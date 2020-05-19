@@ -101,6 +101,36 @@ void secondserial_Command()
         sendcanValues(0, NEW_CAN_PACKET_SIZE, 0x32, 1); //send values to serial3
         break;
 
+    case 'p':
+      //6 bytes required:
+      //2 - Page identifier
+      //2 - offset
+      //2 - Length
+      if(CANSerial.available() >= 6)
+      {
+        byte offset1, offset2, length1, length2;
+        int length;
+        byte tempPage;
+
+        CANSerial.read(); // First byte of the page identifier can be ignored. It's always 0
+        tempPage = CANSerial.read();
+        offset1 = CANSerial.read();
+        offset2 = CANSerial.read();
+        valueOffset = word(offset2, offset1);
+        length1 = CANSerial.read();
+        length2 = CANSerial.read();
+        length = word(length2, length1);
+
+        // confirm command type
+        CANSerial.write("p");
+
+        for(int i = 0; i < length; i++)
+        {
+          CANSerial.write(getPageValue(tempPage, valueOffset + i));
+        }
+      }
+      break;
+
     case 'r': //New format for the optimised OutputChannels
       byte Cmd;
       if (CANSerial.available() >= 6)
