@@ -114,7 +114,7 @@ void doCrankSpeedCalcs()
             if(toothCurrentCount == 1) { angle2 = 2*triggerToothAngle; angle1 = triggerToothAngle; }
             else if(toothCurrentCount == 2) { angle1 = 2*triggerToothAngle; angle2 = triggerToothAngle; }
             else { angle1 = triggerToothAngle; angle2 = triggerToothAngle; }
-          }
+          }      
           else { angle1 = triggerToothAngle; angle2 = triggerToothAngle; }
 
           uint32_t toothDeltaV = (1000000L * angle2 / toothHistory[toothHistoryIndex]) - (1000000L * angle1 / toothHistory[toothHistoryIndex-1]);

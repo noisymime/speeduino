@@ -1,3 +1,5 @@
+#define MJR_DEBUG 1 // used by Mike504 for development, shouldn't be in release code
+
 /*
 Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
