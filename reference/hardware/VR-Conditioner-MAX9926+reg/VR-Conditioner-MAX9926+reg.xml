@@ -1,0 +1,567 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="D">
+  <design>
+    <source>/Users/phillrogers/Documents/kicad/Speeduino VR MAX9926/VR-Conditioner-MAX9926+reg/VR-Conditioner-MAX9926+reg.sch</source>
+    <date>Wednesday, 24 February 2021 at 12:25:04</date>
+    <tool>Eeschema (5.1.6-0-10_14)</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title>Dual Variable Reluctance MAX9926 mode A2</title>
+        <company>(c)2021 Phill Rogers @ TechColab.co.je</company>
+        <rev>3.5</rev>
+        <date>2021-02-24</date>
+        <source>VR-Conditioner-MAX9926+reg.sch</source>
+        <comment number="1" value="Optional onboard regulator or 5V direct"/>
+        <comment number="2" value="Optional power resistors"/>
+        <comment number="3" value="Optional edge header for breadboard etc."/>
+        <comment number="4" value="M2 mounting holes"/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="FID1">
+      <value>Fiducial</value>
+      <footprint>Fiducial:Fiducial_0.5mm_Mask1mm</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Mechanical" part="Fiducial" description="Fiducial Marker"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>60331E91</tstamp>
+    </comp>
+    <comp ref="FID2">
+      <value>Fiducial</value>
+      <footprint>Fiducial:Fiducial_0.5mm_Mask1mm</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Mechanical" part="Fiducial" description="Fiducial Marker"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>6034DBD2</tstamp>
+    </comp>
+    <comp ref="U1">
+      <value>MAX9926UAEE+</value>
+      <footprint>MAX9926UAEE+:MAX9926UAEE&amp;plus_</footprint>
+      <datasheet>https://datasheet.octopart.com/MAX9926UAEE%2B-Maxim-Integrated-datasheet-11046290.pdf</datasheet>
+      <fields>
+        <field name="Critical">Yes</field>
+        <field name="Description">MAX9926 Series 10 mA Differential Input Logic Output Sensor Interface -SSOP-16</field>
+        <field name="MFG Name">Maxim Integrated</field>
+        <field name="MFG Part Num">MAX9926UAEE+</field>
+        <field name="Package JEDEC ID">SSOP-16</field>
+      </fields>
+      <libsource lib="2021-02-17_17-37-40" part="MAX9926UAEE+" description=""/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>602DAA0C</tstamp>
+    </comp>
+    <comp ref="C1">
+      <value>10n</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Description">10 V ±5% Tolerance U2J Multilayer Ceramic Capacitor&#xD;</field>
+        <field name="MFG Name">Murata&#xD;Murata&#xD;</field>
+        <field name="MFG Part Num">GRM1857U1A103JA44D&#xD;</field>
+        <field name="Package JEDEC ID">0603_1608Metric</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>602DCA31</tstamp>
+    </comp>
+    <comp ref="C2">
+      <value>100n</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Description">Ceramic 0.1uF 16V X7R 10% Pad SMD 0603 Soft Termination 125C Automotive T/R&#xD;</field>
+        <field name="MFG Name">Murata&#xD;</field>
+        <field name="MFG Part Num">GCJ188R71C104KA01D&#xD;</field>
+        <field name="Package JEDEC ID">0603_1608Metric</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>602EB266</tstamp>
+    </comp>
+    <comp ref="C3">
+      <value>1u</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Description">16V ±10% Tolerance X7R Surface Mount Multilayer Ceramic Capacitor&#xD;</field>
+        <field name="MFG Name">Murata&#xD;</field>
+        <field name="MFG Part Num">GCM188R71C105KA64D&#xD;</field>
+        <field name="Package JEDEC ID">0603_1608Metric</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>602EBADD</tstamp>
+    </comp>
+    <comp ref="C20">
+      <value>1n</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Description">1000 pF 50 V ±5 % Tolerance C0G SMT Multilayer Ceramic Capacitor&#xD;</field>
+        <field name="MFG Name">Murata&#xD;</field>
+        <field name="MFG Part Num">GRM1885C1H102JA01D&#xD;</field>
+        <field name="Package JEDEC ID">0603_1608Metric</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>60314324</tstamp>
+    </comp>
+    <comp ref="C10">
+      <value>1n</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Description">1000 pF 50 V ±5 % Tolerance C0G SMT Multilayer Ceramic Capacitor&#xD;</field>
+        <field name="MFG Name">Murata&#xD;</field>
+        <field name="MFG Part Num">GRM1885C1H102JA01D&#xD;</field>
+        <field name="Package JEDEC ID">0603_1608Metric</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>603156D1</tstamp>
+    </comp>
+    <comp ref="R22">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Description">Thick Film; +/-1% 0.2W</field>
+        <field name="MFG Name">Vishay</field>
+        <field name="MFG Part Num">CRCW060310K0FKEAHP</field>
+        <field name="Package JEDEC ID">0603_1608Metric</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>603198B2</tstamp>
+    </comp>
+    <comp ref="R21">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Description">Thick Film; +/-1% 0.2W</field>
+        <field name="MFG Name">Vishay</field>
+        <field name="MFG Part Num">CRCW060310K0FKEAHP</field>
+        <field name="Package JEDEC ID">0603_1608Metric</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>6031FC34</tstamp>
+    </comp>
+    <comp ref="R11">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Description">Thick Film; +/-1% 0.2W</field>
+        <field name="MFG Name">Vishay</field>
+        <field name="MFG Part Num">CRCW060310K0FKEAHP</field>
+        <field name="Package JEDEC ID">0603_1608Metric</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>60320C9F</tstamp>
+    </comp>
+    <comp ref="R12">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Description">Thick Film; +/-1% 0.2W</field>
+        <field name="MFG Name">Vishay</field>
+        <field name="MFG Part Num">CRCW060310K0FKEAHP</field>
+        <field name="Package JEDEC ID">0603_1608Metric</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>6032192F</tstamp>
+    </comp>
+    <comp ref="R13">
+      <value>4.7k</value>
+      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Critical">DoNoPlace. User option</field>
+        <field name="Description">3W, 5%</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>6032AC19</tstamp>
+    </comp>
+    <comp ref="J1">
+      <value>8-pin header</value>
+      <footprint>Package_DIP:DIP-8_W7.62mm</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Connector_Generic" part="Conn_02x04_Counter_Clockwise" description="Generic connector, double row, 02x04, counter clockwise pin numbering scheme (similar to DIP packge numbering), script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>6033C0E4</tstamp>
+    </comp>
+    <comp ref="R20">
+      <value>1k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Description">Thick Film; +/-1% 0.2W</field>
+        <field name="MFG Name">Vishay</field>
+        <field name="MFG Part Num">CRCW06031K00FKEAHP</field>
+        <field name="Package JEDEC ID">0603_1608Metric</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>60351FB1</tstamp>
+    </comp>
+    <comp ref="R10">
+      <value>1k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Description">Thick Film; +/-1% 0.2W</field>
+        <field name="MFG Name">Vishay</field>
+        <field name="MFG Part Num">CRCW06031K00FKEAHP</field>
+        <field name="Package JEDEC ID">0603_1608Metric</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>60351FB7</tstamp>
+    </comp>
+    <comp ref="H1">
+      <value>MountingHole</value>
+      <footprint>MountingHole:MountingHole_2.2mm_M2</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Mechanical" part="MountingHole" description="Mounting Hole without connection"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>6037799D</tstamp>
+    </comp>
+    <comp ref="H2">
+      <value>MountingHole</value>
+      <footprint>MountingHole:MountingHole_2.2mm_M2</footprint>
+      <datasheet>~</datasheet>
+      <libsource lib="Mechanical" part="MountingHole" description="Mounting Hole without connection"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>603785C5</tstamp>
+    </comp>
+    <comp ref="C4">
+      <value>10u</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Description">25 V 10 uF ±20% Tolerance X5R Multilayer Ceramic Capacitor&#xD;</field>
+        <field name="MFG Name">Murata&#xD;</field>
+        <field name="MFG Part Num">GRM21BR61E106MA73L&#xD;</field>
+        <field name="Package JEDEC ID">0805_2012Metric</field>
+      </fields>
+      <libsource lib="Device" part="CP" description="Polarized capacitor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>6037FBE4</tstamp>
+    </comp>
+    <comp ref="R23">
+      <value>4.7k</value>
+      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Critical">DoNoPlace. User option</field>
+        <field name="Description">3W, 5%</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>6032659E</tstamp>
+    </comp>
+    <comp ref="U2">
+      <value>AMS1117CD-5.0</value>
+      <footprint>Package_TO_SOT_THT:TO-92_Inline_Wide</footprint>
+      <datasheet>http://www.advanced-monolithic.com/pdf/ds1117.pdf</datasheet>
+      <fields>
+        <field name="Critical">DoNoPlace. User option</field>
+        <field name="Description">1A Low Dropout Voltage Regulator</field>
+        <field name="MFG Name">Advanced Monolithic Systems</field>
+        <field name="MFG Part Num">AMS1117-5.0</field>
+        <field name="Package JEDEC ID">TO92 inline wide</field>
+      </fields>
+      <libsource lib="Regulator_Linear" part="AMS1117CD-5.0" description="1A Low Dropout regulator, positive, 5.0V fixed output, TO-252"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>60325A8A</tstamp>
+    </comp>
+    <comp ref="J2">
+      <value>Edge</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Horizontal</footprint>
+      <datasheet>~</datasheet>
+      <fields>
+        <field name="Critical">DoNoPlace. User option</field>
+      </fields>
+      <libsource lib="Connector_Generic" part="Conn_01x04" description="Generic connector, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>603276E3</tstamp>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="2021-02-17_17-37-40" part="MAX9926UAEE+">
+      <footprints>
+        <fp>21-0055H_16_MXM</fp>
+        <fp>21-0055H_16_MXM-M</fp>
+        <fp>21-0055H_16_MXM-L</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">MAX9926UAEE+</field>
+        <field name="Footprint">21-0055H_16_MXM</field>
+      </fields>
+      <pins>
+        <pin num="1" name="INT_THRS1" type="unspc"/>
+        <pin num="2" name="EXT1" type="input"/>
+        <pin num="3" name="BIAS1" type="input"/>
+        <pin num="4" name="COUT1" type="output"/>
+        <pin num="5" name="COUT2" type="output"/>
+        <pin num="6" name="BIAS2" type="input"/>
+        <pin num="7" name="EXT2" type="input"/>
+        <pin num="8" name="INT_THRS2" type="unspc"/>
+        <pin num="9" name="IN2+" type="input"/>
+        <pin num="10" name="IN2-" type="input"/>
+        <pin num="11" name="GND" type="power_in"/>
+        <pin num="12" name="DIRN" type="output"/>
+        <pin num="13" name="ZERO_EN" type="unspc"/>
+        <pin num="14" name="VCC" type="power_in"/>
+        <pin num="15" name="IN1-" type="input"/>
+        <pin num="16" name="IN1+" type="input"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector_Generic" part="Conn_01x04">
+      <description>Generic connector, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Connector*:*_1x??_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Conn_01x04</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
+        <pin num="3" name="Pin_3" type="passive"/>
+        <pin num="4" name="Pin_4" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector_Generic" part="Conn_02x04_Counter_Clockwise">
+      <description>Generic connector, double row, 02x04, counter clockwise pin numbering scheme (similar to DIP packge numbering), script generated (kicad-library-utils/schlib/autogen/connector/)</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Connector*:*_2x??_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Conn_02x04_Counter_Clockwise</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
+        <pin num="3" name="Pin_3" type="passive"/>
+        <pin num="4" name="Pin_4" type="passive"/>
+        <pin num="5" name="Pin_5" type="passive"/>
+        <pin num="6" name="Pin_6" type="passive"/>
+        <pin num="7" name="Pin_7" type="passive"/>
+        <pin num="8" name="Pin_8" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="C">
+      <description>Unpolarized capacitor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>C_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C</field>
+      </fields>
+      <pins>
+        <pin num="1" name="~" type="passive"/>
+        <pin num="2" name="~" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="CP">
+      <description>Polarized capacitor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>CP_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">CP</field>
+      </fields>
+      <pins>
+        <pin num="1" name="~" type="passive"/>
+        <pin num="2" name="~" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="R">
+      <description>Resistor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R</field>
+      </fields>
+      <pins>
+        <pin num="1" name="~" type="passive"/>
+        <pin num="2" name="~" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Mechanical" part="Fiducial">
+      <description>Fiducial Marker</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Fiducial*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">FID</field>
+        <field name="Value">Fiducial</field>
+      </fields>
+    </libpart>
+    <libpart lib="Mechanical" part="MountingHole">
+      <description>Mounting Hole without connection</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>MountingHole*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">H</field>
+        <field name="Value">MountingHole</field>
+      </fields>
+    </libpart>
+    <libpart lib="Regulator_Linear" part="AMS1117CD-1.5">
+      <aliases>
+        <alias>AMS1117CD-1.8</alias>
+        <alias>AMS1117CD-2.5</alias>
+        <alias>AMS1117CD-2.85</alias>
+        <alias>AMS1117CD-3.3</alias>
+        <alias>AMS1117CD-5.0</alias>
+      </aliases>
+      <description>1A Low Dropout regulator, positive, 1.5V fixed output, TO-252</description>
+      <docs>http://www.advanced-monolithic.com/pdf/ds1117.pdf</docs>
+      <footprints>
+        <fp>TO?252*TabPin2*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">AMS1117CD-1.5</field>
+        <field name="Footprint">Package_TO_SOT_SMD:TO-252-3_TabPin2</field>
+      </fields>
+      <pins>
+        <pin num="1" name="GND" type="power_in"/>
+        <pin num="2" name="VO" type="power_out"/>
+        <pin num="3" name="VI" type="power_in"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries>
+    <library logical="2021-02-17_17-37-40">
+      <uri>/Users/phillrogers/Documents/kicad/Speeduino VR MAX9926/VR-Conditioner-MAX9926+reg/2021-02-17_17-37-40.lib</uri>
+    </library>
+    <library logical="Connector_Generic">
+      <uri>/Library/Application Support/kicad/library/Connector_Generic.lib</uri>
+    </library>
+    <library logical="Device">
+      <uri>/Library/Application Support/kicad/library/Device.lib</uri>
+    </library>
+    <library logical="Mechanical">
+      <uri>/Library/Application Support/kicad/library/Mechanical.lib</uri>
+    </library>
+    <library logical="Regulator_Linear">
+      <uri>/Library/Application Support/kicad/library/Regulator_Linear.lib</uri>
+    </library>
+  </libraries>
+  <nets>
+    <net code="1" name="Net-(U1-Pad2)">
+      <node ref="U1" pin="2"/>
+    </net>
+    <net code="2" name="Net-(U1-Pad7)">
+      <node ref="U1" pin="7"/>
+    </net>
+    <net code="3" name="Net-(U1-Pad12)">
+      <node ref="U1" pin="12"/>
+    </net>
+    <net code="4" name="Net-(C20-Pad2)">
+      <node ref="C20" pin="2"/>
+      <node ref="R22" pin="1"/>
+      <node ref="U1" pin="9"/>
+    </net>
+    <net code="5" name="Net-(J1-Pad4)">
+      <node ref="J1" pin="4"/>
+      <node ref="R23" pin="2"/>
+      <node ref="R21" pin="1"/>
+    </net>
+    <net code="6" name="Net-(C20-Pad1)">
+      <node ref="U1" pin="10"/>
+      <node ref="R21" pin="2"/>
+      <node ref="C20" pin="1"/>
+    </net>
+    <net code="7" name="Net-(C10-Pad2)">
+      <node ref="U1" pin="15"/>
+      <node ref="R11" pin="1"/>
+      <node ref="C10" pin="2"/>
+    </net>
+    <net code="8" name="Net-(C10-Pad1)">
+      <node ref="U1" pin="16"/>
+      <node ref="C10" pin="1"/>
+      <node ref="R12" pin="1"/>
+    </net>
+    <net code="9" name="Net-(J1-Pad2)">
+      <node ref="R11" pin="2"/>
+      <node ref="R13" pin="2"/>
+      <node ref="J1" pin="2"/>
+    </net>
+    <net code="10" name="Net-(J1-Pad3)">
+      <node ref="R22" pin="2"/>
+      <node ref="R23" pin="1"/>
+      <node ref="J1" pin="3"/>
+    </net>
+    <net code="11" name="Net-(J1-Pad1)">
+      <node ref="J1" pin="1"/>
+      <node ref="R13" pin="1"/>
+      <node ref="R12" pin="2"/>
+    </net>
+    <net code="12" name="/COUT1">
+      <node ref="J1" pin="8"/>
+      <node ref="J2" pin="4"/>
+      <node ref="R10" pin="2"/>
+      <node ref="U1" pin="4"/>
+    </net>
+    <net code="13" name="/COUT2">
+      <node ref="J2" pin="3"/>
+      <node ref="U1" pin="5"/>
+      <node ref="J1" pin="7"/>
+      <node ref="R20" pin="2"/>
+    </net>
+    <net code="14" name="GND">
+      <node ref="U1" pin="1"/>
+      <node ref="U1" pin="3"/>
+      <node ref="J1" pin="6"/>
+      <node ref="U1" pin="6"/>
+      <node ref="J2" pin="2"/>
+      <node ref="U2" pin="1"/>
+      <node ref="U1" pin="8"/>
+      <node ref="U1" pin="11"/>
+      <node ref="U1" pin="13"/>
+      <node ref="C1" pin="2"/>
+      <node ref="C3" pin="2"/>
+      <node ref="C2" pin="2"/>
+      <node ref="C4" pin="2"/>
+    </net>
+    <net code="15" name="VCC">
+      <node ref="C2" pin="1"/>
+      <node ref="C3" pin="1"/>
+      <node ref="C1" pin="1"/>
+      <node ref="U1" pin="14"/>
+      <node ref="R10" pin="1"/>
+      <node ref="R20" pin="1"/>
+      <node ref="U2" pin="2"/>
+      <node ref="J1" pin="5"/>
+    </net>
+    <net code="16" name="+12V">
+      <node ref="J2" pin="1"/>
+      <node ref="U2" pin="3"/>
+      <node ref="C4" pin="1"/>
+    </net>
+  </nets>
+</export>
