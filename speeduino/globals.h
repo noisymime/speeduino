@@ -971,8 +971,9 @@ struct config4 {
   byte vvt2PWMdir : 1;
   byte unusedBits4 : 7;
   byte ANGLEFILTER_VVT;
+  byte FILTER_FLEX;
 
-  byte unused4_124[3];
+  byte unused4_124[2];
 
 #if defined(CORE_AVR)
   };

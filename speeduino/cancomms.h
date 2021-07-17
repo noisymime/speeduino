@@ -1,7 +1,7 @@
 #ifndef CANCOMMS_H
 #define CANCOMMS_H
 
-#define NEW_CAN_PACKET_SIZE   75
+#define NEW_CAN_PACKET_SIZE   119
 #define CAN_PACKET_SIZE   75
 
 #if ( defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) )

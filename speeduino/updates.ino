@@ -510,6 +510,8 @@ void doUpdates()
     configPage13.outputPin[6] = 0;
     configPage13.outputPin[7] = 0;
 
+    configPage4.FILTER_FLEX = 75;
+
     EEPROM.write(EEPROM_DATA_VERSION, CURRENT_DATA_VERSION);
   }
 

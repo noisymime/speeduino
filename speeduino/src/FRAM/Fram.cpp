@@ -127,7 +127,7 @@ void FramClass::setClock(uint32_t clockSpeed) {
 uint8_t FramClass::isDeviceActive(void) {
   uint8_t result;
   enableWrite(1); //Best way of detecting a device
-  char SR = readSR();
+  uint8_t SR = readSR();
   result = (SR!=0) && (SR!=255);
   enableWrite(0);
   return result;

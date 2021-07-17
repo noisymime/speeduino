@@ -211,8 +211,8 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
 #if defined(CANSerial_AVAILABLE)
   byte fullStatus[NEW_CAN_PACKET_SIZE];    // this must be set to the maximum number of data fullstatus must read in
   fullStatus[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
-  fullStatus[1] = currentStatus.status1; //status1 Bitfield
-  fullStatus[2] = currentStatus.engine; //Engine Status Bitfield
+  fullStatus[1] = currentStatus.status1; //status1 Bitfield, inj1Status(0), inj2Status(1), inj3Status(2), inj4Status(3), DFCOOn(4), boostCutFuel(5), toothLog1Ready(6), toothLog2Ready(7)
+  fullStatus[2] = currentStatus.engine; //Engine Status Bitfield, running(0), crank(1), ase(2), warmup(3), tpsaccaen(4), tpsacden(5), mapaccaen(6), mapaccden(7)
   fullStatus[3] = (byte)(divu100(currentStatus.dwell)); //Dwell in ms * 10
   fullStatus[4] = lowByte(currentStatus.MAP); //2 bytes for MAP
   fullStatus[5] = highByte(currentStatus.MAP);
@@ -246,7 +246,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
 
   fullStatus[29] = (byte)(currentStatus.boostTarget >> 1); //Divide boost target by 2 to fit in a byte
   fullStatus[30] = (byte)(currentStatus.boostDuty / 100);
-  fullStatus[31] = currentStatus.spark; //Spark related bitfield
+  fullStatus[31] = currentStatus.spark; //Spark related bitfield, launchHard(0), launchSoft(1), hardLimitOn(2), softLimitOn(3), boostCutSpark(4), error(5), idleControlOn(6), sync(7)
 
   //rpmDOT must be sent as a signed integer
   fullStatus[32] = lowByte(currentStatus.rpmDOT);
@@ -257,7 +257,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[36] = currentStatus.flexIgnCorrection; //Ignition correction (Increased degrees of advance) for flex fuel
 
   fullStatus[37] = currentStatus.idleLoad;
-  fullStatus[38] = currentStatus.testOutputs;
+  fullStatus[38] = currentStatus.testOutputs; // testEnabled(0), testActive(1)
 
   fullStatus[39] = currentStatus.O2_2; //O2
   fullStatus[40] = currentStatus.baro; //Barometer value
@@ -296,7 +296,53 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[72] = highByte(currentStatus.canin[15]);
 
   fullStatus[73] = currentStatus.tpsADC;
-  fullStatus[74] = getNextError();
+  fullStatus[74] = getNextError(); // errorNum (0:1), currentError(2:7)
+
+  fullStatus[75] = currentStatus.launchCorrection;
+  fullStatus[76] = lowByte(currentStatus.PW2); //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[77] = highByte(currentStatus.PW2); //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[78] = lowByte(currentStatus.PW3); //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[79] = highByte(currentStatus.PW3); //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[80] = lowByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[81] = highByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
+
+  fullStatus[82] = currentStatus.status3; // resentLockOn(0), nitrousOn(1), fuel2Active(2), vssRefresh(3), halfSync(4), nSquirts(6:7)
+  fullStatus[83] = currentStatus.engineProtectStatus; //RPM(0), MAP(1), OIL(2), AFR(3), Unused(4:7)
+  fullStatus[84] = lowByte(currentStatus.fuelLoad);
+  fullStatus[85] = highByte(currentStatus.fuelLoad);
+  fullStatus[86] = lowByte(currentStatus.ignLoad);
+  fullStatus[87] = highByte(currentStatus.ignLoad);
+  fullStatus[88] = lowByte(currentStatus.injAngle); 
+  fullStatus[89] = highByte(currentStatus.injAngle); 
+  fullStatus[90] = currentStatus.idleDuty;
+  fullStatus[91] = currentStatus.CLIdleTarget; //closed loop idle target
+  fullStatus[92] = currentStatus.mapDOT; //rate of change of the map 
+  fullStatus[93] = (int8_t)currentStatus.vvt1Angle;
+  fullStatus[94] = currentStatus.vvt1TargetAngle;
+  fullStatus[95] = currentStatus.vvt1Duty;
+  fullStatus[96] = lowByte(currentStatus.flexBoostCorrection);
+  fullStatus[97] = highByte(currentStatus.flexBoostCorrection);
+  fullStatus[98] = currentStatus.baroCorrection;
+  fullStatus[99] = currentStatus.ASEValue; //Current ASE (%)
+  fullStatus[100] = lowByte(currentStatus.vss); //speed reading from the speed sensor
+  fullStatus[101] = highByte(currentStatus.vss);
+  fullStatus[102] = currentStatus.gear; 
+  fullStatus[103] = currentStatus.fuelPressure;
+  fullStatus[104] = currentStatus.oilPressure;
+  fullStatus[105] = currentStatus.wmiPW;
+  fullStatus[106] = currentStatus.status4; // wmiEmptyBit(0), vvt1Error(1), vvt2Error(2), UnusedBits(3:7)
+  fullStatus[107] = (int8_t)currentStatus.vvt2Angle;
+  fullStatus[108] = currentStatus.vvt2TargetAngle;
+  fullStatus[109] = currentStatus.vvt2Duty;
+  fullStatus[110] = currentStatus.outputsStatus;
+  fullStatus[111] = (byte)(currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET); //Fuel temperature from flex sensor
+  fullStatus[112] = currentStatus.fuelTempCorrection; //Fuel temperature Correction (%)
+  fullStatus[113] = currentStatus.VE1; //VE 1 (%)
+  fullStatus[114] = currentStatus.VE2; //VE 2 (%)
+  fullStatus[115] = currentStatus.advance1; //advance 1 
+  fullStatus[116] = currentStatus.advance2; //advance 2 
+  fullStatus[117] = currentStatus.nitrous_status;
+  fullStatus[118] = currentStatus.TS_SD_Status; //SD card status
 
   for(byte x=0; x<packetLength; x++)
   {

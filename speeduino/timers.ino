@@ -199,9 +199,10 @@ void oneMSInterval() //Most ARM chips can simply call a function
     //Set the flex reading (if enabled). The flexCounter is updated with every pulse from the sensor. If cleared once per second, we get a frequency reading
     if(configPage2.flexEnabled == true)
     {
+      byte tempEthPct = 0; 
       if(flexCounter < 50)
       {
-        currentStatus.ethanolPct = 0; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
+        tempEthPct = 0; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
         flexCounter = 0;
       }
       else if (flexCounter > 151) //1 pulse buffer
@@ -209,24 +210,26 @@ void oneMSInterval() //Most ARM chips can simply call a function
 
         if(flexCounter < 169)
         {
-          currentStatus.ethanolPct = 100;
+          tempEthPct = 100;
           flexCounter = 0;
         }
         else
         {
           //This indicates an error condition. Spec of the sensor is that errors are above 170Hz)
-          currentStatus.ethanolPct = 0;
+          tempEthPct = 0;
           flexCounter = 0;
         }
       }
       else
       {
-        currentStatus.ethanolPct = flexCounter - 50; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
+        tempEthPct = flexCounter - 50; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
         flexCounter = 0;
       }
 
       //Off by 1 error check
-      if (currentStatus.ethanolPct == 1) { currentStatus.ethanolPct = 0; }
+      if (tempEthPct == 1) { tempEthPct = 0; }
+
+      currentStatus.ethanolPct = ADC_FILTER(tempEthPct, configPage4.FILTER_FLEX, currentStatus.ethanolPct);
 
       //Continental flex sensor fuel temperature can be read with following formula: (Temperature = (41.25 * pulse width(ms)) - 81.25). 1000μs = -40C and 5000μs = 125C
       if(flexPulseWidth > 5000) { flexPulseWidth = 5000; }

@@ -123,6 +123,9 @@ void initialiseADC()
   if(configPage4.ADCFILTER_BAT > 240) { configPage4.ADCFILTER_BAT = 128; writeConfig(ignSetPage); }
   if(configPage4.ADCFILTER_MAP > 240) { configPage4.ADCFILTER_MAP = 20;  writeConfig(ignSetPage); }
   if(configPage4.ADCFILTER_BARO > 240) { configPage4.ADCFILTER_BARO = 64; writeConfig(ignSetPage); }
+  if(configPage4.FILTER_FLEX > 240)   { configPage4.FILTER_FLEX = 75; writeConfig(ignSetPage); }
+
+  flexStartTime = micros();
 
   vssCount = 0;
   vssTotalTime = 0;
@@ -665,7 +668,8 @@ void flexPulse()
 {
   if(READ_FLEX() == true)
   {
-    flexPulseWidth = (micros() - flexStartTime); //Calculate the pulse width
+    unsigned long tempPW = (micros() - flexStartTime); //Calculate the pulse width
+    flexPulseWidth = ADC_FILTER(tempPW, configPage4.FILTER_FLEX, flexPulseWidth);
     ++flexCounter;
   }
   else
