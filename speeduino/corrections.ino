@@ -303,7 +303,7 @@ uint16_t correctionAccel()
     TPS_change = (currentStatus.TPS - TPSlast);
     //TPS_rateOfChange = ldiv(1000000, (TPS_time - TPSlast_time)).quot * TPS_change; //This is the % per second that the TPS has moved
     TPS_rateOfChange = TPS_READ_FREQUENCY * TPS_change; //This is the % per second that the TPS has moved
-    if(TPS_rateOfChange >= 0) { currentStatus.tpsDOT = TPS_rateOfChange / 10; } //The TAE bins are divided by 10 in order to allow them to be stored in a byte. Faster as this than divu10
+    if(TPS_rateOfChange >= 0) { currentStatus.tpsDOT = TPS_rateOfChange / 20; } //The TAE bins are divided by 10 in order to allow them to be stored in a byte. Faster as this than divu10
     else { currentStatus.tpsDOT = 0; } //Prevent overflow as tpsDOT is signed
   }
   
@@ -719,9 +719,9 @@ int8_t correctionFlexTiming(int8_t advance)
 
 int8_t correctionWMITiming(int8_t advance)
 {
-  if( configPage10.wmiEnabled >= 1 && configPage10.wmiAdvEnabled == 1 && BIT_CHECK(currentStatus.status4, BIT_STATUS4_WMI_EMPTY) == 0 ) //Check for wmi being enabled
+  if( (configPage10.wmiEnabled >= 1) && (configPage10.wmiAdvEnabled == 1) && !BIT_CHECK(currentStatus.status4, BIT_STATUS4_WMI_EMPTY) ) //Check for wmi being enabled
   {
-    if(currentStatus.TPS >= configPage10.wmiTPS && currentStatus.RPM >= configPage10.wmiRPM && currentStatus.MAP/2 >= configPage10.wmiMAP && currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET >= configPage10.wmiIAT)
+    if( (currentStatus.TPS >= configPage10.wmiTPS) && (currentStatus.RPM >= configPage10.wmiRPM) && (currentStatus.MAP/2 >= configPage10.wmiMAP) && ((currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET) >= configPage10.wmiIAT) )
     {
       return (int16_t) advance + table2D_getValue(&wmiAdvTable, currentStatus.MAP/2) - OFFSET_IGNITION; //Negative values are achieved with offset
     }

@@ -491,6 +491,16 @@ void doUpdates()
     configPage10.vvtCLMaxAng = 200;
     configPage4.ANGLEFILTER_VVT = 0;
 
+    //TPS resolution incresed to 0.5%
+    configPage2.taeThresh *= 2;
+    configPage2.idleAdvTPS *= 2;
+    configPage2.iacTPSlimit *= 2;
+    configPage4.floodClear *= 2;
+    configPage4.dfcoTPSThresh *= 2;
+    configPage6.egoTPSMax *= 2;
+    configPage10.lnchCtrlTPS *= 2;
+    configPage10.wmiTPS *= 2;
+
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 18);
   }

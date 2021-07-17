@@ -46,7 +46,7 @@ void calculateSecondaryFuel()
       }
       else if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_TPS)
       {
-        if(currentStatus.TPS > configPage10.fuel2SwitchValue)
+        if((currentStatus.TPS/2) > configPage10.fuel2SwitchValue)
         {
           BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
           currentStatus.VE2 = getVE2();
@@ -126,7 +126,7 @@ void calculateSecondarySpark()
       }
       else if(configPage10.spark2SwitchVariable == SPARK2_CONDITION_TPS)
       {
-        if(currentStatus.TPS > configPage10.spark2SwitchValue)
+        if((currentStatus.TPS/2) > configPage10.spark2SwitchValue)
         {
           BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
           currentStatus.advance2 = getAdvance2();
@@ -172,7 +172,7 @@ byte getVE2()
   else if (configPage10.fuel2Algorithm == LOAD_SOURCE_TPS)
   {
     //Alpha-N
-    currentStatus.fuelLoad2 = currentStatus.TPS;
+    currentStatus.fuelLoad2 = (currentStatus.TPS/2);
   }
   else if (configPage10.fuel2Algorithm == LOAD_SOURCE_IMAPEMAP)
   {
@@ -201,7 +201,7 @@ byte getAdvance2()
   else if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS)
   {
     //Alpha-N
-    currentStatus.ignLoad2 = currentStatus.TPS;
+    currentStatus.ignLoad2 = (currentStatus.TPS/2);
 
   }
   else if (configPage10.spark2Algorithm == LOAD_SOURCE_IMAPEMAP)

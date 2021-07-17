@@ -398,7 +398,7 @@ void readTPS(bool useFilter)
     //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
     if (currentStatus.tpsADC < configPage2.tpsMin) { tempADC = configPage2.tpsMin; }
     else if(currentStatus.tpsADC > configPage2.tpsMax) { tempADC = configPage2.tpsMax; }
-    currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
+    currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 0, 200); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
   }
   else
   {
@@ -412,7 +412,7 @@ void readTPS(bool useFilter)
     //All checks below are reversed from the standard case above
     if (tempADC > tempTPSMax) { tempADC = tempTPSMax; }
     else if(tempADC < tempTPSMin) { tempADC = tempTPSMin; }
-    currentStatus.TPS = map(tempADC, tempTPSMin, tempTPSMax, 0, 100);
+    currentStatus.TPS = map(tempADC, tempTPSMin, tempTPSMax, 0, 200);
   }
 
   //Check whether the closed throttle position sensor is active
