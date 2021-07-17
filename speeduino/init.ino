@@ -365,7 +365,7 @@ void initialiseAll()
 
     //Once the configs have been loaded, a number of one time calculations can be completed
     req_fuel_uS = configPage2.reqFuel * 100; //Convert to uS and an int. This is the only variable to be used in calculations
-    inj_opentime_uS = configPage2.injOpen * 100; //Injector open time. Comes through as ms*10 (Eg 15.5ms = 155).
+    inj_opentime_uS = configPage2.injOpen * 10; //Injector open time. Comes through as ms*10 (Eg 15.5ms = 155).
 
     if(configPage10.stagingEnabled == true)
     {

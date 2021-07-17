@@ -491,6 +491,8 @@ void doUpdates()
     configPage10.vvtCLMaxAng = 200;
     configPage4.ANGLEFILTER_VVT = 0;
 
+    configPage2.injOpen *= 10; //injector open time resolution increased from 10 to 1us
+
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 18);
   }
