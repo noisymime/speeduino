@@ -10,6 +10,10 @@
   #define PINMASK_TYPE uint32_t
   #define COMPARE_TYPE uint16_t
   #define COUNTER_TYPE uint16_t
+  #define smallAngle_t int16_t //usually in8_t
+  #define bigAngle_t int32_t //usually in16_t
+  const uint8_t ANGLE_SHIFTS = 3; //2^x
+  const uint8_t ANGLE_SHIFT_POWER = (1UL<<ANGLE_SHIFTS); //2^x
   #define TIMER_RESOLUTION 2
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
   #if defined(SRAM_AS_EEPROM)
@@ -29,6 +33,8 @@
   void jumpToBootloader();
 
   #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) ) //Forbiden pins like USB
+  #define scaleCrankAngle(angle) ((angle)<<ANGLE_SHIFTS) //This set the crank resolution and type.
+  #define scaleCrankAngleDown(angle) ((angle)>>ANGLE_SHIFTS) //This set the crank resolution and type.
 
   #ifndef Serial
     #define Serial Serial1

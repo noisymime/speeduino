@@ -16,12 +16,18 @@
   #define COUNTER_TYPE uint32_t
   #define BOARD_MAX_DIGITAL_PINS 34
   #define BOARD_MAX_IO_PINS 34 //digital pins + analog channels + 1
+  #define smallAngle_t int16_t //usually in8_t
+  #define bigAngle_t int32_t //usually in16_t
+  const uint8_t ANGLE_SHIFTS = 3; //2^x
+  const uint8_t ANGLE_SHIFT_POWER = (1UL<<ANGLE_SHIFTS); //2^x
   #define EEPROM_LIB_H <EEPROM.h>
   #define RTC_ENABLED
   #define RTC_LIB_H "TimeLib.h"
 
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
   #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbiden pins like USB
+  #define scaleCrankAngle(angle) ((angle)<<ANGLE_SHIFTS) //This set the crank resolution and type.
+  #define scaleCrankAngleDown(angle) ((angle)>>ANGLE_SHIFTS) //This set the crank resolution and type.
 
 /*
 ***********************************************************************************************************

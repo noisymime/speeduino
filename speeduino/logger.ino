@@ -114,8 +114,8 @@ void createLog(uint8_t *logBuffer)
     logBuffer[90] = highByte(currentStatus.dwell);
     logBuffer[91] = currentStatus.CLIdleTarget;
     logBuffer[92] = currentStatus.mapDOT;
-    logBuffer[93] = currentStatus.vvt1Angle;
-    logBuffer[94] = currentStatus.vvt1TargetAngle;
+    logBuffer[93] = scaleCrankAngleDown(currentStatus.vvt1Angle);
+    logBuffer[94] = scaleCrankAngleDown(currentStatus.vvt1TargetAngle);
     logBuffer[95] = (byte) currentStatus.vvt1Duty;
     logBuffer[96] = lowByte(currentStatus.flexBoostCorrection);
     logBuffer[97] = highByte(currentStatus.flexBoostCorrection);
@@ -129,8 +129,8 @@ void createLog(uint8_t *logBuffer)
     logBuffer[105] = currentStatus.oilPressure;
     logBuffer[106] = currentStatus.wmiPW;
     logBuffer[107] = currentStatus.status4;
-    logBuffer[108] = currentStatus.vvt2Angle;
-    logBuffer[109] = currentStatus.vvt2TargetAngle;
+    logBuffer[108] = scaleCrankAngleDown(currentStatus.vvt2Angle);
+    logBuffer[109] = scaleCrankAngleDown(currentStatus.vvt2TargetAngle);
     logBuffer[110] = (byte) currentStatus.vvt2Duty;
     logBuffer[111] = currentStatus.advance1;
     logBuffer[112] = currentStatus.advance2;

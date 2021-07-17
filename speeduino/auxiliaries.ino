@@ -264,15 +264,15 @@ void vvtControl()
     else if( (configPage6.vvtMode == VVT_MODE_CLOSED_LOOP) )
     {
       //Lookup VVT duty based on either MAP or TPS
-      if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1TargetAngle = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM); }
-      else { currentStatus.vvt1TargetAngle = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
+      if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1TargetAngle = scaleCrankAngle(get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM)); }
+      else { currentStatus.vvt1TargetAngle = scaleCrankAngle(get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM)); }
 
       if( (vvtCounter & 31) == 1) { vvtPID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);  //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
       vvtPID.SetControllerDirection(configPage6.vvtPWMdir); }
 
       // safety check that the cam angles are ok. The engine will be totally undriveable if the cam sensor is faulty and giving wrong cam angles, so if that happens, default to 0 duty.
       // This also prevents using zero or negative current angle values for PID adjustment, because those don't work in integer PID.
-      if ( currentStatus.vvt1Angle <=  configPage10.vvtCLMinAng || currentStatus.vvt1Angle > configPage10.vvtCLMaxAng )
+      if ( currentStatus.vvt1Angle <=  scaleCrankAngle(configPage10.vvtCLMinAng) || currentStatus.vvt1Angle > scaleCrankAngle(configPage10.vvtCLMaxAng) )
       {
         currentStatus.vvt1Duty = 0;
         vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
@@ -303,15 +303,15 @@ void vvtControl()
 
       if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
       {
-        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2TargetAngle = get3DTableValue(&vvt2Table, currentStatus.TPS, currentStatus.RPM); }
-        else { currentStatus.vvt2TargetAngle = get3DTableValue(&vvt2Table, currentStatus.MAP, currentStatus.RPM); }
+        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2TargetAngle = scaleCrankAngle(get3DTableValue(&vvt2Table, currentStatus.TPS, currentStatus.RPM)); }
+        else { currentStatus.vvt2TargetAngle = scaleCrankAngle(get3DTableValue(&vvt2Table, currentStatus.MAP, currentStatus.RPM)); }
 
         if( vvtCounter == 30) { vvt2PID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);  //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
         vvt2PID.SetControllerDirection(configPage4.vvt2PWMdir); }
 
         // safety check that the cam angles are ok. The engine will be totally undriveable if the cam sensor is faulty and giving wrong cam angles, so if that happens, default to 0 duty.
         // This also prevents using zero or negative current angle values for PID adjustment, because those don't work in integer PID.
-        if ( currentStatus.vvt2Angle <= configPage10.vvtCLMinAng || currentStatus.vvt2Angle > configPage10.vvtCLMaxAng )
+        if ( currentStatus.vvt2Angle <= scaleCrankAngle(configPage10.vvtCLMinAng) || currentStatus.vvt2Angle > scaleCrankAngle(configPage10.vvtCLMaxAng) )
         {
           currentStatus.vvt2Duty = 0;
           vvt2_pwm_value = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);

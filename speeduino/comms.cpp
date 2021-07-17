@@ -794,7 +794,7 @@ byte getStatusEntry(uint16_t byteNum)
     case 20: statusValue = currentStatus.VE2; break; //VE 2 (%)
     case 21: statusValue = currentStatus.afrTarget; break;
     case 22: statusValue = currentStatus.tpsDOT; break; //TPS DOT
-    case 23: statusValue = currentStatus.advance; break;
+    case 23: statusValue = scaleCrankAngleDown(currentStatus.advance); break;
     case 24: statusValue = currentStatus.TPS; break; // TPS (0% to 100%)
     
     case 25: 
@@ -888,9 +888,9 @@ byte getStatusEntry(uint16_t byteNum)
     case 90: statusValue = highByte(currentStatus.dwell); break;
     case 91: statusValue = currentStatus.CLIdleTarget; break;
     case 92: statusValue = currentStatus.mapDOT; break;
-    case 93: statusValue = lowByte(currentStatus.vvt1Angle); break; //2 bytes for vvt1Angle
-    case 94: statusValue = highByte(currentStatus.vvt1Angle); break;
-    case 95: statusValue = currentStatus.vvt1TargetAngle; break;
+    case 93: statusValue = lowByte(scaleCrankAngleDown(currentStatus.vvt1Angle)); break; //2 bytes for vvt1Angle
+    case 94: statusValue = highByte(scaleCrankAngleDown(currentStatus.vvt1Angle)); break;
+    case 95: statusValue = scaleCrankAngleDown(currentStatus.vvt1TargetAngle); break;
     case 96: statusValue = (byte)(currentStatus.vvt1Duty); break;
     case 97: statusValue = lowByte(currentStatus.flexBoostCorrection); break;
     case 98: statusValue = highByte(currentStatus.flexBoostCorrection); break;
@@ -904,15 +904,15 @@ byte getStatusEntry(uint16_t byteNum)
     case 106: statusValue = currentStatus.oilPressure; break;
     case 107: statusValue = currentStatus.wmiPW; break;
     case 108: statusValue = currentStatus.status4; break;
-    case 109: statusValue = lowByte(currentStatus.vvt2Angle); break; //2 bytes for vvt2Angle
-    case 110: statusValue = highByte(currentStatus.vvt2Angle); break;
-    case 111: statusValue = currentStatus.vvt2TargetAngle; break;
+    case 109: statusValue = lowByte(scaleCrankAngleDown(currentStatus.vvt2Angle)); break; //2 bytes for vvt2Angle
+    case 110: statusValue = highByte(scaleCrankAngleDown(currentStatus.vvt2Angle)); break;
+    case 111: statusValue = scaleCrankAngleDown(currentStatus.vvt2TargetAngle); break;
     case 112: statusValue = (byte)(currentStatus.vvt2Duty); break;
     case 113: statusValue = currentStatus.outputsStatus; break;
     case 114: statusValue = (byte)(currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET); break; //Fuel temperature from flex sensor
     case 115: statusValue = currentStatus.fuelTempCorrection; break; //Fuel temperature Correction (%)
-    case 116: statusValue = currentStatus.advance1; break; //advance 1 (%)
-    case 117: statusValue = currentStatus.advance2; break; //advance 2 (%)
+    case 116: statusValue = scaleCrankAngleDown(currentStatus.advance1); break; //advance 1 (%)
+    case 117: statusValue = scaleCrankAngleDown(currentStatus.advance2); break; //advance 2 (%)
     case 118: statusValue = currentStatus.TS_SD_Status; break; //SD card status
     case 119: statusValue = lowByte(currentStatus.EMAP); break; //2 bytes for EMAP
     case 120: statusValue = highByte(currentStatus.EMAP); break;

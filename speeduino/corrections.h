@@ -22,20 +22,19 @@ byte correctionBaro(); //Barometric pressure correction
 byte correctionLaunch(); //Launch control correction
 bool correctionDFCO(); //Decelleration fuel cutoff
 
-
-int8_t correctionsIgn(int8_t advance);
-int8_t correctionFixedTiming(int8_t);
-int8_t correctionCrankingFixedTiming(int8_t);
-int8_t correctionFlexTiming(int8_t);
-int8_t correctionWMITiming(int8_t);
-int8_t correctionIATretard(int8_t);
-int8_t correctionCLTadvance(int8_t);
-int8_t correctionIdleAdvance(int8_t);
-int8_t correctionSoftRevLimit(int8_t);
-int8_t correctionNitrous(int8_t);
-int8_t correctionSoftLaunch(int8_t);
-int8_t correctionSoftFlatShift(int8_t);
-int8_t correctionKnock(int8_t);
+smallAngle_t correctionsIgn(smallAngle_t advance);
+smallAngle_t correctionFixedTiming(smallAngle_t);
+smallAngle_t correctionCrankingFixedTiming(smallAngle_t);
+smallAngle_t correctionFlexTiming(smallAngle_t);
+smallAngle_t correctionWMITiming(smallAngle_t);
+smallAngle_t correctionIATretard(smallAngle_t);
+smallAngle_t correctionCLTadvance(smallAngle_t);
+smallAngle_t correctionIdleAdvance(smallAngle_t);
+smallAngle_t correctionSoftRevLimit(smallAngle_t);
+smallAngle_t correctionNitrous(smallAngle_t);
+smallAngle_t correctionSoftLaunch(smallAngle_t);
+smallAngle_t correctionSoftFlatShift(smallAngle_t);
+smallAngle_t correctionKnock(smallAngle_t);
 
 uint16_t correctionsDwell(uint16_t dwell);
 
@@ -47,8 +46,8 @@ extern byte activateTPSDOT; //The tpsDOT value seen when the MAE was activated.
 extern uint16_t AFRnextCycle;
 extern unsigned long knockStartTime;
 extern byte lastKnockCount;
-extern int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
-extern int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
+extern bigAngle_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
+extern bigAngle_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
 extern uint16_t aseTaperStart;
 extern uint16_t dfcoStart;
 

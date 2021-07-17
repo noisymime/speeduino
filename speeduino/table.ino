@@ -212,7 +212,7 @@ int16_t table2D_getRawValue(struct table2D *fromTable, byte X_index)
 
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
 //It performs a 2D linear interpolation as descibred in: www.megamanual.com/v22manual/ve_tuner.pdf
-int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
+int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in, uint8_t isAngle)
   {
     int X = X_in;
     int Y = Y_in;
@@ -378,10 +378,10 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
               C          D
 
     */
-    int A = fromTable->values[yMin][xMin];
-    int B = fromTable->values[yMin][xMax];
-    int C = fromTable->values[yMax][xMin];
-    int D = fromTable->values[yMax][xMax];
+    int A = (isAngle != 0) ? scaleCrankAngle(fromTable->values[yMin][xMin]) : fromTable->values[yMin][xMin];
+    int B = (isAngle != 0) ? scaleCrankAngle(fromTable->values[yMin][xMax]) : fromTable->values[yMin][xMax];
+    int C = (isAngle != 0) ? scaleCrankAngle(fromTable->values[yMax][xMin]) : fromTable->values[yMax][xMin];
+    int D = (isAngle != 0) ? scaleCrankAngle(fromTable->values[yMax][xMax]) : fromTable->values[yMax][xMax];
 
     //Check that all values aren't just the same (This regularly happens with things like the fuel trim maps)
     if( (A == B) && (A == C) && (A == D) ) { tableResult = A; }
@@ -415,6 +415,7 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
       uint32_t o = ((TABLE_SHIFT_POWER-p) * q) >> TABLE_SHIFT_FACTOR;
       uint32_t r = (p * q) >> TABLE_SHIFT_FACTOR;
       tableResult = ( (A * m) + (B * n) + (C * o) + (D * r) ) >> TABLE_SHIFT_FACTOR;
+      
     }
 
     //Update the tables cache data

@@ -94,7 +94,7 @@ struct table3D {
 
   //Store the last input and output values, again for caching purposes
   int16_t lastXInput, lastYInput;
-  byte lastOutput; //This will need changing if we ever have 16-bit table values
+  int16_t lastOutput; //This will need changing if we ever have 16-bit table values
   bool cacheIsValid; ///< This tracks whether the tables cache should be used. Ordinarily this is true, but is set to false whenever TunerStudio sends a new value for the table
 };
 
@@ -114,7 +114,7 @@ Eg: 2x2 table
 (1,0) = 1
 
 */
-int get3DTableValue(struct table3D *fromTable, int, int);
+int get3DTableValue(struct table3D *fromTable, int, int, uint8_t = 0);
 int table2D_getValue(struct table2D *fromTable, int);
 
 #endif // TABLE_H

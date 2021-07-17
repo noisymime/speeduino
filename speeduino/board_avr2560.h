@@ -13,6 +13,10 @@
   #define PINMASK_TYPE uint8_t
   #define COMPARE_TYPE uint16_t
   #define COUNTER_TYPE uint16_t
+  #define smallAngle_t int16_t //usually in8_t
+  #define bigAngle_t int16_t //usually in16_t
+  const uint8_t ANGLE_SHIFTS = 3; //2^x
+  const uint8_t ANGLE_SHIFT_POWER = (1UL<<ANGLE_SHIFTS); //2^x
   #ifdef USE_SPI_EEPROM
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
   #else
@@ -37,7 +41,8 @@
   #if not defined(__AVR_ATmega2561__)
     #define USE_SERIAL3
   #endif
-
+  #define scaleCrankAngle(angle) ((angle)<<ANGLE_SHIFTS) //This set the crank resolution and type.
+  #define scaleCrankAngleDown(angle) ((angle)>>ANGLE_SHIFTS) //This set the crank resolution and type.
 /*
 ***********************************************************************************************************
 * Schedules

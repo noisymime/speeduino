@@ -15,13 +15,13 @@
 * 3) Closed loop error correction (Alpha-beta filter) 
 * 4) 2nd derivative prediction (Speed + acceleration)
 */
-unsigned long angleToTime(int16_t angle, byte method)
+unsigned long angleToTime(bigAngle_t angle, byte method)
 {
     unsigned long returnTime = 0;
 
     if( (method == CRANKMATH_METHOD_INTERVAL_REV) || (method == CRANKMATH_METHOD_INTERVAL_DEFAULT) )
     {
-        returnTime = ((angle * revolutionTime) / 360);
+        returnTime = ((angle * revolutionTime) / scaleCrankAngle(360));
         //returnTime = angle * (unsigned long)timePerDegree;
     }
     else if (method == CRANKMATH_METHOD_INTERVAL_TOOTH)
@@ -33,7 +33,7 @@ unsigned long angleToTime(int16_t angle, byte method)
           unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime);
           interrupts();
           
-          returnTime = ( (toothTime / triggerToothAngle) * angle );
+          returnTime = scaleCrankAngleDown( (scaleCrankAngle(toothTime) / triggerToothAngle) * angle );
         }
         else { returnTime = angleToTime(angle, CRANKMATH_METHOD_INTERVAL_REV); } //Safety check. This can occur if the last tooth seen was outside the normal pattern etc
     }
@@ -49,9 +49,9 @@ unsigned long angleToTime(int16_t angle, byte method)
 * 3) Closed loop error correction (Alpha-beta filter) 
 * 4) 2nd derivative prediction (Speed + acceleration)
 */
-uint16_t timeToAngle(unsigned long time, byte method)
+bigAngle_t timeToAngle(unsigned long time, byte method)
 {
-    uint16_t returnAngle = 0;
+    bigAngle_t returnAngle = 0;
 
     if( (method == CRANKMATH_METHOD_INTERVAL_REV) || (method == CRANKMATH_METHOD_INTERVAL_DEFAULT) )
     {
@@ -105,8 +105,8 @@ void doCrankSpeedCalcs()
           {
             //Special case for 70/110 pattern on 4g63
             angle2 = triggerToothAngle; //Angle 2 is the most recent
-            if (angle2 == 70) { angle1 = 110; }
-            else { angle1 = 70; }
+            if (angle2 == scaleCrankAngle(70)) { angle1 = scaleCrankAngle(110); }
+            else { angle1 = scaleCrankAngle(70); }
           }
           else if(configPage4.TrigPattern == 0)
           {
@@ -124,8 +124,9 @@ void doCrankSpeedCalcs()
           rpmDelta = (toothDeltaV << 10) / (6 * toothDeltaT);
         }
 
-          timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpmDelta).quot; //This give accuracy down to 0.1 of a degree and can provide noticably better timing results on low res triggers
-          timePerDegree = timePerDegreex16 / 16;
+          bigAngle_t timePerDegreeEx = ldiv( scaleCrankAngle(2666656L) , currentStatus.RPM + rpmDelta).quot; //This give accuracy down to 0.1 of a degree and can provide noticably better timing results on low res triggers
+          timePerDegreex16 = timePerDegreeEx;
+          timePerDegree = timePerDegreex16 >> 4;
       }
       else
       {
@@ -139,7 +140,6 @@ void doCrankSpeedCalcs()
           uint16_t tempTriggerToothAngle = triggerToothAngle;
           interrupts();
           timePerDegreex16 = (unsigned long)( (tempToothLastToothTime - tempToothLastMinusOneToothTime)*16) / tempTriggerToothAngle;
-          timePerDegree = timePerDegreex16 / 16;
         }
         else
         {
@@ -147,11 +147,12 @@ void doCrankSpeedCalcs()
           interrupts();
           //Take into account any likely accleration that has occurred since the last full revolution completed:
           //long rpm_adjust = (timeThisRevolution * (long)currentStatus.rpmDOT) / 1000000; 
-          long rpm_adjust = 0;
-          timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpm_adjust).quot; //The use of a x16 value gives accuracy down to 0.1 of a degree and can provide noticably better timing results on low res triggers
-          timePerDegree = timePerDegreex16 / 16;
+          //long rpm_adjust = 0;
+          bigAngle_t timePerDegreeEx = ldiv( scaleCrankAngle(2666656L) , currentStatus.RPM + rpmDelta).quot; //This give accuracy down to 0.1 of a degree and can provide noticably better timing results on low res triggers
+          timePerDegreex16 = timePerDegreeEx;
         }
+        timePerDegree = timePerDegreex16 >> 4;
       }
-      degreesPeruSx2048 = 2048 / timePerDegree;
-      degreesPeruSx32768 = 524288 / timePerDegreex16;
+      degreesPeruSx2048 = scaleCrankAngle(2048) / scaleCrankAngleDown(timePerDegree);
+      degreesPeruSx32768 = scaleCrankAngle(524288) / scaleCrankAngleDown(timePerDegreex16);
 }

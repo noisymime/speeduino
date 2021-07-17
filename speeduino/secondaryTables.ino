@@ -210,7 +210,7 @@ byte getAdvance2()
     currentStatus.ignLoad2 = (currentStatus.MAP * 100) / currentStatus.EMAP;
   }
   else { currentStatus.ignLoad2 = currentStatus.MAP; }
-  tempAdvance = get3DTableValue(&ignitionTable2, currentStatus.ignLoad2, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
+  tempAdvance = get3DTableValue(&ignitionTable2, currentStatus.ignLoad, currentStatus.RPM, 1) - scaleCrankAngle(OFFSET_IGNITION); //As above, but for ignition advance
   tempAdvance = correctionsIgn(tempAdvance);
 
   return tempAdvance;

@@ -46,8 +46,8 @@ byte activateTPSDOT; //The tpsDOT value seen when the MAE was activated.
 uint16_t AFRnextCycle;
 unsigned long knockStartTime;
 byte lastKnockCount;
-int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
-int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
+bigAngle_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
+bigAngle_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
 uint16_t aseTaperStart;
 uint16_t dfcoStart;
 
@@ -662,13 +662,14 @@ byte correctionAFRClosedLoop()
 }
 
 //******************************** IGNITION ADVANCE CORRECTIONS ********************************
+
 /** Dispatch calculations for all ignition related corrections.
  * @param base_advance - Base ignition advance (deg. ?)
  * @return Advance considering all (~12) individual corrections
  */
-int8_t correctionsIgn(int8_t base_advance)
+smallAngle_t correctionsIgn(smallAngle_t base_advance)
 {
-  int8_t advance;
+  smallAngle_t advance;
   advance = correctionFlexTiming(base_advance);
   advance = correctionWMITiming(advance);
   advance = correctionIATretard(advance);
@@ -689,75 +690,75 @@ int8_t correctionsIgn(int8_t base_advance)
 /** Correct ignition timing to configured fixed value.
  * Must be called near end to override all other corrections.
  */
-int8_t correctionFixedTiming(int8_t advance)
+smallAngle_t correctionFixedTiming(smallAngle_t advance)
 {
-  int8_t ignFixValue = advance;
-  if (configPage2.fixAngEnable == 1) { ignFixValue = configPage4.FixAng; } //Check whether the user has set a fixed timing angle
+  smallAngle_t ignFixValue = advance;
+  if (configPage2.fixAngEnable == 1) { ignFixValue = scaleCrankAngle(configPage4.FixAng); } //Check whether the user has set a fixed timing angle
   return ignFixValue;
 }
 /** Correct ignition timing to configured fixed value to use during craning.
  * Must be called near end to override all other corrections.
  */
-int8_t correctionCrankingFixedTiming(int8_t advance)
+smallAngle_t correctionCrankingFixedTiming(smallAngle_t advance)
 {
-  byte ignCrankFixValue = advance;
-  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { ignCrankFixValue = configPage4.CrankAng; } //Use the fixed cranking ignition angle
+  smallAngle_t ignCrankFixValue = advance;
+  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { ignCrankFixValue = scaleCrankAngle(configPage4.CrankAng); } //Use the fixed cranking ignition angle
   return ignCrankFixValue;
 }
 
-int8_t correctionFlexTiming(int8_t advance)
+smallAngle_t correctionFlexTiming(smallAngle_t advance)
 {
-  int16_t ignFlexValue = advance;
+  bigAngle_t ignFlexValue = advance;
   if( configPage2.flexEnabled == 1 ) //Check for flex being enabled
   {
     ignFlexValue = (int16_t) table2D_getValue(&flexAdvTable, currentStatus.ethanolPct) - OFFSET_IGNITION; //Negative values are achieved with offset
-    currentStatus.flexIgnCorrection = (int8_t) ignFlexValue; //This gets cast to a signed 8 bit value to allows for negative advance (ie retard) values here. 
-    ignFlexValue = (int8_t) advance + currentStatus.flexIgnCorrection;
+    currentStatus.flexIgnCorrection = (smallAngle_t) ignFlexValue; //This gets cast to a signed 8 bit value to allows for negative advance (ie retard) values here. 
+    ignFlexValue = (smallAngle_t) advance + scaleCrankAngle(currentStatus.flexIgnCorrection);
   }
-  return (int8_t) ignFlexValue;
+  return (smallAngle_t) ignFlexValue;
 }
 
-int8_t correctionWMITiming(int8_t advance)
+smallAngle_t correctionWMITiming(smallAngle_t advance)
 {
   if( configPage10.wmiEnabled >= 1 && configPage10.wmiAdvEnabled == 1 && BIT_CHECK(currentStatus.status4, BIT_STATUS4_WMI_EMPTY) == 0 ) //Check for wmi being enabled
   {
     if(currentStatus.TPS >= configPage10.wmiTPS && currentStatus.RPM >= configPage10.wmiRPM && currentStatus.MAP/2 >= configPage10.wmiMAP && currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET >= configPage10.wmiIAT)
     {
-      return (int16_t) advance + table2D_getValue(&wmiAdvTable, currentStatus.MAP/2) - OFFSET_IGNITION; //Negative values are achieved with offset
+      return (bigAngle_t) advance + scaleCrankAngle(table2D_getValue(&wmiAdvTable, currentStatus.MAP/2) - OFFSET_IGNITION); //Negative values are achieved with offset
     }
   }
   return advance;
 }
 /** Ignition correction for inlet air temperature (IAT).
  */
-int8_t correctionIATretard(int8_t advance)
+smallAngle_t correctionIATretard(smallAngle_t advance)
 {
-  byte ignIATValue = advance;
+  bigAngle_t ignIATValue = advance;
   //Adjust the advance based on IAT. If the adjustment amount is greater than the current advance, just set advance to 0
-  int8_t advanceIATadjust = table2D_getValue(&IATRetardTable, currentStatus.IAT);
+  smallAngle_t advanceIATadjust = scaleCrankAngle(table2D_getValue(&IATRetardTable, currentStatus.IAT));
   int tempAdvance = (advance - advanceIATadjust);
-  if (tempAdvance >= -OFFSET_IGNITION) { ignIATValue = tempAdvance; }
-  else { ignIATValue = -OFFSET_IGNITION; }
+  if (tempAdvance >= -scaleCrankAngle(OFFSET_IGNITION)) { ignIATValue = tempAdvance; }
+  else { ignIATValue = -scaleCrankAngle(OFFSET_IGNITION); }
 
   return ignIATValue;
 }
 /** Ignition correction for coolant temperature (CLT).
  */
-int8_t correctionCLTadvance(int8_t advance)
+smallAngle_t correctionCLTadvance(smallAngle_t advance)
 {
-  int8_t ignCLTValue = advance;
+  smallAngle_t ignCLTValue = advance;
   //Adjust the advance based on CLT.
-  int8_t advanceCLTadjust = (int16_t)(table2D_getValue(&CLTAdvanceTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) - 15;
-  ignCLTValue = (advance + advanceCLTadjust);
+  smallAngle_t advanceCLTadjust = (int16_t)(table2D_getValue(&CLTAdvanceTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) - 15;
+  ignCLTValue = (advance + scaleCrankAngle(advanceCLTadjust));
   
   return ignCLTValue;
 }
 /** Ignition Idle advance correction.
  */
-int8_t correctionIdleAdvance(int8_t advance)
+smallAngle_t correctionIdleAdvance(smallAngle_t advance)
 {
 
-  int8_t ignIdleValue = advance;
+  smallAngle_t ignIdleValue = advance;
   //Adjust the advance based on idle target rpm.
   if( (configPage2.idleAdvEnabled >= 1) && (currentStatus.runSecs >= configPage2.IdleAdvDelay))
   {
@@ -768,51 +769,50 @@ int8_t correctionIdleAdvance(int8_t advance)
     if(idleRPMdelta < 0) { idleRPMdelta = 0; }
     if( (configPage2.idleAdvAlgorithm == 0) && ((currentStatus.RPM < (unsigned int)(configPage2.idleAdvRPM * 100)) && (currentStatus.TPS < configPage2.idleAdvTPS)) && ((configPage2.vssMode == 0) || (currentStatus.vss < configPage2.idleAdvVss)) ) // TPS based idle state
     {
-      int8_t advanceIdleAdjust = (int16_t)(table2D_getValue(&idleAdvanceTable, idleRPMdelta)) - 15;
-      if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + advanceIdleAdjust); }
-      else if(configPage2.idleAdvEnabled == 2) { ignIdleValue = advanceIdleAdjust; }
+      smallAngle_t advanceIdleAdjust = (int16_t)(table2D_getValue(&idleAdvanceTable, idleRPMdelta)) - 15;
+      if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + scaleCrankAngle(advanceIdleAdjust)); }
+      else if(configPage2.idleAdvEnabled == 2) { ignIdleValue = scaleCrankAngle(advanceIdleAdjust); }
     }
     else if( (configPage2.idleAdvAlgorithm == 1) && (currentStatus.RPM < (unsigned int)(configPage2.idleAdvRPM * 100) && (currentStatus.CTPSActive == 1) ) && ((configPage2.vssMode == 0) || (currentStatus.vss < configPage2.idleAdvVss)) ) // closed throttle position sensor (CTPS) based idle state
     {
-      int8_t advanceIdleAdjust = (int16_t)(table2D_getValue(&idleAdvanceTable, idleRPMdelta)) - 15;
-      if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + advanceIdleAdjust); }
-      else if(configPage2.idleAdvEnabled == 2) { ignIdleValue = advanceIdleAdjust; }
+      smallAngle_t advanceIdleAdjust = (int16_t)(table2D_getValue(&idleAdvanceTable, idleRPMdelta)) - 15;
+      if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + scaleCrankAngle(advanceIdleAdjust)); }
+      else if(configPage2.idleAdvEnabled == 2) { ignIdleValue = scaleCrankAngle(advanceIdleAdjust); }
     }
   }
   return ignIdleValue;
 }
 /** Ignition soft revlimit correction.
  */
-int8_t correctionSoftRevLimit(int8_t advance)
+smallAngle_t correctionSoftRevLimit(smallAngle_t advance)
 {
-  byte ignSoftRevValue = advance;
+  smallAngle_t ignSoftRevValue = advance;
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
   if (currentStatus.RPM > ((unsigned int)(configPage4.SoftRevLim) * 100) ) //Softcut RPM limit
   {
     BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM);
-    if (configPage2.SoftLimitMode == SOFT_LIMIT_RELATIVE) { ignSoftRevValue = ignSoftRevValue - configPage4.SoftLimRetard; } //delay timing by configured number of degrees in relative mode
-    else if (configPage2.SoftLimitMode == SOFT_LIMIT_FIXED) { ignSoftRevValue = configPage4.SoftLimRetard; } //delay timing to configured number of degrees in fixed mode
+    if (configPage2.SoftLimitMode == SOFT_LIMIT_RELATIVE) { ignSoftRevValue = ignSoftRevValue - scaleCrankAngle(configPage4.SoftLimRetard); } //delay timing by configured number of degrees in relative mode
+    else if (configPage2.SoftLimitMode == SOFT_LIMIT_FIXED) { ignSoftRevValue = scaleCrankAngle(configPage4.SoftLimRetard); } //delay timing to configured number of degrees in fixed mode
     
   }
 
   return ignSoftRevValue;
 }
-/** Ignition Nitrous oxide correction.
- */
-int8_t correctionNitrous(int8_t advance)
+
+smallAngle_t correctionNitrous(smallAngle_t advance)
 {
-  byte ignNitrous = advance;
+  smallAngle_t ignNitrous = advance;
   //Check if nitrous is currently active
   if(configPage10.n2o_enable > 0)
   {
     //Check which stage is running (if any)
     if( (currentStatus.nitrous_status == NITROUS_STAGE1) || (currentStatus.nitrous_status == NITROUS_BOTH) )
     {
-      ignNitrous -= configPage10.n2o_stage1_retard;
+      ignNitrous -= scaleCrankAngle(configPage10.n2o_stage1_retard);
     }
     if( (currentStatus.nitrous_status == NITROUS_STAGE2) || (currentStatus.nitrous_status == NITROUS_BOTH) )
     {
-      ignNitrous -= configPage10.n2o_stage2_retard;
+      ignNitrous -= scaleCrankAngle(configPage10.n2o_stage2_retard);
     }
   }
 
@@ -820,15 +820,15 @@ int8_t correctionNitrous(int8_t advance)
 }
 /** Ignition soft launch correction.
  */
-int8_t correctionSoftLaunch(int8_t advance)
+smallAngle_t correctionSoftLaunch(smallAngle_t advance)
 {
-  byte ignSoftLaunchValue = advance;
+  smallAngle_t ignSoftLaunchValue = advance;
   //SoftCut rev limit for 2-step launch control.
   if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage6.lnchSoftLim) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) )
   {
     currentStatus.launchingSoft = true;
     BIT_SET(currentStatus.spark, BIT_SPARK_SLAUNCH);
-    ignSoftLaunchValue = configPage6.lnchRetard;
+    ignSoftLaunchValue = scaleCrankAngle(configPage6.lnchRetard);
   }
   else
   {
@@ -840,14 +840,14 @@ int8_t correctionSoftLaunch(int8_t advance)
 }
 /** Ignition correction for soft flat shift.
  */
-int8_t correctionSoftFlatShift(int8_t advance)
+smallAngle_t correctionSoftFlatShift(smallAngle_t advance)
 {
-  byte ignSoftFlatValue = advance;
+  smallAngle_t ignSoftFlatValue = advance;
 
   if(configPage6.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM-configPage6.flatSSoftWin) ) )
   {
     BIT_SET(currentStatus.spark2, BIT_SPARK2_FLATSS);
-    ignSoftFlatValue = configPage6.flatSRetard;
+    ignSoftFlatValue = scaleCrankAngle(configPage6.flatSRetard);
   }
   else { BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_FLATSS); }
 
@@ -855,15 +855,15 @@ int8_t correctionSoftFlatShift(int8_t advance)
 }
 /** Ignition knock (retard) correction.
  */
-int8_t correctionKnock(int8_t advance)
+smallAngle_t correctionKnock(smallAngle_t advance)
 {
-  byte knockRetard = 0;
+  smallAngle_t knockRetard = 0;
 
   //First check is to do the window calculations (ASsuming knock is enabled)
   if( configPage10.knock_mode != KNOCK_MODE_OFF )
   {
-    knockWindowMin = table2D_getValue(&knockWindowStartTable, currentStatus.RPMdiv100);
-    knockWindowMax = knockWindowMin + table2D_getValue(&knockWindowDurationTable, currentStatus.RPMdiv100);
+    knockWindowMin = scaleCrankAngle(table2D_getValue(&knockWindowStartTable, currentStatus.RPMdiv100));
+    knockWindowMax = knockWindowMin + scaleCrankAngle(table2D_getValue(&knockWindowDurationTable, currentStatus.RPMdiv100));
   }
 
 
@@ -881,7 +881,7 @@ int8_t correctionKnock(int8_t advance)
         //Knock needs to be activated
         lastKnockCount = knockCounter;
         knockStartTime = micros();
-        knockRetard = configPage10.knock_firstStep;
+        knockRetard = scaleCrankAngle(configPage10.knock_firstStep);
       }
     }
 

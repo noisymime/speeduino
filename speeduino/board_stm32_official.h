@@ -23,6 +23,10 @@
 #define PINMASK_TYPE uint32_t
 #define COMPARE_TYPE uint16_t
 #define COUNTER_TYPE uint16_t
+#define smallAngle_t int16_t //usually in8_t
+#define bigAngle_t int32_t //usually in16_t
+const uint8_t ANGLE_SHIFTS = 3; //2^x
+const uint8_t ANGLE_SHIFT_POWER = (1UL<<ANGLE_SHIFTS); //2^x
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
 #define TIMER_RESOLUTION 4
 
@@ -67,6 +71,8 @@ extern "C" char* sbrk(int incr);
     #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PB3) || ((pin) == PB4) || ((pin) == PB5) || ((pin) == PB0) ) //Forbiden pins like USB
   #endif
 #endif
+#define scaleCrankAngle(angle) ((angle)<<ANGLE_SHIFTS) //This set the crank resolution and type.
+#define scaleCrankAngleDown(angle) ((angle)>>ANGLE_SHIFTS) //This set the crank resolution and type.
 
 #ifndef LED_BUILTIN
   #define LED_BUILTIN PA7
