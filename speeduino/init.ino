@@ -436,7 +436,7 @@ void initialiseAll()
     //Calculate the number of degrees between cylinders
     //Swet some default values. These will be updated below if required. 
     CRANK_ANGLE_MAX = 720;
-    CRANK_ANGLE_MAX_IGN = 360;
+    CRANK_ANGLE_MAX_IGN = 360; //variable actually, depending ignition mode
     CRANK_ANGLE_MAX_INJ = 360;
     channel1InjEnabled = true;
     channel2InjEnabled = false;
@@ -1185,6 +1185,8 @@ void initialiseAll()
         ign5EndFunction = endCoil5Charge;
         break;
     }
+
+    initialiseSchedulers(); //reapply all nessesary changes to the Schedulers also(coil charge functions and channelIgnDegrees).
 
     //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
     //First check that the priming time is not 0

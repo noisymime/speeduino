@@ -165,6 +165,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     Timer3.setMode(2, TIMER_OUTPUT_COMPARE);
     Timer3.setMode(3, TIMER_OUTPUT_COMPARE);
     Timer3.setMode(4, TIMER_OUTPUT_COMPARE);
+  
     Timer1.setMode(1, TIMER_OUTPUT_COMPARE);
     #else //2.0 forward
     Timer2.setMode(1, TIMER_OUTPUT_COMPARE_TOGGLE);

@@ -97,14 +97,39 @@ void setFuelSchedule5(unsigned long timeout, unsigned long duration);
 void setFuelSchedule6(unsigned long timeout, unsigned long duration);
 void setFuelSchedule7(unsigned long timeout, unsigned long duration);
 void setFuelSchedule8(unsigned long timeout, unsigned long duration);
-void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+
+void setIgnitionSchedule(struct Schedule *ignitionSchedule , int16_t crankAngle,int channelIgnDegrees,int ignitionEndAngle, unsigned long duration);
+
+void ignitionScheduleInterrupt(struct Schedule *ignitionSchedule);
+
+void ign1TimerEnable();
+void ign2TimerEnable();
+void ign3TimerEnable();
+void ign4TimerEnable();
+void ign5TimerEnable();
+void ign6TimerEnable();
+void ign7TimerEnable();
+void ign8TimerEnable();
+
+//those small functions are needed to use ignition counter definitions on different platvorms
+uint32_t getIgn1Counter();
+uint32_t getIgn2Counter();
+uint32_t getIgn3Counter();
+uint32_t getIgn4Counter();
+uint32_t getIgn5Counter();
+uint32_t getIgn6Counter();
+uint32_t getIgn7Counter();
+uint32_t getIgn8Counter();
+
+//those small functions are needed to use ignition counter compare definitions on different platvorms
+void setIgnition1Compare(uint32_t value);
+void setIgnition2Compare(uint32_t value);
+void setIgnition3Compare(uint32_t value);
+void setIgnition4Compare(uint32_t value);
+void setIgnition5Compare(uint32_t value);
+void setIgnition6Compare(uint32_t value);
+void setIgnition7Compare(uint32_t value);
+void setIgnition8Compare(uint32_t value);
 
 inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
 
@@ -161,6 +186,7 @@ enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The statuses that a sched
 /** Ignition schedule.
  */
 struct Schedule {
+
   volatile unsigned long duration;///< Scheduled duration (uS ?)
   volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
   volatile byte schedulesSet;     ///< A counter of how many times the schedule has been set
@@ -174,6 +200,10 @@ struct Schedule {
   unsigned int nextEndCompare;        ///< Planned end of next schedule (when current schedule is RUNNING)
   volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
   volatile bool endScheduleSetByDecoder = false;
+
+  uint32_t (*getIgnCounter)(); //Function for getting counter value
+  void (*setIgnitionCompare)(COMPARE_TYPE); //Function for setting counter compare value
+  void (*ignTimerEnable)(); //Function to enable timer for specific channel
 };
 /** Fuel injection schedule.
 * Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.
