@@ -174,6 +174,7 @@ struct Schedule {
   unsigned int nextEndCompare;        ///< Planned end of next schedule (when current schedule is RUNNING)
   volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
   volatile bool endScheduleSetByDecoder = false;
+  volatile bool outputHadRepeated = false;
 };
 /** Fuel injection schedule.
 * Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.

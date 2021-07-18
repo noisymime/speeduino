@@ -821,7 +821,8 @@ struct config2 {
   byte fanWhenOff : 1;      ///< Allow running fan with engine off: 0 = Only run fan when engine is running, 1 = Allow even with engine off
   byte fanWhenCranking : 1; ///< Set whether the fan output will stay on when the engine is cranking (0=force off, 1=allow on)
   byte useDwellMap : 1;     ///< Setting to change between fixed dwell value and dwell map (0=Fixed value from @ref configPage4.dwellRun, 1=Use @ref dwellTable)
-  byte fanUnused : 2;       // Unused ?
+  byte crankIgnOutRpt : 1;  ///< Add another ignition pulse
+  byte priminScaleEnbl : 1; ///< Enable scale priming pulse
   byte rtc_mode : 2;        // Unused ?
   byte incorporateAFR : 1;  ///< Enable AFR target (stoich/afrtgt) compensation in PW calculation
   byte asePct[4];           ///< Afterstart enrichment values (%)
@@ -873,7 +874,10 @@ struct config2 {
   int8_t rtc_trim;
   byte idleAdvVss;
 
-  byte unused2_95[3];
+  byte primingScaleValue;
+  byte ignRptScale;
+
+  byte unused2_96[1];
 
 #if defined(CORE_AVR)
   };

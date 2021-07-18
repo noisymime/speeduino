@@ -784,6 +784,8 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
 extern void beginInjectorPriming()
 {
   unsigned long primingValue = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+  if (configPage2.priminScaleEnbl == 1) { primingValue += (primingValue * configPage2.primingScaleValue) / 50; } //Adds x% to the pulse
+
   if( (primingValue > 0) && (currentStatus.TPS < configPage4.floodClear) )
   {
     primingValue = primingValue * 100 * 5; //to acheive long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
@@ -1123,20 +1125,32 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
       ignitionSchedule1.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the igintion counter
 
+      if ((configPage2.crankIgnOutRpt) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !ignitionSchedule1.outputHadRepeated)
+      {
+        IGN1_COMPARE = (uint16_t)(IGN1_COUNTER + uS_TO_TIMER_COMPARE(configPage4.sparkDur*100));
+        ignitionSchedule1.endCompare = (uint16_t)(IGN1_COMPARE + uS_TO_TIMER_COMPARE(((ignitionSchedule1.duration * configPage2.ignRptScale)/100)));
+        ignitionSchedule1.endScheduleSetByDecoder = true;
+        ignitionSchedule1.outputHadRepeated = true;
+        ignitionSchedule1.Status = PENDING;
+        ignitionSchedule1.schedulesSet = 1;
+        ignitionSchedule1.hasNextSchedule = false;
+      }
       //If there is a next schedule queued up, activate it
-      if(ignitionSchedule1.hasNextSchedule == true)
+      else if(ignitionSchedule1.hasNextSchedule == true)
       {
         IGN1_COMPARE = (uint16_t)ignitionSchedule1.nextStartCompare;
         ignitionSchedule1.Status = PENDING;
         ignitionSchedule1.schedulesSet = 1;
         ignitionSchedule1.hasNextSchedule = false;
+        ignitionSchedule1.outputHadRepeated = false;
       }
-      else{ IGN1_TIMER_DISABLE(); }
+      else{ IGN1_TIMER_DISABLE(); ignitionSchedule1.outputHadRepeated = false; }
     }
     else if (ignitionSchedule1.Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN1_TIMER_DISABLE();
+      ignitionSchedule1.outputHadRepeated = false;
     }
   }
 #endif
@@ -1164,20 +1178,32 @@ static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call
       ignitionSchedule2.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the igintion counter
       
+      if ((configPage2.crankIgnOutRpt) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !ignitionSchedule2.outputHadRepeated)
+      {
+        IGN2_COMPARE = (uint16_t)(IGN2_COUNTER + uS_TO_TIMER_COMPARE(configPage4.sparkDur*100));
+        ignitionSchedule2.endCompare = (uint16_t)(IGN2_COMPARE + uS_TO_TIMER_COMPARE(((ignitionSchedule2.duration * configPage2.ignRptScale)/100)));
+        ignitionSchedule2.endScheduleSetByDecoder = true;
+        ignitionSchedule2.outputHadRepeated = true;
+        ignitionSchedule2.Status = PENDING;
+        ignitionSchedule2.schedulesSet = 1;
+        ignitionSchedule2.hasNextSchedule = false;
+        ignitionSchedule2.outputHadRepeated = false;
+      }
       //If there is a next schedule queued up, activate it
-      if(ignitionSchedule2.hasNextSchedule == true)
+      else if(ignitionSchedule2.hasNextSchedule == true)
       {
         IGN2_COMPARE = (uint16_t)ignitionSchedule2.nextStartCompare;
         ignitionSchedule2.Status = PENDING;
         ignitionSchedule2.schedulesSet = 1;
         ignitionSchedule2.hasNextSchedule = false;
       }
-      else{ IGN2_TIMER_DISABLE(); }
+      else{ IGN2_TIMER_DISABLE(); ignitionSchedule2.outputHadRepeated = false; }
     }
     else if (ignitionSchedule2.Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN2_TIMER_DISABLE();
+      ignitionSchedule2.outputHadRepeated = false;
     }
   }
 #endif
@@ -1199,26 +1225,38 @@ static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call
     }
     else if (ignitionSchedule3.Status == RUNNING)
     {
-       ignitionSchedule3.Status = OFF; //Turn off the schedule
-       ignitionSchedule3.EndCallback();
-       ignitionSchedule3.schedulesSet = 0;
-       ignitionSchedule3.endScheduleSetByDecoder = false;
-       ignitionCount += 1; //Increment the igintion counter
+      ignitionSchedule3.Status = OFF; //Turn off the schedule
+      ignitionSchedule3.EndCallback();
+      ignitionSchedule3.schedulesSet = 0;
+      ignitionSchedule3.endScheduleSetByDecoder = false;
+      ignitionCount += 1; //Increment the igintion counter
 
+      if ((configPage2.crankIgnOutRpt) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !ignitionSchedule3.outputHadRepeated)
+      {
+        IGN3_COMPARE = (uint16_t)(IGN3_COUNTER + uS_TO_TIMER_COMPARE(configPage4.sparkDur*100));
+        ignitionSchedule3.endCompare = (uint16_t)(IGN3_COMPARE + uS_TO_TIMER_COMPARE(((ignitionSchedule3.duration * configPage2.ignRptScale)/100)));
+        ignitionSchedule3.endScheduleSetByDecoder = true;
+        ignitionSchedule3.outputHadRepeated = true;
+        ignitionSchedule3.Status = PENDING;
+        ignitionSchedule3.schedulesSet = 1;
+        ignitionSchedule3.hasNextSchedule = false;
+      }
        //If there is a next schedule queued up, activate it
-       if(ignitionSchedule3.hasNextSchedule == true)
-       {
-         IGN3_COMPARE = (uint16_t)ignitionSchedule3.nextStartCompare;
-         ignitionSchedule3.Status = PENDING;
-         ignitionSchedule3.schedulesSet = 1;
-         ignitionSchedule3.hasNextSchedule = false;
-       }
-       else { IGN3_TIMER_DISABLE(); }
+      else if(ignitionSchedule3.hasNextSchedule == true)
+      {
+        IGN3_COMPARE = (uint16_t)ignitionSchedule3.nextStartCompare;
+        ignitionSchedule3.Status = PENDING;
+        ignitionSchedule3.schedulesSet = 1;
+        ignitionSchedule3.hasNextSchedule = false;
+        ignitionSchedule3.outputHadRepeated = false;
+      }
+      else { IGN3_TIMER_DISABLE(); ignitionSchedule3.outputHadRepeated = false; }
     }
     else if (ignitionSchedule3.Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN3_TIMER_DISABLE();
+      ignitionSchedule3.outputHadRepeated = false;
     }
   }
 #endif
@@ -1240,26 +1278,38 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
     }
     else if (ignitionSchedule4.Status == RUNNING)
     {
-       ignitionSchedule4.Status = OFF; //Turn off the schedule
-       ignitionSchedule4.EndCallback();
-       ignitionSchedule4.schedulesSet = 0;
-       ignitionSchedule4.endScheduleSetByDecoder = false;
-       ignitionCount += 1; //Increment the igintion counter
+      ignitionSchedule4.Status = OFF; //Turn off the schedule
+      ignitionSchedule4.EndCallback();
+      ignitionSchedule4.schedulesSet = 0;
+      ignitionSchedule4.endScheduleSetByDecoder = false;
+      ignitionCount += 1; //Increment the igintion counter
 
-       //If there is a next schedule queued up, activate it
-       if(ignitionSchedule4.hasNextSchedule == true)
-       {
-         IGN4_COMPARE = (uint16_t)ignitionSchedule4.nextStartCompare;
-         ignitionSchedule4.Status = PENDING;
-         ignitionSchedule4.schedulesSet = 1;
-         ignitionSchedule4.hasNextSchedule = false;
-       }
-       else { IGN4_TIMER_DISABLE(); }
+      if ((configPage2.crankIgnOutRpt) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !ignitionSchedule4.outputHadRepeated)
+      {
+        IGN4_COMPARE = (uint16_t)(IGN4_COUNTER + uS_TO_TIMER_COMPARE(configPage4.sparkDur*100));
+        ignitionSchedule4.endCompare = (uint16_t)(IGN4_COMPARE + uS_TO_TIMER_COMPARE(((ignitionSchedule4.duration * configPage2.ignRptScale)/100)));
+        ignitionSchedule4.endScheduleSetByDecoder = true;
+        ignitionSchedule4.outputHadRepeated = true;
+        ignitionSchedule4.Status = PENDING;
+        ignitionSchedule4.schedulesSet = 1;
+        ignitionSchedule4.hasNextSchedule = false;
+      }
+      //If there is a next schedule queued up, activate it
+      else if(ignitionSchedule4.hasNextSchedule == true)
+      {
+        IGN4_COMPARE = (uint16_t)ignitionSchedule4.nextStartCompare;
+        ignitionSchedule4.Status = PENDING;
+        ignitionSchedule4.schedulesSet = 1;
+        ignitionSchedule4.hasNextSchedule = false;
+        ignitionSchedule4.outputHadRepeated = false;
+      }
+      else { IGN4_TIMER_DISABLE(); ignitionSchedule4.outputHadRepeated = false; }
     }
     else if (ignitionSchedule4.Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN4_TIMER_DISABLE();
+      ignitionSchedule4.outputHadRepeated = false;
     }
   }
 #endif
@@ -1287,13 +1337,24 @@ static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call
       ignitionSchedule5.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the igintion counter
 
+      if ((configPage2.crankIgnOutRpt) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !ignitionSchedule5.outputHadRepeated)
+      {
+        IGN5_COMPARE = (uint16_t)(IGN5_COUNTER + uS_TO_TIMER_COMPARE(configPage4.sparkDur*100));
+        ignitionSchedule5.endCompare = (uint16_t)(IGN5_COMPARE + uS_TO_TIMER_COMPARE(((ignitionSchedule5.duration * configPage2.ignRptScale)/100)));
+        ignitionSchedule5.endScheduleSetByDecoder = true;
+        ignitionSchedule5.outputHadRepeated = true;
+        ignitionSchedule5.Status = PENDING;
+        ignitionSchedule5.schedulesSet = 1;
+        ignitionSchedule5.hasNextSchedule = false;
+      }
       //If there is a next schedule queued up, activate it
-      if(ignitionSchedule5.hasNextSchedule == true)
+      else if(ignitionSchedule5.hasNextSchedule == true)
       {
         IGN5_COMPARE = (uint16_t)ignitionSchedule5.nextStartCompare;
         ignitionSchedule5.Status = PENDING;
         ignitionSchedule5.schedulesSet = 1;
         ignitionSchedule5.hasNextSchedule = false;
+        ignitionSchedule5.outputHadRepeated = false;
       }
       else{ IGN5_TIMER_DISABLE(); }
     }
@@ -1328,20 +1389,32 @@ static inline void ignitionSchedule6Interrupt() //Most ARM chips can simply call
       ignitionSchedule6.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the igintion counter
 
+      if ((configPage2.crankIgnOutRpt) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !ignitionSchedule6.outputHadRepeated)
+      {
+        IGN6_COMPARE = (uint16_t)(IGN6_COUNTER + uS_TO_TIMER_COMPARE(configPage4.sparkDur*100));
+        ignitionSchedule6.endCompare = (uint16_t)(IGN6_COMPARE + uS_TO_TIMER_COMPARE(((ignitionSchedule1.duration * configPage2.ignRptScale)/100)));
+        ignitionSchedule6.endScheduleSetByDecoder = true;
+        ignitionSchedule6.outputHadRepeated = true;
+        ignitionSchedule6.Status = PENDING;
+        ignitionSchedule6.schedulesSet = 1;
+        ignitionSchedule6.hasNextSchedule = false;
+      }
       //If there is a next schedule queued up, activate it
-      if(ignitionSchedule6.hasNextSchedule == true)
+      else if(ignitionSchedule6.hasNextSchedule == true)
       {
         IGN6_COMPARE = (uint16_t)ignitionSchedule6.nextStartCompare;
         ignitionSchedule6.Status = PENDING;
         ignitionSchedule6.schedulesSet = 1;
         ignitionSchedule6.hasNextSchedule = false;
+        ignitionSchedule6.outputHadRepeated = false;
       }
-      else{ IGN6_TIMER_DISABLE(); }
+      else{ IGN6_TIMER_DISABLE(); ignitionSchedule6.outputHadRepeated = false; }
     }
     else if (ignitionSchedule6.Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN6_TIMER_DISABLE();
+      ignitionSchedule6.outputHadRepeated = false;
     }
   }
 #endif
@@ -1369,20 +1442,32 @@ static inline void ignitionSchedule7Interrupt() //Most ARM chips can simply call
       ignitionSchedule7.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the igintion counter
 
+      if ((configPage2.crankIgnOutRpt) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !ignitionSchedule7.outputHadRepeated)
+      {
+        IGN7_COMPARE = (uint16_t)(IGN7_COUNTER + uS_TO_TIMER_COMPARE(configPage4.sparkDur*100));
+        ignitionSchedule7.endCompare = (uint16_t)(IGN7_COMPARE + uS_TO_TIMER_COMPARE(((ignitionSchedule7.duration * configPage2.ignRptScale)/100)));
+        ignitionSchedule7.endScheduleSetByDecoder = true;
+        ignitionSchedule7.outputHadRepeated = true;
+        ignitionSchedule7.Status = PENDING;
+        ignitionSchedule7.schedulesSet = 1;
+        ignitionSchedule7.hasNextSchedule = false;
+      }
       //If there is a next schedule queued up, activate it
-      if(ignitionSchedule7.hasNextSchedule == true)
+      else if(ignitionSchedule7.hasNextSchedule == true)
       {
         IGN7_COMPARE = (uint16_t)ignitionSchedule7.nextStartCompare;
         ignitionSchedule7.Status = PENDING;
         ignitionSchedule7.schedulesSet = 1;
         ignitionSchedule7.hasNextSchedule = false;
+        ignitionSchedule7.outputHadRepeated = false;
       }
-      else{ IGN7_TIMER_DISABLE(); }
+      else{ IGN7_TIMER_DISABLE(); ignitionSchedule7.outputHadRepeated = false; }
     }
     else if (ignitionSchedule7.Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN7_TIMER_DISABLE();
+      ignitionSchedule7.outputHadRepeated = false;
     }
   }
 #endif
@@ -1410,20 +1495,32 @@ static inline void ignitionSchedule8Interrupt() //Most ARM chips can simply call
       ignitionSchedule8.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the igintion counter
 
+      if ((configPage2.crankIgnOutRpt) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !ignitionSchedule8.outputHadRepeated)
+      {
+        IGN8_COMPARE = (uint16_t)(IGN8_COUNTER + uS_TO_TIMER_COMPARE(configPage4.sparkDur*100));
+        ignitionSchedule8.endCompare = (uint16_t)(IGN8_COMPARE + uS_TO_TIMER_COMPARE(((ignitionSchedule8.duration * configPage2.ignRptScale)/100)));
+        ignitionSchedule8.endScheduleSetByDecoder = true;
+        ignitionSchedule8.outputHadRepeated = true;
+        ignitionSchedule8.Status = PENDING;
+        ignitionSchedule8.schedulesSet = 1;
+        ignitionSchedule8.hasNextSchedule = false;
+      }
       //If there is a next schedule queued up, activate it
-      if(ignitionSchedule8.hasNextSchedule == true)
+      else if(ignitionSchedule8.hasNextSchedule == true)
       {
         IGN8_COMPARE = (uint16_t)ignitionSchedule8.nextStartCompare;
         ignitionSchedule8.Status = PENDING;
         ignitionSchedule8.schedulesSet = 1;
         ignitionSchedule8.hasNextSchedule = false;
+        ignitionSchedule8.outputHadRepeated = false;
       }
-      else{ IGN8_TIMER_DISABLE(); }
+      else{ IGN8_TIMER_DISABLE(); ignitionSchedule8.outputHadRepeated = false; }
     }
     else if (ignitionSchedule8.Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN8_TIMER_DISABLE();
+      ignitionSchedule8.outputHadRepeated = false;
     }
   }
 #endif
