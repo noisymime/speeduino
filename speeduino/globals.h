@@ -1116,14 +1116,17 @@ struct config9 {
   byte iacStepperInv : 1;  //stepper direction of travel to allow reversing. 0=normal, 1=inverted.
   byte iacCoolTime : 3; // how long to wait for the stepper to cool between steps
 
+  byte boostByGearEnabled : 2;
+
   byte iacMaxSteps; // Step limit beyond which the stepper won't be driven. Should always be less than homing steps. Stored div 3 as per home steps.
 
-  byte unused10_155;
-  byte unused10_156;
-  byte unused10_157;
-  byte unused10_158;
-  byte unused10_159;
-  byte unused10_160;
+  byte boostByGear1;
+  byte boostByGear2;
+  byte boostByGear3;
+  byte boostByGear4;
+  byte boostByGear5;
+  byte boostByGear6;
+
   byte unused10_161;
   byte unused10_162;
   byte unused10_163;

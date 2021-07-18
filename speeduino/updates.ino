@@ -491,6 +491,8 @@ void doUpdates()
     configPage10.vvtCLMaxAng = 200;
     configPage4.ANGLEFILTER_VVT = 0;
 
+    configPage9.boostByGearEnabled = 0;
+
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 18);
   }
