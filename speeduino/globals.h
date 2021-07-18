@@ -872,8 +872,8 @@ struct config2 {
 
   int8_t rtc_trim;
   byte idleAdvVss;
-
-  byte unused2_95[3];
+  byte idleUpRPMAdder; //byte 125
+  byte unused2_127[2];
 
 #if defined(CORE_AVR)
   };

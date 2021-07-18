@@ -762,6 +762,7 @@ int8_t correctionIdleAdvance(int8_t advance)
   if( (configPage2.idleAdvEnabled >= 1) && (currentStatus.runSecs >= configPage2.IdleAdvDelay))
   {
     currentStatus.CLIdleTarget = (byte)table2D_getValue(&idleTargetTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+    if(currentStatus.idleUpActive == true) { currentStatus.CLIdleTarget += configPage2.idleUpRPMAdder;  } //Adds Idle Up RPM amount if active
     int idleRPMdelta = (currentStatus.CLIdleTarget - (currentStatus.RPM / 10) ) + 50;
     // Limit idle rpm delta between -500rpm - 500rpm
     if(idleRPMdelta > 100) { idleRPMdelta = 100; }
