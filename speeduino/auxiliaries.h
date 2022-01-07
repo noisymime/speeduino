@@ -6,6 +6,7 @@
 void initialiseAuxPWM();
 void boostControl();
 void boostDisable();
+void boostByGear();
 void idleControl();
 void vvtControl();
 void initialiseFan();
@@ -40,7 +41,7 @@ void wmiControl();
 #define FAN_ON()         ((configPage6.fanInv) ? FAN_PIN_LOW() : FAN_PIN_HIGH())
 #define FAN_OFF()        ((configPage6.fanInv) ? FAN_PIN_HIGH() : FAN_PIN_LOW())
 
-#define WMI_TANK_IS_EMPTY() ((configPage10.wmiEmptyEnabled) ? ((configPage10.wmiEmptyPolarity) ? digitalRead(pinWMIEmpty) : !digitalRead(pinWMIEmpty)) : 0)
+#define WMI_TANK_IS_EMPTY() ((configPage10.wmiEmptyEnabled) ? ((configPage10.wmiEmptyPolarity) ? digitalRead(pinWMIEmpty) : !digitalRead(pinWMIEmpty)) : 1)
 
 volatile PORT_TYPE *boost_pin_port;
 volatile PINMASK_TYPE boost_pin_mask;

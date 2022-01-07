@@ -4,6 +4,9 @@ This file is used for everything related to maps/tables including their definiti
 #ifndef TABLE_H
 #define TABLE_H
 
+#define SIZE_BYTE           8
+#define SIZE_INT            16
+
 /*
 The 2D table can contain either 8-bit (byte) or 16-bit (int) values
 The valueSize variable should be set to either 8 or 16 to indicate this BEFORE the table is used

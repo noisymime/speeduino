@@ -433,7 +433,7 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
         //send to truecan send routine
         //canaddress == speeduino canid, candata1 == canin channel dest, paramgroup == can address  to request from
         //This section is to be moved to the correct can output routine later
-        #if defined(CORE_TEENSY) || defined(STM32F407xx) || defined(STM32F103xB) || defined(STM32F405xx)  //Scope guarding this for now, but this needs a bit of a rethink for how it can be handled better across multiple archs
+        #if defined(NATIVE_CAN_AVAILABLE)
         outMsg.id = (canaddress);
         outMsg.len = 8;
         outMsg.buf[0] = 0x0B ;  //11;   

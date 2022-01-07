@@ -1,14 +1,17 @@
 #ifndef MATH_H
 #define MATH_H
 
+#include "globals.h"
+
 #define USE_LIBDIVIDE
 
 int fastMap1023toX(int, int);
 unsigned long percentage(byte, unsigned long);
 unsigned long halfPercentage(byte, unsigned long);
 inline long powint(int, unsigned int);
-int divs100(long);
+int32_t divs100(int32_t);
 unsigned long divu100(unsigned long);
+uint32_t divu10(uint32_t);
 
 #define DIV_ROUND_CLOSEST(n, d) ((((n) < 0) ^ ((d) < 0)) ? (((n) - (d)/2)/(d)) : (((n) + (d)/2)/(d)))
 

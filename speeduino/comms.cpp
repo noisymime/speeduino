@@ -152,7 +152,6 @@ void command()
       currentStatus.compositeLogEnabled = false; //Safety first (Should never be required)
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothHistoryIndex = 0;
-      toothHistorySerialIndex = 0;
 
       //Disconnect the standard interrupt and add the logger version
       detachInterrupt( digitalPinToInterrupt(pinTrigger) );
@@ -180,8 +179,6 @@ void command()
       currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothHistoryIndex = 0;
-      toothHistorySerialIndex = 0;
-      compositeLastToothTime = 0;
 
       //Disconnect the standard interrupt and add the logger version
       detachInterrupt( digitalPinToInterrupt(pinTrigger) );
@@ -284,7 +281,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 202109-dev"));
+      Serial.print(F("speeduino 202201"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -316,7 +313,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2021.09-dev"));
+      Serial.print(F("Speeduino 2022.01"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -335,8 +332,8 @@ void command()
         Serial.read(); // First byte of the page identifier can be ignored. It's always 0
         Serial.read(); // First byte of the page identifier can be ignored. It's always 0
 
-        if(currentStatus.toothLogEnabled == true) { sendToothLog(0); } //Sends tooth log values as ints
-        else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(0); }
+        if(currentStatus.toothLogEnabled == true) { sendToothLog_old(0); } //Sends tooth log values as ints
+        else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog_old(0); }
 
         cmdPending = false;
       }
@@ -502,7 +499,7 @@ void command()
       break;
 
     case 'z': //Send 256 tooth log entries to a terminal emulator
-      sendToothLog(0); //Sends tooth log values as chars
+      sendToothLog_old(0); //Sends tooth log values as chars
       break;
 
     case '`': //Custom 16u2 firmware is making its presence known
@@ -550,6 +547,8 @@ void command()
       break;
 
     default:
+      Serial.println(F("Err: Unknown cmd"));
+      cmdPending = false;
       break;
   }
 }
@@ -1107,7 +1106,7 @@ void receiveCalibration(byte tableID)
  * if useChar is true, the values are sent as chars to be printed out by a terminal emulator
  * if useChar is false, the values are sent as a 2 byte integer which is readable by TunerStudios tooth logger
 */
-void sendToothLog(byte startOffset)
+void sendToothLog_old(byte startOffset)
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
@@ -1122,19 +1121,17 @@ void sendToothLog(byte startOffset)
           toothLogSendInProgress = true;
           return;
         }
-        //Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
-        //Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
-        Serial.write(toothHistory[toothHistorySerialIndex] >> 24);
-        Serial.write(toothHistory[toothHistorySerialIndex] >> 16);
-        Serial.write(toothHistory[toothHistorySerialIndex] >> 8);
-        Serial.write(toothHistory[toothHistorySerialIndex]);
 
-        if(toothHistorySerialIndex == (TOOTH_LOG_BUFFER-1)) { toothHistorySerialIndex = 0; }
-        else { toothHistorySerialIndex++; }
+
+        Serial.write(toothHistory[x] >> 24);
+        Serial.write(toothHistory[x] >> 16);
+        Serial.write(toothHistory[x] >> 8);
+        Serial.write(toothHistory[x]);
       }
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       cmdPending = false;
       toothLogSendInProgress = false;
+      toothHistoryIndex = 0;
   }
   else 
   { 
@@ -1147,7 +1144,7 @@ void sendToothLog(byte startOffset)
   } 
 }
 
-void sendCompositeLog(byte startOffset)
+void sendCompositeLog_old(byte startOffset)
 {
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
   {
@@ -1163,22 +1160,17 @@ void sendCompositeLog(byte startOffset)
           return;
         }
 
-        inProgressCompositeTime += toothHistory[toothHistorySerialIndex]; //This combined runtime (in us) that the log was going for by this record)
+        inProgressCompositeTime = toothHistory[x]; //This combined runtime (in us) that the log was going for by this record)
         
         Serial.write(inProgressCompositeTime >> 24);
         Serial.write(inProgressCompositeTime >> 16);
         Serial.write(inProgressCompositeTime >> 8);
         Serial.write(inProgressCompositeTime);
 
-        Serial.write(compositeLogHistory[toothHistorySerialIndex]); //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
-
-        if(toothHistorySerialIndex == (TOOTH_LOG_BUFFER-1)) { toothHistorySerialIndex = 0; }
-        else { toothHistorySerialIndex++; }
+        Serial.write(compositeLogHistory[x]); //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
       }
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothHistoryIndex = 0;
-      toothHistorySerialIndex = 0;
-      compositeLastToothTime = 0;
       cmdPending = false;
       compositeLogSendInProgress = false;
       inProgressCompositeTime = 0;

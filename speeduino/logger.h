@@ -25,7 +25,11 @@ byte getTSLogEntry(uint16_t);
 int16_t getReadableLogEntry(uint16_t);
 bool is2ByteEntry(uint8_t);
 
-extern const byte PROGMEM fsIntIndex[34];
+// This array indicates which index values from the log are 2 byte values
+// This array MUST remain in ascending order
+// !!!! WARNING: If any value above 255 is required in this array, changes MUST be made to is2ByteEntry() function !!!!
+const byte PROGMEM fsIntIndex[] = {4, 14, 17, 25, 27, 32, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 75, 77, 79, 81, 85, 87, 89, 93, 97, 102, 109, 119 };
+
 //List of logger field names. This must be in the same order and length as logger_updateLogdataCSV()
 const char header_0[] PROGMEM = "secl";
 const char header_1[] PROGMEM = "status1";

@@ -10,6 +10,8 @@
  */
 #include "globals.h"
 #include "storage.h"
+#include "sensors.h"
+#include "updates.h"
 #include EEPROM_LIB_H //This is defined in the board .h files
 
 void doUpdates()
@@ -160,13 +162,13 @@ void doUpdates()
     }
 
     //Ability to change the analog filter values was added. Set default values for these:
-    configPage4.ADCFILTER_TPS = 50;
-    configPage4.ADCFILTER_CLT = 180;
-    configPage4.ADCFILTER_IAT = 180;
-    configPage4.ADCFILTER_O2  = 128;
-    configPage4.ADCFILTER_BAT = 128;
-    configPage4.ADCFILTER_MAP = 20;
-    configPage4.ADCFILTER_BARO= 64;
+    configPage4.ADCFILTER_TPS  = ADCFILTER_TPS_DEFAULT;
+    configPage4.ADCFILTER_CLT  = ADCFILTER_CLT_DEFAULT;
+    configPage4.ADCFILTER_IAT  = ADCFILTER_IAT_DEFAULT;
+    configPage4.ADCFILTER_O2   = ADCFILTER_O2_DEFAULT;
+    configPage4.ADCFILTER_BAT  = ADCFILTER_BAT_DEFAULT;
+    configPage4.ADCFILTER_MAP  = ADCFILTER_MAP_DEFAULT;
+    configPage4.ADCFILTER_BARO = ADCFILTER_BARO_DEFAULT;
 
     writeAllConfig();
     storeEEPROMVersion(10);
@@ -522,6 +524,61 @@ void doUpdates()
   {
     configPage2.fanEnable = configPage6.fanUnused; // PWM Fan mode added, but take the previous setting of Fan in use.
 
+    //TPS resolution increased to 0.5%
+    //configPage2.taeThresh *= 2;
+    configPage2.idleAdvTPS *= 2;
+    configPage2.iacTPSlimit *= 2;
+    configPage4.floodClear *= 2;
+    configPage4.dfcoTPSThresh *= 2;
+    configPage6.egoTPSMax *= 2;
+    configPage10.lnchCtrlTPS *= 2;
+    configPage10.wmiTPS *= 2;
+    configPage10.n2o_minTPS *= 2;
+    if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_TPS) { configPage10.fuel2SwitchValue *= 2; }
+    if(configPage10.spark2SwitchVariable == SPARK2_CONDITION_TPS) { configPage10.spark2SwitchVariable *= 2; }
+
+    // Each table Y axis need to be updated as well if TPS is the source
+    if(configPage2.fuelAlgorithm == LOAD_SOURCE_TPS)
+    {
+      multiplyTableLoad(&fuelTable,  fuelTable.type_key,  4);
+      multiplyTableLoad(&afrTable,   afrTable.type_key,   4);
+      multiplyTableLoad(&trim1Table, trim1Table.type_key, 4);
+      multiplyTableLoad(&trim2Table, trim2Table.type_key, 4);
+      multiplyTableLoad(&trim3Table, trim3Table.type_key, 4);
+      multiplyTableLoad(&trim4Table, trim4Table.type_key, 4);
+      multiplyTableLoad(&trim5Table, trim5Table.type_key, 4);
+      multiplyTableLoad(&trim6Table, trim6Table.type_key, 4);
+      multiplyTableLoad(&trim7Table, trim7Table.type_key, 4);
+      multiplyTableLoad(&trim8Table, trim8Table.type_key, 4);
+      if(configPage4.sparkMode == IGN_MODE_ROTARY)
+      { 
+        for(uint8_t x = 0; x < 8; x++)
+        {
+          configPage10.rotarySplitBins[x] *= 2;
+        }
+      }
+    }
+    if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS) { multiplyTableLoad(&ignitionTable, ignitionTable.type_key, 4); }
+    if(configPage10.fuel2Algorithm == LOAD_SOURCE_TPS) { multiplyTableLoad(&fuelTable2, fuelTable2.type_key, 4); }
+    if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS) { multiplyTableLoad(&ignitionTable2, ignitionTable2.type_key, 4); }
+    multiplyTableLoad(&boostTable, boostTable.type_key, 2); // Boost table used 1.0 previously, so it only needs a 2x multiplier
+
+    if(configPage6.vvtLoadSource == VVT_LOAD_TPS)
+    {
+      //NOTE: The VVT tables all had 1.0 as the multiply value rather than 2.0 used in all other tables. For this reason they only need to be multiplied by 2 when updating
+      multiplyTableLoad(&vvtTable, vvtTable.type_key, 2);
+      multiplyTableLoad(&vvt2Table, vvt2Table.type_key, 2);
+    }
+    else
+    {
+      //NOTE: The VVT tables all had 1.0 as the multiply value rather than 2.0 used in all other tables. For this reason they need to be divided by 2 when updating
+      divideTableLoad(&vvtTable, vvtTable.type_key, 2);
+      divideTableLoad(&vvt2Table, vvt2Table.type_key, 2);
+    }
+
+
+    configPage4.vvtDelay = 0;
+    configPage4.vvtMinClt = 0;
     writeAllConfig();
     storeEEPROMVersion(19);
   }
@@ -541,11 +598,31 @@ void doUpdates()
     configPage13.outputPin[6] = 0;
     configPage13.outputPin[7] = 0;
 
-    configPage4.FILTER_FLEX = 75;
+    configPage4.FILTER_FLEX = FILTER_FLEX_DEFAULT;
 
     storeEEPROMVersion(CURRENT_DATA_VERSION);
   }
 
   //Check to see if someone has downgraded versions:
   if( readEEPROMVersion() > CURRENT_DATA_VERSION ) { storeEEPROMVersion(CURRENT_DATA_VERSION); }
+}
+
+void multiplyTableLoad(const void *pTable, table_type_t key, uint8_t multiplier)
+{
+  auto y_it = y_begin(pTable, key);
+  while(!y_it.at_end())
+  {
+    *y_it = (byte)*y_it * multiplier; 
+    ++y_it;
+  }
+}
+
+void divideTableLoad(const void *pTable, table_type_t key, uint8_t divisor)
+{
+  auto y_it = y_begin(pTable, key);
+  while(!y_it.at_end())
+  {
+    *y_it = (byte)*y_it / divisor; //Previous TS scale was 2.0, now is 0.5, 4x increase
+    ++y_it;
+  }
 }

@@ -1,7 +1,7 @@
 #include <globals.h>
 #include <speeduino.h>
 #include <unity.h>
-#include "tests_PW.h"
+#include "test_PW.h"
 
 #define PW_ALLOWED_ERROR  30
 

@@ -36,9 +36,9 @@ void saveConfig();
 void sendPage();
 void sendPageASCII();
 void receiveCalibration(byte);
-void sendToothLog(uint8_t);
+void sendToothLog_old(uint8_t);
 void testComm();
 void commandButtons(int16_t);
-void sendCompositeLog(uint8_t);
+void sendCompositeLog_old(uint8_t);
 
 #endif // COMMS_H

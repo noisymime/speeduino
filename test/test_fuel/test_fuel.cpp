@@ -1,10 +1,10 @@
+#include <globals.h>
+#include <init.h>
 #include <Arduino.h>
 #include <unity.h>
 
-#include "tests_init.h"
-#include "tests_tables.h"
-#include "test_table2d.h"
-#include "tests_maths.h"
+#include "test_corrections.h"
+#include "test_PW.h"
 
 #define UNITY_EXCLUDE_DETAILS
 
@@ -18,10 +18,9 @@ void setup()
 
     UNITY_BEGIN();    // IMPORTANT LINE!
 
-    testInitialisation();
-    testTables();
-    testTable2d();
-    testMaths();
+    initialiseAll(); //Run the main initialise function
+    testCorrections();
+    testPW();
 
     UNITY_END(); // stop unit testing
 }

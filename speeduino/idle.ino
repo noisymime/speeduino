@@ -748,6 +748,17 @@ void idleControl()
       break;
   }
   lastDFCOValue = BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO);
+
+  //Check for 100% DC on PWM idle
+  if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL) )
+  {
+    if(currentStatus.idleLoad == 100)
+    {
+      IDLE_TIMER_DISABLE();
+      IDLE_PIN_HIGH();
+    }
+    else if(currentStatus.idleLoad > 0) { IDLE_TIMER_ENABLE(); }
+  }
 }
 
 

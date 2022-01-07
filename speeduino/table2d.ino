@@ -9,7 +9,18 @@ Because the size of the table is dynamic, this functino is required to reallocat
 Note that this may clear some of the existing values of the table
 */
 #include "table2d.h"
+#if !defined(UNIT_TEST)
 #include "globals.h"
+#endif
+
+
+static inline uint8_t getCacheTime() {
+#if !defined(UNIT_TEST)
+  return currentStatus.secl;
+#else
+  return 0;
+#endif
+}
 
 /*
 This function pulls a 1D linear interpolated (ie averaged) value from a 2D table
@@ -30,7 +41,7 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
   int xMax = fromTable->xSize-1;
 
   //Check whether the X input is the same as last time this ran
-  if( (X_in == fromTable->lastInput) && (fromTable->cacheTime == currentStatus.secl) )
+  if( (X_in == fromTable->lastInput) && (fromTable->cacheTime == getCacheTime()) )
   {
     returnValue = fromTable->lastOutput;
     valueFound = true;
@@ -49,7 +60,7 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
   //Finally if none of that is found
   else
   {
-    fromTable->cacheTime = currentStatus.secl; //As we're not using the cache value, set the current secl value to track when this new value was calc'd
+    fromTable->cacheTime = getCacheTime(); //As we're not using the cache value, set the current secl value to track when this new value was calc'd
 
     //1st check is whether we're still in the same X bin as last time
     xMaxValue = table2D_getAxisValue(fromTable, fromTable->lastXMax);

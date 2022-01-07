@@ -6,10 +6,15 @@
 #include "scheduler.h"
 #include "HardwareTimer.h"
 
-#if defined(STM32F407xx) || defined(STM32F103xB) || defined(STM32F405xx)
-#define NATIVE_CAN_AVAILABLE
+#if HAL_CAN_MODULE_ENABLED
 //This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
-STM32_CAN Can0 (_CAN1,DEF);
+STM32_CAN Can0 (CAN1, ALT_2, RX_SIZE_256, TX_SIZE_16);
+/*
+These CAN interfaces and pins are available for use, depending on the chip/package:
+Default CAN1 pins are PA11 and PA12. Alternative (ALT) pins are PB8 & PB9 and ALT_2 pins are PD0 & PD1.
+Default CAN2 pins are PB12 & PB13. Alternative (ALT) pins are PB5 & PB6.
+Default CAN3 pins are PA8 & PA15. Alternative (ALT) pins are PB3 & PB4.
+*/
 #endif
 
 #if defined(SRAM_AS_EEPROM)

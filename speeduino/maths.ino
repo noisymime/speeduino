@@ -23,13 +23,15 @@ int fastMap(unsigned long x, int in_min, int in_max, int out_min, int out_max)
 }
 
 //Unsigned divide by 10
-unsigned int divu10(unsigned int n)
+uint32_t divu10(uint32_t n)
 {
 #ifdef USE_LIBDIVIDE
+  
   //Check whether 16 or 32 bit divide is required
-  //if( n <= UINT8_MAX) { return (uint8_t)n / 10; }
-  if( n <= UINT16_MAX ) { return FAST_DIV16U(n, 10); }
+  if( n <= UINT8_MAX) { return (uint8_t)n / 10; }
+  else if( n <= UINT16_MAX ) { return FAST_DIV16U(n, 10); }
   else { return libdivide::libdivide_u32_do(n, &libdiv_u32_10); }
+  //return libdivide::libdivide_u32_do(n, &libdiv_u32_10);
 
 #else
   return (n / 10);
@@ -37,7 +39,7 @@ unsigned int divu10(unsigned int n)
 }
 
 //Signed divide by 100
-int divs100(long n)
+int32_t divs100(int32_t n)
 {
 #ifdef USE_LIBDIVIDE
   return libdivide::libdivide_s32_do(n, &libdiv_s32_100);
@@ -55,6 +57,7 @@ unsigned long divu100(unsigned long n)
   if( n <= UINT8_MAX) { return (uint8_t)n / 100; }
   else if( n <= UINT16_MAX ) { return FAST_DIV16U(n, 100); }
   else { return libdivide::libdivide_u32_do(n, &libdiv_u32_100); }
+  //return libdivide::libdivide_u32_do(n, &libdiv_u32_100);
 
 #else
   return (n / 100);
@@ -77,9 +80,13 @@ unsigned long percentage(byte x, unsigned long y)
 unsigned long halfPercentage(byte x, unsigned long y)
 {
 #ifdef USE_LIBDIVIDE
-  //if( x <= UINT8_MAX) { return (uint8_t)x / 200; }
-  if( x <= UINT16_MAX ) { return FAST_DIV16U(x, 200); }
-  else { return libdivide::libdivide_u32_do((y * x), &libdiv_u32_200); }
+  
+  uint32_t numerator = (y * x);
+  if( numerator <= UINT8_MAX) { return (uint8_t)numerator / 200; }
+  else if( numerator <= UINT16_MAX ) { return FAST_DIV16U((uint16_t)numerator, 200); }
+  else { return libdivide::libdivide_u32_do(numerator, &libdiv_u32_200); }
+  
+  //return libdivide::libdivide_u32_do((y * x), &libdiv_u32_200);
 #else
   return (y * x) / 200;
 #endif
@@ -90,8 +97,8 @@ unsigned long halfPercentage(byte x, unsigned long y)
  */
 inline long powint(int factor, unsigned int exponent)
 {
-   long product = 1;
-   unsigned int counter = exponent;
-   while ( (counter--) > 0) { product *= factor; }
-   return product;
+  long product = 1;
+  unsigned int counter = exponent;
+  while ( (counter--) > 0) { product *= factor; }
+  return product;
 }

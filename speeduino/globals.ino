@@ -14,9 +14,9 @@ struct table3d16RpmLoad ignitionTable; ///< 16x16 ignition map
 struct table3d16RpmLoad ignitionTable2; ///< 16x16 ignition map
 struct table3d16RpmLoad afrTable; ///< 16x16 afr target map
 struct table3d8RpmLoad stagingTable; ///< 8x8 fuel staging table
-struct table3d8RpmTps boostTable; ///< 8x8 boost map
-struct table3d8RpmTps vvtTable; ///< 8x8 vvt map
-struct table3d8RpmTps vvt2Table; ///< 8x8 vvt2 map
+struct table3d8RpmLoad boostTable; ///< 8x8 boost map
+struct table3d8RpmLoad vvtTable; ///< 8x8 vvt map
+struct table3d8RpmLoad vvt2Table; ///< 8x8 vvt2 map
 struct table3d8RpmLoad wmiTable; ///< 8x8 wmi map
 struct table3d6RpmLoad trim1Table; ///< 6x6 Fuel trim 1 map
 struct table3d6RpmLoad trim2Table; ///< 6x6 Fuel trim 2 map
@@ -124,6 +124,7 @@ int ignition8EndAngle = 0;
 //These are variables used across multiple files
 bool initialisationComplete = false; ///< Tracks whether the setup() function has run completely (true = has run)
 byte fpPrimeTime = 0; ///< The time (in seconds, based on @ref statuses.secl) that the fuel pump started priming
+uint16_t softStartTime = 0; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
 volatile uint16_t mainLoopCount; //Main loop counter (incremented at each main loop rev., used for maintaining currentStatus.loopsPerSecond)
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 volatile unsigned long timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
@@ -131,12 +132,11 @@ volatile unsigned long ms_counter = 0; //A counter that increments once per ms
 uint16_t fixedCrankingOverride = 0;
 bool clutchTrigger;
 bool previousClutchTrigger;
-volatile uint32_t toothHistory[TOOTH_LOG_BUFFER]; ///< Tooth trigger history - delta time (in uS) from last tooth (Indexed by @ref toothHistoryIndex)
-volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
+volatile uint32_t toothHistory[TOOTH_LOG_SIZE]; ///< Tooth trigger history - delta time (in uS) from last tooth (Indexed by @ref toothHistoryIndex)
+volatile uint8_t compositeLogHistory[TOOTH_LOG_SIZE]; 
 volatile bool fpPrimed = false; ///< Tracks whether or not the fuel pump priming has been completed yet
 volatile bool injPrimed = false; ///< Tracks whether or not the injectors priming has been completed yet
 volatile unsigned int toothHistoryIndex = 0; ///< Current index to @ref toothHistory array
-volatile byte toothHistorySerialIndex = 0;
 unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
 unsigned long previousLoopTime; /**< The time (in uS) that the previous mainloop started */
 volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */

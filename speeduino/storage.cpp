@@ -32,6 +32,7 @@ A full copy of the license may be found in the projects root directory
 #define EEPROM_LAST_BARO              (EEPROM_CALIBRATION_O2_BINS-1)
 
 static bool eepromWritesPending = false;
+static bool forceBurn = false;
 
 bool isEepromWritePending()
 {
@@ -45,18 +46,20 @@ void writeAllConfig()
   uint8_t pageCount = getPageCount();
   uint8_t page = 1U;
   writeConfig(page++);
-  while (page<pageCount && !eepromWritesPending)
+  while (page<pageCount && ( !eepromWritesPending || forceBurn ) )
   {
     writeConfig(page++);
   }
 }
 
+void enableForceBurn() { forceBurn = true; }
+void disableForceBurn() { forceBurn = false; }
+
 
 //  ================================= Internal write support ===============================
-
 struct write_location {
   eeprom_address_t address;
-  uint8_t counter;
+  uint16_t counter;
 
   /** Update byte to EEPROM by first comparing content and the need to write it.
   We only ever write to the EEPROM where the new value is different from the currently stored byte
@@ -79,13 +82,14 @@ struct write_location {
 
   bool can_write() const
   {
-    return counter<=EEPROM_MAX_WRITE_BLOCK;
+    //return true;
+    return (counter<=EEPROM_MAX_WRITE_BLOCK);
   }
 };
 
 static inline write_location write_range(const byte *pStart, const byte *pEnd, write_location location)
 {
-  while (location.can_write() && pStart!=pEnd)
+  while ( (location.can_write() || forceBurn) && pStart!=pEnd)
   {
     location.update(*pStart);
     ++pStart; 
@@ -101,7 +105,7 @@ static inline write_location write(const table_row_iterator &row, write_location
 
 static inline write_location write(table_value_iterator it, write_location location)
 {
-  while (location.can_write() && !it.at_end())
+  while ((location.can_write() || forceBurn) && !it.at_end())
   {
     location = write(*it, location);
     ++it;
@@ -111,7 +115,7 @@ static inline write_location write(table_value_iterator it, write_location locat
 
 static inline write_location write(table_axis_iterator it, write_location location)
 {
-  while (location.can_write() && !it.at_end())
+  while ((location.can_write() || forceBurn) && !it.at_end())
   {
     location.update((byte)*it);
     ++location;

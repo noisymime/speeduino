@@ -258,17 +258,19 @@ void checkProgrammableIO()
 int16_t ProgrammableIOGetData(uint16_t index)
 {
   int16_t result;
-  uint8_t x;
   if ( index < LOG_ENTRY_SIZE )
   {
-    
-    for(x = 0; x<sizeof(fsIntIndex); x++)
+    /*
+    for(uint8_t x = 0; x<sizeof(fsIntIndex); x++)
     {
       // Stop at desired field
       if (pgm_read_byte(&(fsIntIndex[x])) == index) { break; }
     }
     if (x >= sizeof(fsIntIndex)) { result = getTSLogEntry(index); } // 8-bit, coerce to 16 bit result
     else { result = word(getTSLogEntry(index+1), getTSLogEntry(index)); } // Assemble 2 bytes to word of 16 bit result
+    */
+    if(is2ByteEntry(index)) { result = word(getTSLogEntry(index+1), getTSLogEntry(index)); }
+    else { result = getTSLogEntry(index); }
     
 
     //Special cases for temperatures

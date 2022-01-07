@@ -37,7 +37,7 @@
 #endif
 
 //Test values only
-#define SD_LOG_FILE_SIZE  10000000 //Defuault 10mb file size
+#define SD_LOG_FILE_SIZE  10000000 //Default 10mb file size
 #define MAX_LOG_FILES     10000
 #define LOG_FILE_PREFIX "SPD_"
 #define LOG_FILE_EXTENSION "csv"

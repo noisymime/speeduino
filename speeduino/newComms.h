@@ -51,6 +51,7 @@
 #define SERIAL_CRC_LENGTH   4
 #define SERIAL_LEN_SIZE     2
 #define SERIAL_OVERHEAD_SIZE (SERIAL_LEN_SIZE + SERIAL_CRC_LENGTH) //The overhead for each serial command is 6 bytes. 2 bytes for the length and 4 bytes for the CRC
+#define SERIAL_TIMEOUT      3000 //ms
 
 #ifdef RTC_ENABLED
   #define SD_FILE_TRANSMIT_BUFFER_SIZE 2048 + 3
@@ -68,18 +69,13 @@
 
 #define SERIAL_RC_BURN_OK   0x04
 
+#define SERIAL_RC_TIMEOUT   0x80 //Timeout error
 #define SERIAL_RC_CRC_ERR   0x82
 #define SERIAL_RC_UKWN_ERR  0x83 //Unkwnown command
 #define SERIAL_RC_RANGE_ERR 0x84 //Incorrect range. TS will not retry command
+#define SERIAL_RC_BUSY_ERR  0x85 //TS will wait and retry
 
-extern uint16_t serialPayloadLength;
-extern uint32_t serialCRC;
-extern bool serialReceivePending; /**< Whether or not a serial request has only been partially received. This occurs when a the length has been received in the serial buffer, but not all of the payload or CRC has yet been received. */
-//extern uint8_t *serialPayload; /**< Pointer to the serial payload buffer. */
-extern uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Pointer to the serial payload buffer. */
-extern uint16_t serialBytesReceived; /**< The number of bytes received in the serial buffer during the current command. */
 extern bool serialWriteInProgress;
-extern uint16_t serialBytesTransmitted;
 
 void parseSerial();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.
 void processSerialCommand();
@@ -88,9 +84,9 @@ void sendSerialPayload(void*, uint16_t payloadLength);
 
 void generateLiveValues(uint16_t, uint16_t);
 void saveConfig();
-void generateToothLog(uint8_t);
+void sendToothLog(uint8_t);
 void commandButtons(int16_t);
-void generateCompositeLog(uint8_t);
+void sendCompositeLog(uint8_t);
 void continueSerialTransmission();
 
 #endif // COMMS_H

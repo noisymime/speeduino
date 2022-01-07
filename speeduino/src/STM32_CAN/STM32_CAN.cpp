@@ -1,515 +1,940 @@
-#if defined(STM32F407xx) || defined(STM32F103xB) || defined(STM32F405xx)
+#if HAL_CAN_MODULE_ENABLED
 #include "STM32_CAN.h"
 
-uint8_t STM32_CAN::CANMsgAvail()
-{
-  uint8_t msgAvail = CAN1->RF0R & 0x3UL; //Default value
-  if (_channel == _CAN1) {
-    // Check for pending FIFO 0 messages
-    msgAvail = CAN1->RF0R & 0x3UL;
+STM32_CAN::STM32_CAN( CAN_TypeDef* canPort, CAN_PINS pins, RXQUEUE_TABLE rxSize, TXQUEUE_TABLE txSize ) {
+
+  if (_canIsActive) { return; }
+  
+  sizeRxBuffer=rxSize;
+  sizeTxBuffer=txSize;
+  
+  if (canPort == CAN1)
+  {
+    _CAN1 = this;
+    n_pCanHandle = &hcan1;
   }
-  #if defined(CAN2)
-  if (_channel == _CAN2) {
-    // Check for pending FIFO 0 messages
-    msgAvail = CAN2->RF0R & 0x3UL;
+  #ifdef CAN2
+  if( canPort == CAN2)
+  {
+    _CAN2 = this;
+    n_pCanHandle = &hcan2;
   }
   #endif
-  return msgAvail;
-}
-
-void STM32_CAN::CANSetGpio(GPIO_TypeDef * addr, uint8_t index, uint8_t speed )
-{
-    #if defined(STM32F4xx)
-    uint8_t _index2 = index * 2;
-    uint8_t _index4 = index * 4;
-    uint8_t ofs = 0;
-    uint8_t setting;
-
-    if (index > 7) {
-      _index4 = (index - 8) * 4;
-      ofs = 1;
-    }
-
-    uint32_t mask;
-    mask = 0xF << _index4;
-    addr->AFR[ofs]  &= ~mask;         // Reset alternate function
-    setting = 0x9;                    // AF9
-    mask = setting << _index4;
-    addr->AFR[ofs]  |= mask;          // Set alternate function
-
-    mask = 0x3 << _index2;
-    addr->MODER   &= ~mask;           // Reset mode
-    setting = 0x2;                    // Alternate function mode
-    mask = setting << _index2;
-    addr->MODER   |= mask;            // Set mode
-
-    mask = 0x3 << _index2;
-    addr->OSPEEDR &= ~mask;           // Reset speed
-    setting = speed;
-    mask = setting << _index2;
-    addr->OSPEEDR |= mask;            // Set speed
-
-    mask = 0x1 << index;
-    addr->OTYPER  &= ~mask;           // Reset Output push-pull
-
-    mask = 0x3 << _index2;
-    addr->PUPDR   &= ~mask;           // Reset port pull-up/pull-down
-    #endif
-}
-
-void STM32_CAN::CANSetFilter(uint8_t index, uint8_t scale, uint8_t mode, uint8_t fifo, uint32_t bank1, uint32_t bank2) {
-  if (index > 27) return;
-
-  CAN1->FA1R &= ~(0x1UL<<index);               // Deactivate filter
-
-  if (scale == 0) {
-    CAN1->FS1R &= ~(0x1UL<<index);             // Set filter to Dual 16-bit scale configuration
-  } else {
-    CAN1->FS1R |= (0x1UL<<index);              // Set filter to single 32 bit configuration
-  }
-    if (mode == 0) {
-    CAN1->FM1R &= ~(0x1UL<<index);             // Set filter to Mask mode
-  } else {
-    CAN1->FM1R |= (0x1UL<<index);              // Set filter to List mode
-  }
-
-  if (fifo == 0) {
-    CAN1->FFA1R &= ~(0x1UL<<index);            // Set filter assigned to FIFO 0
-  } else {
-    CAN1->FFA1R |= (0x1UL<<index);             // Set filter assigned to FIFO 1
-  }
-
-  CAN1->sFilterRegister[index].FR1 = bank1;    // Set filter bank registers1
-  CAN1->sFilterRegister[index].FR2 = bank2;    // Set filter bank registers2
-
-  CAN1->FA1R |= (0x1UL<<index);                // Activate filter
-
-}
-
-void STM32_CAN::begin()
-{
-  volatile int timeout = 0;
-  if (_channel == _CAN1)
+  #ifdef CAN3
+  if (canPort == CAN3)
   {
-    // CAN1
-    RCC->APB1ENR |= 0x2000000UL;           // Enable CAN1 clock 
-  }
-  #if defined(CAN2)
-  else if (_channel == _CAN2)
-  {
-    // CAN2
-    RCC->APB1ENR |= 0x4000000UL;           // Enable CAN2 clock
+    _CAN3 = this;
+    n_pCanHandle = &hcan3;
   }
   #endif
-  SetTXRX();
 
-  if (_channel == _CAN1)
-  {
-    CAN1->MCR |= 0x1UL;                                    // Require CAN1 to Initialization mode 
-    while ((!(CAN1->MSR & 0x1UL)) && timeout++ < 100000);  // Wait for Initialization mode
-
-    CAN1->MCR = 0x51UL;                    // Hardware initialization(No automatic retransmission)
-    //CAN1->MCR = 0x41UL;                  // Hardware initialization(With automatic retransmission, not used because causes timer issues on speeduino)
-  }
-  #if defined(CAN2)
-  else if (_channel == _CAN2)
-  {
-    // CAN2
-    CAN2->MCR |= 0x1UL;                                    // Require CAN2 to Initialization mode
-    while ((!(CAN2->MSR & 0x1UL)) && timeout++ < 100000);  // Wait for Initialization mode
-
-    CAN2->MCR = 0x51UL;                    // Hardware initialization(No automatic retransmission)
-    //CAN2->MCR = 0x41UL;                  // Hardware initialization(With automatic retransmission, not used because causes timer issues on speeduino)
-  }
-  #endif
+  _canPort = canPort;
+  _pins = pins;
 }
 
-void STM32_CAN::writeTxMailbox(uint8_t mb_num, CAN_message_t &CAN_tx_msg)
-{
-  uint32_t out = 0;
-  if (CAN_tx_msg.flags.extended == true) { // Extended frame format
-      out = ((CAN_tx_msg.id & CAN_EXT_ID_MASK) << 3U) | STM32_CAN_TIR_IDE;
-  }
-  else {                                    // Standard frame format
-      out = ((CAN_tx_msg.id & CAN_STD_ID_MASK) << 21U);
-  }
-  // Remote frame
-  if (CAN_tx_msg.flags.remote == true) {
-      out |= STM32_CAN_TIR_RTR;
-  }
+// Init and start CAN
+void STM32_CAN::begin( bool retransmission ) {
 
-  if (_channel == _CAN1)
+  // exit if CAN already is active
+  if (_canIsActive) return;
+  
+  _canIsActive = true;
+  
+  GPIO_InitTypeDef GPIO_InitStruct;
+  
+  initializeBuffers();
+  
+  // Configure CAN
+  if (_canPort == CAN1)
   {
-    CAN1->sTxMailBox[mb_num].TDTR &= ~(0xF);
-    CAN1->sTxMailBox[mb_num].TDTR |= CAN_tx_msg.len & 0xFUL;
-    CAN1->sTxMailBox[mb_num].TDLR  = (((uint32_t) CAN_tx_msg.buf[3] << 24) |
-                                      ((uint32_t) CAN_tx_msg.buf[2] << 16) |
-                                      ((uint32_t) CAN_tx_msg.buf[1] <<  8) |
-                                      ((uint32_t) CAN_tx_msg.buf[0]      ));
-    CAN1->sTxMailBox[mb_num].TDHR  = (((uint32_t) CAN_tx_msg.buf[7] << 24) |
-                                      ((uint32_t) CAN_tx_msg.buf[6] << 16) |
-                                      ((uint32_t) CAN_tx_msg.buf[5] <<  8) |
-                                      ((uint32_t) CAN_tx_msg.buf[4]      ));
+    //CAN1
+    __HAL_RCC_CAN1_CLK_ENABLE();
+    
+    if (_pins == ALT)
+    {
+      __HAL_RCC_GPIOB_CLK_ENABLE();
+      #if defined(__HAL_RCC_AFIO_CLK_ENABLE)  // Some MCUs like F1xx uses AFIO to set pins, so if there is AFIO defined, we use that.
+      __HAL_AFIO_REMAP_CAN1_2();  // To use PB8/9 pins for CAN1.
+      __HAL_RCC_AFIO_CLK_ENABLE();
+      GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;  // If AFIO is used, there doesn't seem to be "very high" option for speed, so we use "high" -setting.
+      GPIO_InitStruct.Pin = GPIO_PIN_8;
+      GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+      HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+      GPIO_InitStruct.Pin = GPIO_PIN_9;
+      #else  // Without AFIO, this is the way to set the pins for CAN.
+      GPIO_InitStruct.Alternate = GPIO_AF9_CAN1;
+      GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9;
+      GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+      #endif
+      GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+      HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+    } 
+     if (_pins == DEF)
+     {
+      __HAL_RCC_GPIOA_CLK_ENABLE();
+      GPIO_InitStruct.Pull = GPIO_NOPULL;
+      #if defined(__HAL_RCC_AFIO_CLK_ENABLE)
+      __HAL_AFIO_REMAP_CAN1_1(); // To use PA11/12 pins for CAN1.
+      __HAL_RCC_AFIO_CLK_ENABLE();
+      GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+      GPIO_InitStruct.Pin = GPIO_PIN_11;
+      GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+      HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+      GPIO_InitStruct.Pin = GPIO_PIN_12;
+      #else
+      GPIO_InitStruct.Alternate = GPIO_AF9_CAN1;
+      GPIO_InitStruct.Pin = GPIO_PIN_11|GPIO_PIN_12;
+      GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+      #endif
+      GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+      HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    }
 
-    // Send Go
-    CAN1->sTxMailBox[mb_num].TIR = out | STM32_CAN_TIR_TXRQ;
+     if (_pins == ALT_2)
+     {
+      __HAL_RCC_GPIOD_CLK_ENABLE();
+      GPIO_InitStruct.Pull = GPIO_NOPULL;
+      #if defined(__HAL_RCC_AFIO_CLK_ENABLE)
+      __HAL_AFIO_REMAP_CAN1_3(); // To use PD0/1 pins for CAN1.
+      __HAL_RCC_AFIO_CLK_ENABLE();
+      GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+      GPIO_InitStruct.Pin = GPIO_PIN_0;
+      GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+      HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+      GPIO_InitStruct.Pin = GPIO_PIN_1;
+      #else
+      GPIO_InitStruct.Alternate = GPIO_AF9_CAN1;
+      GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1;
+      GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+      #endif
+      GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+      HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+    }
+
+    // NVIC configuration for CAN1 Reception complete interrupt
+    HAL_NVIC_SetPriority(CAN1_RX0_IRQn, 15, 0); // 15 is lowest possible priority
+    HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn );
+    // NVIC configuration for CAN1 Transmission complete interrupt
+    HAL_NVIC_SetPriority(CAN1_TX_IRQn, 15, 0); // 15 is lowest possible priority
+    HAL_NVIC_EnableIRQ(CAN1_TX_IRQn);
+    
+    n_pCanHandle->Instance = CAN1;
   }
-  #if defined(CAN2)
-  if (_channel == _CAN2)
+#ifdef CAN2  
+  else if (_canPort == CAN2)
   {
-    CAN2->sTxMailBox[mb_num].TDTR &= ~(0xF);
-    CAN2->sTxMailBox[mb_num].TDTR |= CAN_tx_msg.len & 0xFUL;
-    CAN2->sTxMailBox[mb_num].TDLR  = (((uint32_t) CAN_tx_msg.buf[3] << 24) |
-                                      ((uint32_t) CAN_tx_msg.buf[2] << 16) |
-                                      ((uint32_t) CAN_tx_msg.buf[1] <<  8) |
-                                      ((uint32_t) CAN_tx_msg.buf[0]      ));
-    CAN2->sTxMailBox[mb_num].TDHR  = (((uint32_t) CAN_tx_msg.buf[7] << 24) |
-                                      ((uint32_t) CAN_tx_msg.buf[6] << 16) |
-                                      ((uint32_t) CAN_tx_msg.buf[5] <<  8) |
-                                      ((uint32_t) CAN_tx_msg.buf[4]      ));
-    // Send Go
-    CAN2->sTxMailBox[mb_num].TIR = out | STM32_CAN_TIR_TXRQ;
+    //CAN2
+    __HAL_RCC_CAN1_CLK_ENABLE(); // CAN1 clock needs to be enabled too, because CAN2 works as CAN1 slave.
+    __HAL_RCC_CAN2_CLK_ENABLE();
+    if (_pins == ALT)
+    {
+      __HAL_RCC_GPIOB_CLK_ENABLE();
+      #if defined(__HAL_RCC_AFIO_CLK_ENABLE)
+      __HAL_AFIO_REMAP_CAN2_ENABLE(); // To use PB5/6 pins for CAN2. Don't ask me why this has different name than for CAN1.
+      __HAL_RCC_AFIO_CLK_ENABLE();
+      GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+      GPIO_InitStruct.Pin = GPIO_PIN_5;
+      GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+      HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+      GPIO_InitStruct.Pin = GPIO_PIN_6;
+      #else
+      GPIO_InitStruct.Alternate = GPIO_AF9_CAN2;
+      GPIO_InitStruct.Pin = GPIO_PIN_5|GPIO_PIN_6;
+      GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+      #endif
+      GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+      HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+    } 
+    if (_pins == DEF) {
+      __HAL_RCC_GPIOB_CLK_ENABLE();
+      #if defined(__HAL_RCC_AFIO_CLK_ENABLE)
+      __HAL_AFIO_REMAP_CAN2_DISABLE(); // To use PB12/13 pins for CAN2.
+      __HAL_RCC_AFIO_CLK_ENABLE();
+      GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+      GPIO_InitStruct.Pin = GPIO_PIN_12;
+      GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+      HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+      GPIO_InitStruct.Pin = GPIO_PIN_13;
+      #else
+      GPIO_InitStruct.Alternate = GPIO_AF9_CAN2;
+      GPIO_InitStruct.Pin = GPIO_PIN_12|GPIO_PIN_13;
+      GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+      #endif
+      GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+      HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+    }
+
+    // NVIC configuration for CAN2 Reception complete interrupt
+    HAL_NVIC_SetPriority(CAN2_RX0_IRQn, 15, 0); // 15 is lowest possible priority
+    HAL_NVIC_EnableIRQ(CAN2_RX0_IRQn );
+    // NVIC configuration for CAN2 Transmission complete interrupt
+    HAL_NVIC_SetPriority(CAN2_TX_IRQn, 15, 0); // 15 is lowest possible priority
+    HAL_NVIC_EnableIRQ(CAN2_TX_IRQn);
+    
+    n_pCanHandle->Instance = CAN2;
   }
-  #endif
-}
+#endif
 
-int STM32_CAN::write(CAN_message_t &CAN_tx_msg)
-{
-  volatile int mailbox = 0;
-
-  if (_channel == _CAN1)
+#ifdef CAN3 
+  else if (_canPort == CAN3)
   {
-    // Check if one of the three mailboxes is empty
-    while(CAN1->sTxMailBox[mailbox].TIR & 0x1UL &&  mailbox++ < 3);
+    //CAN3
+    __HAL_RCC_CAN3_CLK_ENABLE();
+    if (_pins == ALT)
+    {
+      __HAL_RCC_GPIOB_CLK_ENABLE();
+      GPIO_InitStruct.Alternate = GPIO_AF11_CAN3;
+      GPIO_InitStruct.Pin = GPIO_PIN_3|GPIO_PIN_4;
+      GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+      GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+      HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+    } 
+    if (_pins == DEF)
+    {
+      __HAL_RCC_GPIOA_CLK_ENABLE();
+      GPIO_InitStruct.Alternate = GPIO_AF11_CAN3;
+      GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_15;
+      GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+      GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+      HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    }
 
-    if (mailbox >= 3) {
-      //Serial.println("transmit Fail");
-      return -1; // transmit failed, no mailboxes available
-    }
-    else { // empty mailbox found, so it's ok to send new message
-      writeTxMailbox(mailbox, CAN_tx_msg);
-      return 1; // transmit done
-    }
+    // NVIC configuration for CAN3 Reception complete interrupt
+    HAL_NVIC_SetPriority(CAN3_RX0_IRQn, 15, 0); // 15 is lowest possible priority
+    HAL_NVIC_EnableIRQ(CAN3_RX0_IRQn );
+    // NVIC configuration for CAN3 Transmission complete interrupt
+    HAL_NVIC_SetPriority(CAN3_TX_IRQn, 15, 0); // 15 is lowest possible priority
+    HAL_NVIC_EnableIRQ(CAN3_TX_IRQn);
+    
+    n_pCanHandle->Instance = CAN3;
   }
-  #if defined(CAN2)
-  if (_channel == _CAN2)
-  {
-    // Check if one of the three mailboxes is empty
-    while(CAN2->sTxMailBox[mailbox].TIR & 0x1UL &&  mailbox++ < 3);
+#endif
 
-    if (mailbox >= 3) {
-      //Serial.println("transmit Fail");
-      return -1; // transmit failed, no mailboxes available
-    }
-    else { // empty mailbox found, so it's ok to send new message
-      writeTxMailbox(mailbox, CAN_tx_msg);
-      return 1; // transmit done
-    }
-  }
-  #endif
-}
-
-int STM32_CAN::write(CAN_MAILBOX mb_num, CAN_message_t &CAN_tx_msg)
-{
-  if (_channel == _CAN1)
-  {
-    if (CAN1->sTxMailBox[mb_num].TIR & 0x1UL) {
-      //Serial.println("transmit Fail");
-      return -1; // transmit failed, mailbox was not empty
-    }
-    else { // mailbox was empty, so it's ok to send new message
-      writeTxMailbox(mb_num, CAN_tx_msg);
-      return 1; // transmit done
-    }
-  }
-  #if defined(CAN2)
-  if (_channel == _CAN2)
-  {
-    if (CAN2->sTxMailBox[mb_num].TIR & 0x1UL) {
-      //Serial.println("transmit Fail");
-      return -1; // transmit failed, mailbox was not empty
-    }
-    else { // mailbox was empty, so it's ok to send new message
-      writeTxMailbox(mb_num, CAN_tx_msg);
-      return 1; // transmit done
-    }
-  }
-  #endif
-}
-
-int STM32_CAN::read(CAN_message_t &CAN_rx_msg)
-{
-  if (CANMsgAvail()) {
-    if(_channel == _CAN1) {
-      uint32_t id = CAN1->sFIFOMailBox[0].RIR;
-      if ((id & STM32_CAN_RIR_IDE) == 0) { // Standard frame format
-          CAN_rx_msg.flags.extended = false;
-          CAN_rx_msg.id = (CAN_STD_ID_MASK & (id >> 21U));
-      } 
-      else {                               // Extended frame format
-          CAN_rx_msg.flags.extended = true;
-          CAN_rx_msg.id = (CAN_EXT_ID_MASK & (id >> 3U));
-      }
-
-      if ((id & STM32_CAN_RIR_RTR) == 0) {  // Data frame
-          CAN_rx_msg.flags.remote = false;
-      }
-      else {                                // Remote frame
-          CAN_rx_msg.flags.remote = true;
-      }
-
-      CAN_rx_msg.len = (CAN1->sFIFOMailBox[0].RDTR) & 0xFUL;
-
-      CAN_rx_msg.buf[0] = 0xFFUL &  CAN1->sFIFOMailBox[0].RDLR;
-      CAN_rx_msg.buf[1] = 0xFFUL & (CAN1->sFIFOMailBox[0].RDLR >> 8);
-      CAN_rx_msg.buf[2] = 0xFFUL & (CAN1->sFIFOMailBox[0].RDLR >> 16);
-      CAN_rx_msg.buf[3] = 0xFFUL & (CAN1->sFIFOMailBox[0].RDLR >> 24);
-      CAN_rx_msg.buf[4] = 0xFFUL &  CAN1->sFIFOMailBox[0].RDHR;
-      CAN_rx_msg.buf[5] = 0xFFUL & (CAN1->sFIFOMailBox[0].RDHR >> 8);
-      CAN_rx_msg.buf[6] = 0xFFUL & (CAN1->sFIFOMailBox[0].RDHR >> 16);
-      CAN_rx_msg.buf[7] = 0xFFUL & (CAN1->sFIFOMailBox[0].RDHR >> 24);
-
-      CAN_rx_msg.bus = 1;
-
-      CAN1->RF0R |= 0x20UL;
-    } // end CAN1
-    #if defined(CAN2)
-    if(_channel == _CAN2) {
-      uint32_t id = CAN2->sFIFOMailBox[0].RIR;
-      if ((id & STM32_CAN_RIR_IDE) == 0) { // Standard frame format
-          CAN_rx_msg.flags.extended = false;
-          CAN_rx_msg.id = (CAN_STD_ID_MASK & (id >> 21U));
-      }
-      else {                               // Extended frame format
-          CAN_rx_msg.flags.extended = true;
-          CAN_rx_msg.id = (CAN_EXT_ID_MASK & (id >> 3U));
-      }
-
-      if ((id & STM32_CAN_RIR_RTR) == 0) {  // Data frame
-          CAN_rx_msg.flags.remote = false;
-      }
-      else {                                // Remote frame
-          CAN_rx_msg.flags.remote = true;
-      }
-
-      CAN_rx_msg.len = (CAN2->sFIFOMailBox[0].RDTR) & 0xFUL;
-      
-      CAN_rx_msg.buf[0] = 0xFFUL &  CAN2->sFIFOMailBox[0].RDLR;
-      CAN_rx_msg.buf[1] = 0xFFUL & (CAN2->sFIFOMailBox[0].RDLR >> 8);
-      CAN_rx_msg.buf[2] = 0xFFUL & (CAN2->sFIFOMailBox[0].RDLR >> 16);
-      CAN_rx_msg.buf[3] = 0xFFUL & (CAN2->sFIFOMailBox[0].RDLR >> 24);
-      CAN_rx_msg.buf[4] = 0xFFUL &  CAN2->sFIFOMailBox[0].RDHR;
-      CAN_rx_msg.buf[5] = 0xFFUL & (CAN2->sFIFOMailBox[0].RDHR >> 8);
-      CAN_rx_msg.buf[6] = 0xFFUL & (CAN2->sFIFOMailBox[0].RDHR >> 16);
-      CAN_rx_msg.buf[7] = 0xFFUL & (CAN2->sFIFOMailBox[0].RDHR >> 24);
-
-      CAN_rx_msg.bus = 2;
-
-      CAN2->RF0R |= 0x20UL;
-    } // END CAN2
-    #endif
-    return 1; // message read
-  }
-  else {
-    return 0; // no messages available
-  }
+  n_pCanHandle->Init.TimeTriggeredMode = DISABLE;
+  n_pCanHandle->Init.AutoBusOff = DISABLE;
+  n_pCanHandle->Init.AutoWakeUp = DISABLE;
+  if (retransmission){ n_pCanHandle->Init.AutoRetransmission  = ENABLE; }
+  else { n_pCanHandle->Init.AutoRetransmission  = DISABLE; }
+  n_pCanHandle->Init.ReceiveFifoLocked  = DISABLE;
+  n_pCanHandle->Init.TransmitFifoPriority = ENABLE;
+  n_pCanHandle->Init.Mode = CAN_MODE_NORMAL;
 }
 
 void STM32_CAN::setBaudRate(uint32_t baud)
 {
-  //there must be better way to do this, but for now it's what it is.
-  int bitrate = 0; //Default to slowest baud rate
-  switch(baud)
+
+  // Calculate and set baudrate
+  calculateBaudrate( n_pCanHandle, baud );
+
+  // Initializes CAN
+  HAL_CAN_Init( n_pCanHandle );
+  
+  initializeFilters();
+
+  // Start the CAN peripheral
+  HAL_CAN_Start( n_pCanHandle );
+  
+  // Activate CAN RX notification
+  HAL_CAN_ActivateNotification( n_pCanHandle, CAN_IT_RX_FIFO0_MSG_PENDING);
+ 
+  // Activate CAN TX notification
+  HAL_CAN_ActivateNotification( n_pCanHandle, CAN_IT_TX_MAILBOX_EMPTY);
+}
+
+bool STM32_CAN::write(CAN_message_t &CAN_tx_msg, bool sendMB)
+{
+  bool ret = true;
+  uint32_t TxMailbox;
+  CAN_TxHeaderTypeDef TxHeader;
+ 
+  __HAL_CAN_DISABLE_IT(n_pCanHandle, CAN_IT_TX_MAILBOX_EMPTY);
+
+  if (CAN_tx_msg.flags.extended == 1) // Extended ID when CAN_tx_msg.flags.extended is 1
+  {
+      TxHeader.ExtId = CAN_tx_msg.id;
+      TxHeader.IDE   = CAN_ID_EXT;
+  }
+  else // Standard ID otherwise
+  {
+      TxHeader.StdId = CAN_tx_msg.id;
+      TxHeader.IDE   = CAN_ID_STD;
+  }
+  
+  TxHeader.RTR   = CAN_RTR_DATA;
+  TxHeader.DLC   = CAN_tx_msg.len;
+  TxHeader.TransmitGlobalTime = DISABLE;
+
+  if(HAL_CAN_AddTxMessage( n_pCanHandle, &TxHeader, CAN_tx_msg.buf, &TxMailbox) != HAL_OK)
+  {
+    /* in normal situation we add up the message to TX ring buffer, if there is no free TX mailbox. But the TX mailbox interrupt is using this same function
+    to move the messages from ring buffer to empty TX mailboxes, so for that use case, there is this check */
+    if(sendMB != true) 
     {
-      case 50000:
-        bitrate = 0;
-        break;
-      case 100000:
-        bitrate = 1;
-        break;
-      case 125000:
-        bitrate = 2;
-        break;
-      case 250000:
-        bitrate = 3;
-        break;
-      case 500000:
-         bitrate = 4;
-        break;
-      case 1000000:
-         bitrate = 5;
-        break;
-      default:
-        //Other baud rates aren't supported
-        break;
+      if( addToRingBuffer(txRing, CAN_tx_msg) == false )
+      {
+        ret = false; // no more room
+      }
     }
-  // Set bit rates 
-  if (_channel == _CAN1)
-  {
-    CAN1->BTR &= ~(((0x03) << 24) | ((0x07) << 20) | ((0x0F) << 16) | (0x1FF)); 
-    CAN1->BTR |=  (((can_configs[bitrate].TS2-1) & 0x07) << 20) | (((can_configs[bitrate].TS1-1) & 0x0F) << 16) | ((can_configs[bitrate].BRP-1) & 0x1FF);
+    else { ret = false; }
   }
-  #if defined(CAN2)
-  else if (_channel == _CAN2)
+  __HAL_CAN_ENABLE_IT(n_pCanHandle, CAN_IT_TX_MAILBOX_EMPTY);
+  return ret;
+}
+
+bool STM32_CAN::read(CAN_message_t &CAN_rx_msg)
+{
+  bool ret;
+  __HAL_CAN_DISABLE_IT(n_pCanHandle, CAN_IT_RX_FIFO0_MSG_PENDING); 
+  ret = removeFromRingBuffer(rxRing, CAN_rx_msg);
+  __HAL_CAN_ENABLE_IT(n_pCanHandle, CAN_IT_RX_FIFO0_MSG_PENDING); 
+  return ret;
+}
+
+bool STM32_CAN::setFilter(uint8_t bank_num, uint32_t filter_id, uint32_t mask, uint32_t filter_mode, uint32_t filter_scale, uint32_t fifo)
+{
+  CAN_FilterTypeDef sFilterConfig;
+
+  sFilterConfig.FilterBank = bank_num;
+  sFilterConfig.FilterMode = filter_mode;
+  sFilterConfig.FilterScale = filter_scale;
+  sFilterConfig.FilterFIFOAssignment = fifo;
+  sFilterConfig.FilterActivation = ENABLE;
+
+  if (filter_id <= 0x7FF)
   {
-    CAN2->BTR &= ~(((0x03) << 24) | ((0x07) << 20) | ((0x0F) << 16) | (0x1FF)); 
-    CAN2->BTR |=  (((can_configs[bitrate].TS2-1) & 0x07) << 20) | (((can_configs[bitrate].TS1-1) & 0x0F) << 16) | ((can_configs[bitrate].BRP-1) & 0x1FF); 
+    // Standard ID can be only 11 bits long
+    sFilterConfig.FilterIdHigh = (uint16_t) (filter_id << 5);
+    sFilterConfig.FilterIdLow = 0;
+    sFilterConfig.FilterMaskIdHigh = (uint16_t) (mask << 5);
+    sFilterConfig.FilterMaskIdLow = CAN_ID_EXT;
   }
+  else
+  {
+    // Extended ID
+    sFilterConfig.FilterIdLow = (uint16_t) (filter_id << 3);
+    sFilterConfig.FilterIdLow |= CAN_ID_EXT;
+    sFilterConfig.FilterIdHigh = (uint16_t) (filter_id >> 13);
+    sFilterConfig.FilterMaskIdLow = (uint16_t) (mask << 3);
+    sFilterConfig.FilterMaskIdLow |= CAN_ID_EXT;
+    sFilterConfig.FilterMaskIdHigh = (uint16_t) (mask >> 13);
+  }
+
+  // Enable filter
+  if (HAL_CAN_ConfigFilter( n_pCanHandle, &sFilterConfig ) != HAL_OK)
+  {
+    return 1;
+  }
+  else
+  {
+    return 0;
+  }
+}
+
+void STM32_CAN::setMBFilter(CAN_BANK bank_num, CAN_FLTEN input)
+{
+  CAN_FilterTypeDef sFilterConfig;
+  sFilterConfig.FilterBank = uint8_t(bank_num);
+  if (input = ACCEPT_ALL) { sFilterConfig.FilterActivation = ENABLE; }
+  else { sFilterConfig.FilterActivation = DISABLE; }
+  
+  HAL_CAN_ConfigFilter(n_pCanHandle, &sFilterConfig);
+}
+
+void STM32_CAN::setMBFilter(CAN_FLTEN input)
+{
+  CAN_FilterTypeDef sFilterConfig;
+  uint8_t max_bank_num = 27;
+  uint8_t min_bank_num = 0;
+  #ifdef CAN2
+  if (_canPort == CAN1){ max_bank_num = 13;}
+  else if (_canPort == CAN2){ min_bank_num = 14;}
+  #endif
+  for (uint8_t bank_num = min_bank_num ; bank_num <= max_bank_num ; bank_num++)
+  {
+    sFilterConfig.FilterBank = bank_num;
+    if (input = ACCEPT_ALL) { sFilterConfig.FilterActivation = ENABLE; }
+    else { sFilterConfig.FilterActivation = DISABLE; }
+    HAL_CAN_ConfigFilter(n_pCanHandle, &sFilterConfig);
+  }
+}
+
+bool STM32_CAN::setMBFilterProcessing(CAN_BANK bank_num, uint32_t filter_id, uint32_t mask)
+{
+  // just convert the MB number enum to bank number.
+  return setFilter(uint8_t(bank_num), filter_id, mask);
+}
+
+bool STM32_CAN::setMBFilter(CAN_BANK bank_num, uint32_t id1)
+{
+  // by setting the mask to 0x1FFFFFFF we only filter the ID set as Filter ID.
+  return setFilter(uint8_t(bank_num), id1, 0x1FFFFFFF);
+}
+
+bool STM32_CAN::setMBFilter(CAN_BANK bank_num, uint32_t id1, uint32_t id2)
+{
+  // if we set the filter mode as IDLIST, the mask becomes filter ID too. So we can filter two totally independent IDs in same bank.
+  return setFilter(uint8_t(bank_num), id1, id2, CAN_FILTERMODE_IDLIST);
+}
+
+// TBD, do this using "setFilter" -function
+void STM32_CAN::initializeFilters()
+{
+  CAN_FilterTypeDef sFilterConfig;
+  // We set first bank to accept all RX messages
+  sFilterConfig.FilterBank = 0;
+  sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+  sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+  sFilterConfig.FilterIdHigh = 0x0000;
+  sFilterConfig.FilterIdLow = 0x0000;
+  sFilterConfig.FilterMaskIdHigh = 0x0000;
+  sFilterConfig.FilterMaskIdLow = 0x0000;
+  sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
+  sFilterConfig.FilterActivation = ENABLE;
+  #ifdef CAN2
+  // Filter banks from 14 to 27 are for Can2, so first for Can2 is bank 14. This is not relevant for devices with only one CAN
+  if (_canPort == CAN1)
+  {
+    sFilterConfig.SlaveStartFilterBank = 14;
+  }
+  if (_canPort == CAN2)
+  {
+    sFilterConfig.FilterBank = 14;
+  } 
   #endif
   
-    // Configure Filters to default values
-    CAN1->FMR  |=   0x1UL;                 // Set to filter initialization mode
-    CAN1->FMR  &= 0xFFFFC0FF;              // Clear CAN2 start bank
+  HAL_CAN_ConfigFilter(n_pCanHandle, &sFilterConfig);
+}
 
-    // bxCAN has 28 filters.
-    // These filters are used for both CAN1 and CAN2.
-    #if defined(STM32F1xx)
-    // STM32F1xx has only CAN1, so all 28 are used for CAN1
-    CAN1->FMR  |= 0x1C << 8;              // Assign all filters to CAN1
+void STM32_CAN::initializeBuffers()
+{
+    if(isInitialized()) { return; }
+  
+    // set up the transmit and receive ring buffers
+    if(tx_buffer==0)
+    {
+      tx_buffer=new CAN_message_t[sizeTxBuffer];
+    }
+    initRingBuffer(txRing, tx_buffer, sizeTxBuffer);
 
-    #elif defined(STM32F4xx)
-    // STM32F4xx has CAN1 and CAN2, so CAN2 filters are offset by 14
-    CAN1->FMR  |= 0xE00;                   // Start bank for the CAN2 interface
-    #endif
+    if(rx_buffer==0)
+    {
+      rx_buffer=new CAN_message_t[sizeRxBuffer];
+    }
+    initRingBuffer(rxRing, rx_buffer, sizeRxBuffer);
+}
 
-    // Set filter 0
-    // Single 32-bit scale configuration 
-    // Two 32-bit registers of filter bank x are in Identifier Mask mode
-    // Filter assigned to FIFO 0 
-    // Filter bank register to all 0
-    CANSetFilter(0, 1, 0, 0, 0x0UL, 0x0UL); 
+void STM32_CAN::initRingBuffer(RingbufferTypeDef &ring, volatile CAN_message_t *buffer, uint32_t size)
+{
+    ring.buffer = buffer;
+    ring.size = size;
+    ring.head = 0;
+    ring.tail = 0;
+}
 
-    // Set filter 14
-    // Single 32-bit scale configuration 
-    // Two 32-bit registers of filter bank x are in Identifier Mask mode
-    // Filter assigned to FIFO 0 
-    // Filter bank register to all 0
-    CANSetFilter(14, 1, 0, 0, 0x0UL, 0x0UL); 
+bool STM32_CAN::addToRingBuffer(RingbufferTypeDef &ring, const CAN_message_t &msg)
+{
+    uint16_t nextEntry;
+    nextEntry =(ring.head + 1) % ring.size;
 
-  if (_channel == _CAN1)
+    // check if the ring buffer is full
+    if(nextEntry == ring.tail)
+	{
+        return(false);
+    }
+
+    // add the element to the ring */
+    memcpy((void *)&ring.buffer[ring.head],(void *)&msg, sizeof(CAN_message_t));
+
+    // bump the head to point to the next free entry
+    ring.head = nextEntry;
+
+    return(true);
+}
+bool STM32_CAN::removeFromRingBuffer(RingbufferTypeDef &ring, CAN_message_t &msg)
+{
+    // check if the ring buffer has data available
+    if(isRingBufferEmpty(ring) == true)
+    {
+        return(false);
+    }
+
+    // copy the message
+    memcpy((void *)&msg,(void *)&ring.buffer[ring.tail], sizeof(CAN_message_t));
+
+    // bump the tail pointer
+    ring.tail =(ring.tail + 1) % ring.size;
+    return(true);
+}
+
+bool STM32_CAN::isRingBufferEmpty(RingbufferTypeDef &ring)
+{
+    if(ring.head == ring.tail)
+	{
+        return(true);
+    }
+
+    return(false);
+}
+
+uint32_t STM32_CAN::ringBufferCount(RingbufferTypeDef &ring)
+{
+    int32_t entries;
+    entries = ring.head - ring.tail;
+
+    if(entries < 0)
+    {
+        entries += ring.size;
+    }
+    return((uint32_t)entries);
+}
+
+void STM32_CAN::calculateBaudrate(CAN_HandleTypeDef *CanHandle, int baud)
+{
+  /* this function calculates the needed Sync Jump Width, Time segments 1 and 2 and prescaler values based on the set baud rate and APB1 clock.
+  This could be done faster if needed by calculating these values beforehand and just using fixed values from table.
+  The function has been optimized to give values that have sample-point between 75-94%. If some other sample-point percentage is needed, this needs to be adjusted.
+  More info about this topic here: http://www.bittiming.can-wiki.info/
+  */
+  int sjw = 1;
+  int bs1 = 5; // optimization. bs1 smaller than 5 does give too small sample-point percentages.
+  int bs2 = 1;
+  int prescaler = 1;
+  uint32_t _SyncJumpWidth;
+  uint32_t _TimeSeg1;
+  uint32_t _TimeSeg2;
+  uint32_t _Prescaler;
+  
+  bool shouldBrake = false;
+  
+  uint32_t frequency = getAPB1Clock();
+  
+  for (; sjw <= 4 && !shouldBrake;)
   {
-    CAN1->FMR   &= ~(0x1UL);               // Deactivate initialization mode
-    CAN1->MCR   &= ~(0x1UL);               // Require CAN1 to normal mode 
+    for (; prescaler <= 1024 && !shouldBrake;)
+    {
+      for (; bs2 <= 3 && !shouldBrake;)  // Time segment 2 can get up to 8, but that causes too small sample-point percentages, so this is limited to 3.
+      {
+        for (; bs1 <= 15 && !shouldBrake;)  // Time segment 1 can get up to 16, but that causes too big sample-point percenages, so this is limited to 15.
+        {
+          int calcBaudrate = (int)(frequency / (prescaler * (sjw + bs1 + bs2)));
+          
+          if (calcBaudrate == baud)
+          {
+            switch (sjw)
+            {
+              case 1:
+                _SyncJumpWidth = CAN_SJW_1TQ;
+                break;
+              case 2:
+                _SyncJumpWidth = CAN_SJW_2TQ;
+                break;
+              case 3:
+                _SyncJumpWidth = CAN_SJW_3TQ;
+                break;
+              case 4:
+                _SyncJumpWidth = CAN_SJW_4TQ;
+                break;
+              default:
+                // should not happen
+                _SyncJumpWidth = CAN_SJW_1TQ;
+                break;
+            }
+
+            switch (bs1)
+            {
+              case 1:
+                _TimeSeg1 = CAN_BS1_1TQ;
+                break;
+              case 2:
+                _TimeSeg1 = CAN_BS1_2TQ;
+                break;
+              case 3:
+                _TimeSeg1 = CAN_BS1_3TQ;
+                break;
+              case 4:
+                _TimeSeg1 = CAN_BS1_4TQ;
+                break;
+              case 5:
+                _TimeSeg1 = CAN_BS1_5TQ;
+                break;
+              case 6:
+                _TimeSeg1 = CAN_BS1_6TQ;
+                break;
+              case 7:
+                _TimeSeg1 = CAN_BS1_7TQ;
+                break;
+              case 8:
+                _TimeSeg1 = CAN_BS1_8TQ;
+                break;
+              case 9:
+                _TimeSeg1 = CAN_BS1_9TQ;
+                break;
+              case 10:
+                _TimeSeg1 = CAN_BS1_10TQ;
+                break;
+              case 11:
+                _TimeSeg1 = CAN_BS1_11TQ;
+                break;
+              case 12:
+                _TimeSeg1 = CAN_BS1_12TQ;
+                break;
+              case 13:
+                _TimeSeg1 = CAN_BS1_13TQ;
+                break;
+              case 14:
+                _TimeSeg1 = CAN_BS1_14TQ;
+                break;
+              case 15:
+                _TimeSeg1 = CAN_BS1_15TQ;
+                break;
+              case 16:
+                _TimeSeg1 = CAN_BS1_16TQ;
+                break;
+              default:
+                // should not happen
+                _TimeSeg1 = CAN_BS1_1TQ;
+                break;
+            }
+
+            switch (bs2)
+            {
+              case 1:
+                _TimeSeg2 = CAN_BS2_1TQ;
+                break;
+              case 2:
+                _TimeSeg2 = CAN_BS2_2TQ;
+                break;
+              case 3:
+                _TimeSeg2 = CAN_BS2_3TQ;
+                break;
+              case 4:
+                _TimeSeg2 = CAN_BS2_4TQ;
+                break;
+              case 5:
+                _TimeSeg2 = CAN_BS2_5TQ;
+                break;
+              case 6:
+                _TimeSeg2 = CAN_BS2_6TQ;
+                break;
+              case 7:
+                _TimeSeg2 = CAN_BS2_7TQ;
+                break;
+              case 8:
+                _TimeSeg2 = CAN_BS2_8TQ;
+                break;
+              default:
+                // should not happen
+                _TimeSeg2 = CAN_BS2_1TQ;
+                break;
+            }
+            _Prescaler = prescaler;
+
+            shouldBrake = true;
+          }
+          bs1++;
+        }
+        if (!shouldBrake)
+        {
+          bs1 = 5;
+          bs2++;
+        }
+      }
+      if (!shouldBrake)
+      {
+        bs1 = 5;
+        bs2 = 1;
+        prescaler++;
+      }
+    }
+    if (!shouldBrake)
+    {
+      bs1 = 5;
+      sjw++;
+    }
   }
-  #if defined(CAN2)
-  else if (_channel == _CAN2)
+
+  CanHandle->Init.SyncJumpWidth = _SyncJumpWidth;
+  CanHandle->Init.TimeSeg1 = _TimeSeg1;
+  CanHandle->Init.TimeSeg2 = _TimeSeg2;
+  CanHandle->Init.Prescaler = _Prescaler;
+}
+
+uint32_t STM32_CAN::getAPB1Clock()
+{
+  RCC_ClkInitTypeDef clkInit;
+  uint32_t flashLatency;
+  HAL_RCC_GetClockConfig(&clkInit, &flashLatency);
+
+  uint32_t hclkClock = HAL_RCC_GetHCLKFreq();
+  uint8_t clockDivider = 1;
+  switch (clkInit.APB1CLKDivider)
   {
-    CAN2->FMR   &= ~(0x1UL);               // Deactivate initialization mode
-    CAN2->MCR   &= ~(0x1UL);               // Require CAN2 to normal mode  
+  case RCC_HCLK_DIV1:
+    clockDivider = 1;
+    break;
+  case RCC_HCLK_DIV2:
+    clockDivider = 2;
+    break;
+  case RCC_HCLK_DIV4:
+    clockDivider = 4;
+    break;
+  case RCC_HCLK_DIV8:
+    clockDivider = 8;
+    break;
+  case RCC_HCLK_DIV16:
+    clockDivider = 16;
+    break;
+  default:
+    // should not happen
+    break;
   }
-  #endif
+
+  uint32_t apb1Clock = hclkClock / clockDivider;
+
+  return apb1Clock;
+}
+
+void STM32_CAN::enableMBInterrupts()
+{
+  if (n_pCanHandle->Instance == CAN1) 
+  {
+    HAL_NVIC_EnableIRQ(CAN1_TX_IRQn);
+  }
+#ifdef CAN2
+  else if (n_pCanHandle->Instance == CAN2) 
+  {
+    HAL_NVIC_EnableIRQ(CAN2_TX_IRQn);
+  }
+#endif
+#ifdef CAN3
+  else if (n_pCanHandle->Instance == CAN3) 
+  {
+    HAL_NVIC_EnableIRQ(CAN3_TX_IRQn);
+  }
+#endif
+}
+
+void STM32_CAN::disableMBInterrupts()
+{
+  if (n_pCanHandle->Instance == CAN1) 
+  {
+    HAL_NVIC_DisableIRQ(CAN1_TX_IRQn);
+  }
+#ifdef CAN2
+  else if (n_pCanHandle->Instance == CAN2)
+  {
+    HAL_NVIC_DisableIRQ(CAN2_TX_IRQn);
+  }
+#endif
+#ifdef CAN3
+  else if (n_pCanHandle->Instance == CAN3)
+  {
+    HAL_NVIC_DisableIRQ(CAN3_TX_IRQn);
+  }
+#endif
+}
+
+void STM32_CAN::enableLoopBack( bool yes ) {
+  if (yes) { n_pCanHandle->Init.Mode = CAN_MODE_LOOPBACK; }
+  else { n_pCanHandle->Init.Mode = CAN_MODE_NORMAL; }
+}
+
+void STM32_CAN::enableSilentMode( bool yes ) {
+  if (yes) { n_pCanHandle->Init.Mode = CAN_MODE_SILENT; }
+  else { n_pCanHandle->Init.Mode = CAN_MODE_NORMAL; }
+}
+
+void STM32_CAN::enableSilentLoopBack( bool yes ) {
+  if (yes) { n_pCanHandle->Init.Mode = CAN_MODE_SILENT_LOOPBACK; }
+  else { n_pCanHandle->Init.Mode = CAN_MODE_NORMAL; }
 }
 
 void STM32_CAN::enableFIFO(bool status)
 {
-  //Nothing to do here. The FIFO is on by default.
+  //Nothing to do here. The FIFO is on by default. This is just to work with code made for Teensy FlexCan.
 }
 
-void STM32_CAN::SetTXRX()
+/* Interupt functions 
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+*/
+
+// There is 3 TX mailboxes. Each one has own transmit complete callback function, that we use to pull next message from TX ringbuffer to be sent out in TX mailbox.
+extern "C" void HAL_CAN_TxMailbox0CompleteCallback( CAN_HandleTypeDef *CanHandle )
 {
-  if (_channel == _CAN1)  // CAN1
+  CAN_message_t txmsg;
+  // use correct CAN instance
+  if (CanHandle->Instance == CAN1) 
   {
-    #if defined(STM32F4xx)
-    //PD0/PD1 as default. PA11/PA12 is for USB so that can't be used if native USB connection is in use.
-    if (_pins == DEF) {
-      RCC->AHB1ENR |= 0x8;                 // Enable GPIOD clock 
-      CANSetGpio(GPIOD, 1);                // Set PD1
-      CANSetGpio(GPIOD, 0);                // Set PD0
-    }
-    //PB8/PB9 are alternative pins. 
-    if (_pins == ALT) {
-      RCC->AHB1ENR |= 0x2;                 // Enable GPIOB clock 
-      CANSetGpio(GPIOB, 9);                // Set PB9
-      CANSetGpio(GPIOB, 8);                // Set PB8
-    }
-    //PA11/PA12 are second alternative pins, but it can't be used if native USB connection is in use.
-    if (_pins == ALT_2) {
-      RCC->AHB1ENR |= 0x1;                 // Enable GPIOA clock 
-      CANSetGpio(GPIOA, 12);               // Set PA12
-      CANSetGpio(GPIOA, 11);               // Set PA11
-    }
-    #elif defined(STM32F1xx)
-    RCC->APB2ENR |= 0x1UL;
-    AFIO->MAPR   &= 0xFFFF9FFF;          // reset CAN remap
-    //PA11/PA12 as default, because those are only ones available on all F1 models.
-    if (_pins == DEF) {
-      RCC->APB2ENR |= 0x4UL;           // Enable GPIOA clock
-      AFIO->MAPR   &= 0xFFFF9FFF;          // reset CAN remap
-                                           // CAN_RX mapped to PA11, CAN_TX mapped to PA12
-      GPIOA->CRH   &= ~(0xFF000UL);        // Configure PA12(0b0000) and PA11(0b0000)
-                                           // 0b0000
-                                           //   MODE=00(Input mode)
-                                           //   CNF=00(Analog mode)
-
-      GPIOA->CRH   |= 0xB8FFFUL;           // Configure PA12(0b1011) and PA11(0b1000)
-                                           // 0b1011
-                                           //   MODE=11(Output mode, max speed 50 MHz) 
-                                           //   CNF=10(Alternate function output Push-pull
-                                           // 0b1000
-                                           //   MODE=00(Input mode)
-                                           //   CNF=10(Input with pull-up / pull-down)
-                                     
-      GPIOA->ODR |= 0x1UL << 12;           // PA12 Upll-up
-    }
-    //PB8/PB9 are alternative pins. 
-    if (_pins == ALT) {
-      AFIO->MAPR   |= 0x00004000;          // set CAN remap
-                                           // CAN_RX mapped to PB8, CAN_TX mapped to PB9 (not available on 36-pin package)
-
-      RCC->APB2ENR |= 0x8UL;               // Enable GPIOB clock
-      GPIOB->CRH   &= ~(0xFFUL);           // Configure PB9(0b0000) and PB8(0b0000)
-                                           // 0b0000
-                                           //   MODE=00(Input mode)
-                                           //   CNF=00(Analog mode)
-
-      GPIOB->CRH   |= 0xB8UL;              // Configure PB9(0b1011) and PB8(0b1000)
-                                           // 0b1011
-                                           //   MODE=11(Output mode, max speed 50 MHz) 
-                                           //   CNF=10(Alternate function output Push-pull
-                                           // 0b1000
-                                           //   MODE=00(Input mode)
-                                           //   CNF=10(Input with pull-up / pull-down)
-                                     
-      GPIOB->ODR |= 0x1UL << 8;            // PB8 Upll-up
-    }
-    if (_pins == ALT_2) {
-      AFIO->MAPR   |= 0x00005000;      // set CAN remap
-                                       // CAN_RX mapped to PD0, CAN_TX mapped to PD1 (available on 100-pin and 144-pin package)
-
-      RCC->APB2ENR |= 0x20UL;          // Enable GPIOD clock
-      GPIOD->CRL   &= ~(0xFFUL);       // Configure PD1(0b0000) and PD0(0b0000)
-                                       // 0b0000
-                                       //   MODE=00(Input mode)
-                                       //   CNF=00(Analog mode)
-
-      GPIOD->CRH   |= 0xB8UL;          // Configure PD1(0b1011) and PD0(0b1000)
-                                       // 0b1000
-                                       //   MODE=00(Input mode)
-                                       //   CNF=10(Input with pull-up / pull-down)
-                                       // 0b1011
-                                       //   MODE=11(Output mode, max speed 50 MHz) 
-                                       //   CNF=10(Alternate function output Push-pull
-                                     
-      GPIOD->ODR |= 0x1UL << 0;        // PD0 Upll-up
-    }
-    #endif
-  }
-  #if defined(CAN2)
-  else if (_channel == _CAN2)  // CAN2
-  {
-    //PB5/PB6 as default
-    if (_pins == DEF) {
-      RCC->AHB1ENR |= 0x2;                 // Enable GPIOB clock
-      CANSetGpio(GPIOB, 6);                // Set PB6
-      CANSetGpio(GPIOB, 5);                // Set PB5
-    }
-    //PB12/PB13 are alternative pins. 
-    if (_pins == ALT) {
-      RCC->AHB1ENR |= 0x2;                 // Enable GPIOB clock 
-      CANSetGpio(GPIOB, 13);               // Set PB13
-      CANSetGpio(GPIOB, 12);               // Set PB12
+    if (_CAN1->removeFromRingBuffer(_CAN1->txRing, txmsg))
+    {
+      _CAN1->write(txmsg, true);
     }
   }
-  #endif
+#ifdef CAN2
+  else if (CanHandle->Instance == CAN2) 
+  {
+    if (_CAN2->removeFromRingBuffer(_CAN2->txRing, txmsg))
+    {
+      _CAN2->write(txmsg, true);
+    }
+  }
+#endif
+#ifdef CAN3
+  else if (CanHandle->Instance == CAN3) 
+  {
+    if (_CAN3->removeFromRingBuffer(_CAN3->txRing, txmsg))
+    {
+      _CAN3->write(txmsg, true);
+    }
+  }
+#endif
 }
+
+extern "C" void HAL_CAN_TxMailbox1CompleteCallback( CAN_HandleTypeDef *CanHandle )
+{
+  CAN_message_t txmsg;
+  // use correct CAN instance
+  if (CanHandle->Instance == CAN1) 
+  {
+    if (_CAN1->removeFromRingBuffer(_CAN1->txRing, txmsg))
+    {
+      _CAN1->write(txmsg, true);
+    }
+  }
+#ifdef CAN2
+  else if (CanHandle->Instance == CAN2) 
+  {
+    if (_CAN2->removeFromRingBuffer(_CAN2->txRing, txmsg))
+    {
+      _CAN2->write(txmsg, true);
+    }
+  }
+#endif
+#ifdef CAN3
+  else if (CanHandle->Instance == CAN3) 
+  {
+    if (_CAN3->removeFromRingBuffer(_CAN3->txRing, txmsg))
+    {
+      _CAN3->write(txmsg, true);
+    }
+  }
+#endif
+}
+
+extern "C" void HAL_CAN_TxMailbox2CompleteCallback( CAN_HandleTypeDef *CanHandle )
+{
+  CAN_message_t txmsg;
+  // use correct CAN instance
+  if (CanHandle->Instance == CAN1) 
+  {
+    if (_CAN1->removeFromRingBuffer(_CAN1->txRing, txmsg))
+    {
+      _CAN1->write(txmsg, true);
+    }
+  }
+#ifdef CAN2
+  else if (CanHandle->Instance == CAN2) 
+  {
+    if (_CAN2->removeFromRingBuffer(_CAN2->txRing, txmsg))
+    {
+      _CAN2->write(txmsg, true);
+    }
+  }
+#endif
+#ifdef CAN3
+  else if (CanHandle->Instance == CAN3) 
+  {
+    if (_CAN3->removeFromRingBuffer(_CAN3->txRing, txmsg))
+    {
+      _CAN3->write(txmsg, true);
+    }
+  }
+#endif
+}
+
+// This is called by RX0_IRQHandler when there is message at RX FIFO0 buffer
+extern "C" void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *CanHandle)
+{
+  CAN_message_t rxmsg;
+  CAN_RxHeaderTypeDef   RxHeader;
+  
+  // move the message from RX FIFO0 to RX ringbuffer
+  if (HAL_CAN_GetRxMessage( CanHandle, CAN_RX_FIFO0, &RxHeader, rxmsg.buf ) == HAL_OK)
+  {
+    if ( RxHeader.IDE == CAN_ID_STD )
+    {
+      rxmsg.id = RxHeader.StdId;
+      rxmsg.flags.extended = 0;
+    }
+    else
+    {
+      rxmsg.id = RxHeader.ExtId;
+      rxmsg.flags.extended = 1;
+    }
+
+    rxmsg.flags.remote = RxHeader.RTR;
+    rxmsg.mb           = RxHeader.FilterMatchIndex;
+    rxmsg.timestamp    = RxHeader.Timestamp;
+    rxmsg.len          = RxHeader.DLC;
+
+    // use correct ring buffer based on CAN instance
+    if (CanHandle->Instance == CAN1) 
+    {
+      rxmsg.bus = 1;
+      _CAN1->addToRingBuffer(_CAN1->rxRing, rxmsg);
+    }
+#ifdef CAN2
+    else if (CanHandle->Instance == CAN2) 
+    {
+      rxmsg.bus = 2;
+      _CAN2->addToRingBuffer(_CAN2->rxRing, rxmsg);
+    }
+#endif
+#ifdef CAN3
+    else if (CanHandle->Instance == CAN3) 
+    {
+      rxmsg.bus = 3;
+      _CAN3->addToRingBuffer(_CAN3->rxRing, rxmsg);
+    }
+#endif
+  }
+}
+
+// RX IRQ handlers
+extern "C" void CAN1_RX0_IRQHandler(void)
+{
+  HAL_CAN_IRQHandler(&hcan1);
+}
+
+#ifdef CAN2
+extern "C" void CAN2_RX0_IRQHandler(void)
+{
+  HAL_CAN_IRQHandler(&hcan2);
+}
+#endif
+#ifdef CAN3
+extern "C" void CAN3_RX0_IRQHandler(void)
+{
+  HAL_CAN_IRQHandler(&hcan3);
+}
+#endif
+
+// TX IRQ handlers
+extern "C" void CAN1_TX_IRQHandler(void)
+{
+  HAL_CAN_IRQHandler(&hcan1);
+}
+
+#ifdef CAN2
+extern "C" void CAN2_TX_IRQHandler(void)
+{
+  HAL_CAN_IRQHandler(&hcan2);
+}
+#endif
+#ifdef CAN3
+extern "C" void CAN3_TX_IRQHandler(void)
+{
+  HAL_CAN_IRQHandler(&hcan3);
+}
+#endif
 #endif
