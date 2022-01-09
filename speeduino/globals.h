@@ -1073,7 +1073,7 @@ struct config6 {
 
   byte iacCLValues[10]; //Closed loop target RPM value
   byte iacOLStepVal[10]; //Open loop step values for stepper motors
-  byte iacOLPWMVal[10]; //Open loop duty values for PMWM valves
+  byte iacOLPWMVal[10]; //Open loop duty values for PMW valves
   byte iacBins[10]; //Temperature Bins for the above 3 curves
   byte iacCrankSteps[4]; //Steps to use when cranking (Stepper motor)
   byte iacCrankDuty[4]; //Duty cycle to use on PWM valves when cranking
@@ -1148,16 +1148,8 @@ struct config9 {
   byte boostByGear5;
   byte boostByGear6;
 
-  byte PWMFanDuty[4];
-  byte unused10_166;
-  byte unused10_167;
-  byte unused10_168;
-  byte unused10_169;
-  byte unused10_170;
-  byte unused10_171;
-  byte unused10_172;
-  byte unused10_173;
-  byte unused10_174;
+  byte PWMFanDuty[4]; //byte 162
+  byte iacOLPWMIATVal [9]; //Open loop IAT duty values for PMW valves
   byte unused10_175;
   byte unused10_176;
   byte unused10_177;
