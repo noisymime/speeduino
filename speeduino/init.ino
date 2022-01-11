@@ -81,6 +81,7 @@ void initialiseAll()
           //if user let go of key within 1 second erase eeprom
           if(digitalRead(EEPROM_RESET_PIN) != LOW){
             #if defined(FLASH_AS_EEPROM_h)
+              EEPROM.read(0); //needed for SPI eeprom emulation.
               EEPROM.clear(); 
             #else 
               for (int i = 0 ; i < EEPROM.length() ; i++) { EEPROM.write(i, 255);}

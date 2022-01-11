@@ -43,11 +43,6 @@
 #define SD_RTC_WRITE_ARG1   0x027E
 #define SD_RTC_WRITE_ARG2   0x0009
 
-
-#define O2_CALIBRATION_PAGE   2
-#define IAT_CALIBRATION_PAGE  1
-#define CLT_CALIBRATION_PAGE  0
-
 #define SERIAL_CRC_LENGTH   4
 #define SERIAL_LEN_SIZE     2
 #define SERIAL_OVERHEAD_SIZE (SERIAL_LEN_SIZE + SERIAL_CRC_LENGTH) //The overhead for each serial command is 6 bytes. 2 bytes for the length and 4 bytes for the CRC
