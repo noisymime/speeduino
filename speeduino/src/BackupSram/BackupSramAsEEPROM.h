@@ -17,6 +17,7 @@ class BackupSramAsEEPROM {
     uint8_t read(uint16_t address);  
     int8_t write(uint16_t address, uint8_t val);
     int8_t update(uint16_t address, uint8_t val);
+    uint16_t length();
     template< typename T > T &get( int idx, T &t ){
         uint16_t e = idx;
         uint8_t *ptr = (uint8_t*) &t;

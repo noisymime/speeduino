@@ -82,7 +82,6 @@ struct write_location {
 
   bool can_write() const
   {
-    //return true;
     return (counter<=EEPROM_MAX_WRITE_BLOCK);
   }
 };
@@ -455,6 +454,25 @@ void writeCalibration()
 
   EEPROM.put(EEPROM_CALIBRATION_CLT_BINS, cltCalibration_bins);
   EEPROM.put(EEPROM_CALIBRATION_CLT_VALUES, cltCalibration_values);
+}
+
+void writeCalibrationPage(uint8_t pageNum)
+{
+  if(pageNum == O2_CALIBRATION_PAGE)
+  {
+    EEPROM.put(EEPROM_CALIBRATION_O2_BINS, o2Calibration_bins);
+    EEPROM.put(EEPROM_CALIBRATION_O2_VALUES, o2Calibration_values);
+  }
+  else if(pageNum == IAT_CALIBRATION_PAGE)
+  {
+    EEPROM.put(EEPROM_CALIBRATION_IAT_BINS, iatCalibration_bins);
+    EEPROM.put(EEPROM_CALIBRATION_IAT_VALUES, iatCalibration_values);
+  }
+  else if(pageNum == CLT_CALIBRATION_PAGE)
+  {
+    EEPROM.put(EEPROM_CALIBRATION_CLT_BINS, cltCalibration_bins);
+    EEPROM.put(EEPROM_CALIBRATION_CLT_VALUES, cltCalibration_values);
+  }
 }
 
 static eeprom_address_t compute_crc_address(uint8_t pageNum)

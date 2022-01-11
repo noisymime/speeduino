@@ -237,8 +237,11 @@ void processSerialCommand()
 
       if(isEepromWritePending())
       {
-        //There is already a write pending, so we can't do anything
+        //There is already a write pending, force it through. 
         sendSerialReturnCode(SERIAL_RC_BUSY_ERR);
+        enableForceBurn();
+        writeAllConfig();
+        disableForceBurn();
         break;
       }
 
@@ -454,7 +457,7 @@ void processSerialCommand()
     case 'Q': // send code version
     {
       //char productString[] = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','1','0','9','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
-      char productString[] = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','2','0','1'} ; //Note no null terminator in array and statu variable at the start
+      char productString[] = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','2','0','2'} ; //Note no null terminator in array and statu variable at the start
       sendSerialPayload(&productString, sizeof(productString));
       break;
     }
@@ -604,7 +607,7 @@ void processSerialCommand()
     case 'S': // send code version
     {
       //byte productString[] = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '1', '.', '0', '9', '-', 'd', 'e', 'v'};
-      byte productString[] = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '2', '.', '0', '1'};
+      byte productString[] = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '2', '0', '2'};
       sendSerialPayload(&productString, sizeof(productString));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
@@ -642,13 +645,22 @@ void processSerialCommand()
           }
         }
         sendSerialReturnCode(SERIAL_RC_OK);
+        Serial.flush(); //This is safe because engine is assumed to not be running during calibration
+
+        //Check if this is the final chunk of calibration data
+        #ifdef CORE_STM32
+          //STM32 requires TS to send 16 x 64 bytes chunk rather than 4 x 256 bytes. 
+          if(valueOffset == (64*15)) { writeCalibrationPage(cmd); } //Store received values in EEPROM if this is the final chunk of calibration
+        #else
+          if(valueOffset == (256*3)) { writeCalibrationPage(cmd); } //Store received values in EEPROM if this is the final chunk of calibration
+        #endif
       }
       else if(cmd == IAT_CALIBRATION_PAGE)
       {
         void* pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
         uint16_t* pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
 
-        //Temperature calibrations are sent as 32 16-bit values
+        //Temperature calibrations are sent as 32 16-bit values (ie 64 bytes total)
         if(calibrationLength == 64)
         {
           for (uint16_t x = 0; x < 32; x++)
@@ -702,8 +714,6 @@ void processSerialCommand()
       {
         sendSerialReturnCode(SERIAL_RC_RANGE_ERR);
       }
-
-      writeCalibration(); //Store received values in EEPROM
       break;
     }
 
