@@ -1,6 +1,10 @@
 #ifdef SD_LOGGING
 #include <SPI.h>
-#include <SD.h>
+#ifdef __SD_H__
+  #include <SD.h>
+#else
+  #include "SdFat.h"
+#endif
 #include "SD_logger.h"
 #include "logger.h"
 #include "rtc_common.h"

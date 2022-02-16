@@ -172,7 +172,7 @@ byte getVE2()
   else if (configPage10.fuel2Algorithm == LOAD_SOURCE_TPS)
   {
     //Alpha-N
-    currentStatus.fuelLoad2 = currentStatus.TPS;
+    currentStatus.fuelLoad2 = currentStatus.TPS * 2;
   }
   else if (configPage10.fuel2Algorithm == LOAD_SOURCE_IMAPEMAP)
   {
@@ -201,7 +201,7 @@ byte getAdvance2()
   else if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS)
   {
     //Alpha-N
-    currentStatus.ignLoad2 = currentStatus.TPS;
+    currentStatus.ignLoad2 = currentStatus.TPS * 2;
 
   }
   else if (configPage10.spark2Algorithm == LOAD_SOURCE_IMAPEMAP)

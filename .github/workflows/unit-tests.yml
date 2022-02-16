@@ -19,6 +19,12 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Set up GCC
+      uses: egor-tensin/setup-gcc@v1
+      with:
+        version: latest
+        platform: x32
+
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
@@ -38,6 +44,7 @@ jobs:
       run: | 
         platformio run -e megaatmega2560
         platformio remote test --force-remote --environment megaatmega2560
+        platformio test -e native
 
     - name: Slack Notification (Passed)
       uses: rtCamp/action-slack-notify@v2

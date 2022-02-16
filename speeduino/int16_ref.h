@@ -31,7 +31,7 @@ public:
     /**
      * @brief Construct
      * @param value The \c int16_t to encapsulate.
-     * @param factor The factor to scale the \c int16_t value by when converting to/from a \c byte
+     * @param pScalar The factor to scale the \c int16_t value by when converting to/from a \c byte
      */
     int16_ref(int16_t &value, const scalar *pScalar) 
         : _value(value), _pScalar(pScalar)

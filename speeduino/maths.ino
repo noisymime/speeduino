@@ -8,6 +8,7 @@
   struct libdivide::libdivide_u32_t libdiv_u32_100 = libdivide::libdivide_u32_gen(100);
   struct libdivide::libdivide_s32_t libdiv_s32_100 = libdivide::libdivide_s32_gen(100);
   struct libdivide::libdivide_u32_t libdiv_u32_200 = libdivide::libdivide_u32_gen(200);
+  struct libdivide::libdivide_u32_t libdiv_u32_360 = libdivide::libdivide_u32_gen(360);
 #endif
 
 //Replace the standard arduino map() function to use the div function instead

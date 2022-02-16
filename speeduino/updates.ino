@@ -16,7 +16,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    19
+  #define CURRENT_DATA_VERSION    20
   //Only the latest updat for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
@@ -403,7 +403,7 @@ void doUpdates()
     configPage10.oilPressureProtEnbl = false;
     configPage10.oilPressureEnable = false;
     configPage10.fuelPressureEnable = false;
-
+    
     //wmi
     configPage10.wmiEnabled = 0;
     configPage10.wmiMode = 0;
@@ -522,6 +522,7 @@ void doUpdates()
 
   if(readEEPROMVersion() == 18)
   {
+    //202202
     configPage2.fanEnable = configPage6.fanUnused; // PWM Fan mode added, but take the previous setting of Fan in use.
 
     //TPS resolution increased to 0.5%
@@ -581,6 +582,15 @@ void doUpdates()
     configPage4.vvtMinClt = 0;
     writeAllConfig();
     storeEEPROMVersion(19);
+  }
+  
+  if(readEEPROMVersion() == 19)
+  {
+    //202204
+    configPage9.coolantProtEnbl = false;
+    
+    writeAllConfig();
+    storeEEPROMVersion(20);
   }
 
   //Final check is always for 255 and 0 (Brand new arduino)

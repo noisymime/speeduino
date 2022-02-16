@@ -17,6 +17,10 @@ Default CAN3 pins are PA8 & PA15. Alternative (ALT) pins are PB3 & PB4.
 */
 #endif
 
+#if defined SD_LOGGING
+    SPIClass SD_SPI(PC12, PC11, PC10); //SPI3_MOSI, SPI3_MISO, SPI3_SCK
+#endif
+
 #if defined(SRAM_AS_EEPROM)
     BackupSramAsEEPROM EEPROM;
 #elif defined(USE_SPI_EEPROM)
@@ -306,8 +310,21 @@ STM32RTC& rtc = STM32RTC::getInstance();
 
   uint16_t freeRam()
   {
-      char top = 't';
-      return &top - reinterpret_cast<char*>(sbrk(0));
+    uint32_t freeRam;
+    uint32_t stackTop;
+    uint32_t heapTop;
+
+    // current position of the stack.
+    stackTop = (uint32_t)&stackTop;
+
+    // current position of heap.
+    void *hTop = malloc(1);
+    heapTop = (uint32_t)hTop;
+    free(hTop);
+    freeRam = stackTop - heapTop;
+
+    if(freeRam>0xFFFF){return 0xFFFF;}
+    else{return freeRam;}
   }
 
   void doSystemReset( void )

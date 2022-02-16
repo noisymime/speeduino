@@ -21,6 +21,8 @@ uint32_t divu10(uint32_t);
 //This is a new version that allows for out_min
 #define fastMap10Bit(x, out_min, out_max) ( ( ((unsigned long)x * (out_max-out_min)) >> 10 ) + out_min)
 
-
+#ifdef USE_LIBDIVIDE
+extern struct libdivide::libdivide_u32_t libdiv_u32_360;
+#endif
 
 #endif

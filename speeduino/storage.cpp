@@ -16,7 +16,8 @@ A full copy of the license may be found in the projects root directory
 #if defined(CORE_STM32) || defined(CORE_TEENSY) & !defined(USE_SPI_EEPROM)
 #define EEPROM_MAX_WRITE_BLOCK 64
 #else
-#define EEPROM_MAX_WRITE_BLOCK 30
+#define EEPROM_MAX_WRITE_BLOCK 12
+//#define EEPROM_MAX_WRITE_BLOCK 8
 #endif
 
 #define EEPROM_DATA_VERSION   0
@@ -33,6 +34,7 @@ A full copy of the license may be found in the projects root directory
 
 static bool eepromWritesPending = false;
 static bool forceBurn = false;
+bool deferEEPROMWrites = false;
 
 bool isEepromWritePending()
 {
@@ -131,6 +133,10 @@ static inline write_location writeTable(const void *pTable, table_type_t key, wr
                   write(rows_begin(pTable, key), location)));
 }
 
+//Simply an alias for EEPROM.update()
+void EEPROMWriteRaw(uint16_t address, uint8_t data) { EEPROM.update(address, data); }
+uint8_t EEPROMReadRaw(uint16_t address) { return EEPROM.read(address); }
+
 //  ================================= End write support ===============================
 
 /** Write a table or map to EEPROM storage.
@@ -140,6 +146,8 @@ and writes them to EEPROM as per the layout defined in storage.h.
 void writeConfig(uint8_t pageNum)
 {
   write_location result = { 0, 0 };
+
+  if(deferEEPROMWrites == true) { result.counter = (EEPROM_MAX_WRITE_BLOCK + 1); } //If we are deferring writes then we don't want to write anything. This will force can_write() to return false and the write will be skipped.
 
   switch(pageNum)
   {
@@ -497,6 +505,64 @@ uint32_t readPageCRC32(uint8_t pageNum)
 {
   uint32_t crc32_val;
   return EEPROM.get(compute_crc_address(pageNum), crc32_val);
+}
+
+/** Same as above, but writes the CRC32 for the calibration page rather than tune data
+@param pageNum - Calibration page number
+@param crcValue - CRC32 checksum
+*/
+void storeCalibrationCRC32(uint8_t calibrationPageNum, uint32_t calibrationCRC)
+{
+  uint16_t targetAddress;
+  switch(calibrationPageNum)
+  {
+    case O2_CALIBRATION_PAGE:
+      targetAddress = EEPROM_CALIBRATION_O2_CRC;
+      break;
+    case IAT_CALIBRATION_PAGE:
+      targetAddress = EEPROM_CALIBRATION_IAT_CRC;
+      break;
+    case CLT_CALIBRATION_PAGE:
+      targetAddress = EEPROM_CALIBRATION_CLT_CRC;
+      break;
+    default:
+      targetAddress = EEPROM_CALIBRATION_CLT_CRC; //Obviously should never happen
+      break;
+  }
+
+  EEPROM.put(targetAddress, calibrationCRC);
+}
+
+/** Retrieves and returns the 4 byte CRC32 checksum for a given calibration page from EEPROM.
+@param pageNum - Config page number
+*/
+uint32_t readCalibrationCRC32(uint8_t calibrationPageNum)
+{
+  uint32_t crc32_val;
+  uint16_t targetAddress;
+  switch(calibrationPageNum)
+  {
+    case O2_CALIBRATION_PAGE:
+      targetAddress = EEPROM_CALIBRATION_O2_CRC;
+      break;
+    case IAT_CALIBRATION_PAGE:
+      targetAddress = EEPROM_CALIBRATION_IAT_CRC;
+      break;
+    case CLT_CALIBRATION_PAGE:
+      targetAddress = EEPROM_CALIBRATION_CLT_CRC;
+      break;
+    default:
+      targetAddress = EEPROM_CALIBRATION_CLT_CRC; //Obviously should never happen
+      break;
+  }
+
+  EEPROM.get(targetAddress, crc32_val);
+  return crc32_val;
+}
+
+uint16_t getEEPROMSize()
+{
+  return EEPROM.length();
 }
 
 // Utility functions.
