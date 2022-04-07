@@ -326,7 +326,7 @@ static inline byte checkForStepping()
       timeCheck = iacCoolTime_uS;
     }
 
-    if(micros_safe() > (idleStepper.stepStartTime + timeCheck) )
+    if((unsigned long)(micros_safe() - idleStepper.stepStartTime) > timeCheck )
     {         
       if(idleStepper.stepperStatus == STEPPING)
       {
@@ -738,8 +738,10 @@ void idleControl()
       //Set or clear the idle active flag
       if(idleStepper.targetIdleStep != idleStepper.curIdleStep) { BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); }
       else { BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); }
-      if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Use timer flag instead idle count
+      static uint16_t previousMillisIdle1Hz=7;
+      if((uint16_t)((uint16_t)millis() - previousMillisIdle1Hz) >= (uint16_t)1000U )//Use millis() instead idle count
       {
+        previousMillisIdle1Hz+=(uint16_t)1000U;
         //This only needs to be run very infrequently, once per second
         idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
         iacStepTime_uS = configPage6.iacStepTime * 1000;

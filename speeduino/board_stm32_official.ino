@@ -129,14 +129,14 @@ STM32RTC& rtc = STM32RTC::getInstance();
       #endif
       Timer4.resume(); //Start Timer
     #else
-      Timer11.setOverflow(1000, MICROSEC_FORMAT);  // Set up period
-      #if ( STM32_CORE_VERSION_MAJOR < 2 )
-      Timer11.setMode(1, TIMER_OUTPUT_COMPARE);
-      Timer11.attachInterrupt(1, oneMSInterval);
-      #else
-      Timer11.attachInterrupt(oneMSInterval);
-      #endif
-      Timer11.resume(); //Start Timer
+//      Timer11.setOverflow(1000, MICROSEC_FORMAT);  // Set up period
+//      #if ( STM32_CORE_VERSION_MAJOR < 2 )
+//      Timer11.setMode(1, TIMER_OUTPUT_COMPARE);
+//      Timer11.attachInterrupt(1, oneMSInterval);
+//      #else
+//      Timer11.attachInterrupt(oneMSInterval);
+//      #endif
+//      Timer11.resume(); //Start Timer
     #endif
     pinMode(LED_BUILTIN, OUTPUT); //Visual WDT
 

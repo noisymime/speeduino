@@ -43,10 +43,11 @@ void initBoard()
     ***********************************************************************************************************
     * Timers
     */
-    //Configure Timer2 for our low-freq interrupt code.
+    //Configure Timer2 for tacho signal generation.
     TCCR2B = TIMER_PRESCALER_OFF;   //Disbale Timer2 while we set it up
-    TCNT2  = 131;                   //Preload timer2 with 131 cycles, leaving 125 till overflow. As the timer runs at 125Khz, this causes overflow to occur at 1Khz = 1ms
-    TIMSK2 = (1<<TOIE2);            //Timer2 Set Overflow Interrupt enabled.
+    TCNT2  = 0;
+//    TIMSK2 = (1<<TOIE2);            //Timer2 Set Overflow Interrupt enabled.
+//    TIMSK2 |= (1<<OCIE2A);            //Timer2 Output Compare Match A Interrupt Enable
     TCCR2A = TIMER_MODE_NORMAL;     //Timer2 Control Reg A: Wave Gen Mode normal
     /* Now configure the prescaler to CPU clock divided by 128 = 125Khz */
     TCCR2B = (1<<CS22)  | (1<<CS20); // Set bits. This timer uses different prescaler values, thus we cannot use the defines above.

@@ -81,6 +81,7 @@ void initialiseADC();
 void readTPS(bool=true); //Allows the option to override the use of the filter
 void readO2_2();
 void flexPulse();
+void getFlex();
 uint32_t vssGetPulseGap(byte);
 void vssPulse();
 uint16_t getSpeed();

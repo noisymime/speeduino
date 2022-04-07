@@ -36,6 +36,7 @@ byte pinTranslateAnalog(byte);
 void initialiseProgrammableIO();
 void checkProgrammableIO();
 int16_t ProgrammableIOGetData(uint16_t index);
+void testOutputs();
 
 #if !defined(UNUSED)
 #define UNUSED(x) (void)(x)

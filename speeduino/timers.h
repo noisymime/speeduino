@@ -21,19 +21,7 @@ Hence we will preload the timer with 131 cycles to leave 125 until overflow (1ms
 
 #define SET_COMPARE(compare, value) compare = (COMPARE_TYPE)(value) // It is important that we cast this to the actual overflow limit of the timer. The compare variables type can be bigger than the timer overflow.
 
-volatile bool tachoAlt = false;
-#define TACHO_PULSE_HIGH() *tach_pin_port |= (tach_pin_mask)
-#define TACHO_PULSE_LOW() *tach_pin_port &= ~(tach_pin_mask)
-enum TachoOutputStatus {DEACTIVE, READY, ACTIVE}; //The 3 statuses that the tacho output pulse can have
-
-volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
-volatile TachoOutputStatus tachoOutputFlag;
-
-volatile byte loop33ms;
-volatile byte loop66ms;
-volatile byte loop100ms;
-volatile byte loop250ms;
-volatile int loopSec;
+char getTimerFlags();
 
 volatile unsigned int dwellLimit_uS;
 volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation

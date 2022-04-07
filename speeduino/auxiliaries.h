@@ -94,5 +94,23 @@ long vvt2_pid_current_angle;
 void boostInterrupt();
 void vvtInterrupt();
 
+//Tacho related 
+#define TACHO_PULSE_HIGH() *tach_pin_port |= (tach_pin_mask)
+#define TACHO_PULSE_LOW() *tach_pin_port &= ~(tach_pin_mask)
+
+enum TachoOutputStatus {DEACTIVE, READY, ACTIVE}; //The 3 statuses that the tacho output pulse can have
+
+volatile TachoOutputStatus tachoOutputFlag;
+#ifdef CORE_AVR  //AVR chips use timer2 interrupt for this
+uint16_t tachoDwell; //Current tacho dwell time saved as ms*125 pre-calculated for atmega2560
+volatile uint16_t tachoInterval; //Holds Tacho interval timer data
+#else
+unsigned long tachoStartTime; //The time (in micros) that the tacho pulse started
+unsigned long lastTachoStartTime;
+#endif
+
+void setTacho(); //Sets tacho output
+void tachoControl();
+
 
 #endif

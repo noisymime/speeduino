@@ -894,3 +894,65 @@ void boostDisable()
   }
 }
 #endif
+
+//Sets tacho output
+void setTacho()
+{
+  static bool tachoAlt=false; //tacho divider
+  
+  if(tachoOutputFlag=DEACTIVE){
+    tachoOutputFlag=ACTIVE;    
+    if( (configPage2.tachoDiv == 0) || (tachoAlt == true) )
+    { 
+      TACHO_PULSE_LOW(); //start tacho pulse
+    }
+    tachoAlt = !tachoAlt; //Flip the alternating value incase half speed tacho is in use.    
+    #if defined(CORE_AVR) //avr chips use Timer2 for this
+      tachoInterval =tachoDwell;//
+      TACHO_COMPARE =(uint8_t)(TACHO_COUNTER + lowByte(tachoInterval));
+      TACHO_TIMER_ENABLE();            //Timer2 Output Compare Match A Interrupt Enable        
+    #else  //other chips use simply micros() for this      
+      lastTachoStartTime=tachoStartTime;
+      tachoStartTime=micros();       
+    #endif     
+  } 
+}
+
+//Tacho output check
+//clears the tacho output when time is ready
+#if defined(CORE_AVR) //AVR chips use the ISR for this
+ISR(TIMER2_COMPA_vect)
+{
+  if(highByte(tachoInterval) > 0)
+  {
+    tachoInterval-= 0x100U;        //extends timing capabilities beyond timer overflow
+  }
+  else
+  {
+  tachoOutputFlag = DEACTIVE;
+  TACHO_PULSE_HIGH(); //end tacho pulse
+  TACHO_TIMER_DISABLE();
+  }
+}
+#endif
+
+//Tacho output check
+//clears the tacho output when time is ready
+void tachoControl()  // ARM chips can simply call a function in the main loop
+{  
+  #ifdef CORE_AVR //AVR chips use the ISR for this  
+    tachoDwell = (uint8_t)configPage2.tachoDuration * (uint8_t)125U;
+  #else 
+  //Tacho is flagged as being ready for a pulse by the ignition outputs. 
+  if(tachoOutputFlag == ACTIVE)
+  {
+    if(((micros()-tachoStartTime) >= configPage2.tachoDuration*1000U) || ((micros()-tachoStartTime) > (tachoStartTime-lastTachoStartTime)/2) ) //also limits pulse to 50% duty cycle
+    {      
+      TACHO_PULSE_HIGH(); //end tacho pulse
+      tachoOutputFlag = DEACTIVE;
+    }
+  }
+  #endif
+}
+
+  

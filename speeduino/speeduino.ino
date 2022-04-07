@@ -116,8 +116,11 @@ inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int
 void loop()
 {
       mainLoopCount++;
+      TIMER_mask=getTimerFlags();
       LOOP_TIMER = TIMER_mask;
 
+      tachoControl();
+      
       //SERIAL Comms
       //Initially check that the last serial send values request is not still outstanding
       if (serialInProgress == true) 
@@ -401,6 +404,11 @@ void loop()
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_1HZ);
       readBaro(); //Infrequent baro readings are not an issue.
+
+      currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10); //Infrequent crankRPM treshold updates are not an issue.
+      getFlex();
+      testOutputs();
+      fanControl();            // Fucntion to turn the cooling fan on/off
 
       if ( (configPage10.wmiEnabled > 0) && (configPage10.wmiIndicatorEnabled > 0) )
       {

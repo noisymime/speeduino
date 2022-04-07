@@ -13,6 +13,7 @@
 #include "decoders.h"
 #include "comms.h"
 #include "logger.h"
+#include "scheduledIO.h"
 
 uint8_t ioDelay[sizeof(configPage13.outputPin)];
 uint8_t ioOutDelay[sizeof(configPage13.outputPin)];
@@ -279,4 +280,32 @@ int16_t ProgrammableIOGetData(uint16_t index)
   else if ( index == 239U ) { result = (int16_t)max((uint32_t)runSecsX10, (uint32_t)32768); } //STM32 used std lib
   else { result = -1; } //Index is bigger than fullStatus array
   return result;
+}
+    //Handle any of the hardware testing outputs
+void testOutputs()
+{
+    if( BIT_CHECK(currentStatus.testOutputs, 1) )
+    {
+      //Check whether any of the fuel outputs is on
+
+      //Check for injector outputs on 50%
+      if(BIT_CHECK(HWTest_INJ_50pc, INJ1_CMD_BIT)) { injector1Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, INJ2_CMD_BIT)) { injector2Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, INJ3_CMD_BIT)) { injector3Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, INJ4_CMD_BIT)) { injector4Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, INJ5_CMD_BIT)) { injector5Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, INJ6_CMD_BIT)) { injector6Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, INJ7_CMD_BIT)) { injector7Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, INJ8_CMD_BIT)) { injector8Toggle(); }
+
+      //Check for ignition outputs on 50%
+      if(BIT_CHECK(HWTest_IGN_50pc, IGN1_CMD_BIT)) { coil1Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, IGN2_CMD_BIT)) { coil2Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, IGN3_CMD_BIT)) { coil3Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, IGN4_CMD_BIT)) { coil4Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, IGN5_CMD_BIT)) { coil5Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, IGN6_CMD_BIT)) { coil6Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, IGN7_CMD_BIT)) { coil7Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, IGN8_CMD_BIT)) { coil8Toggle(); }
+    }
 }
