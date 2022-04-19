@@ -11,7 +11,7 @@ void calculateSecondaryFuel()
     if(configPage10.fuel2Mode == FUEL2_MODE_MULTIPLY)
     {
       currentStatus.VE2 = getVE2();
-      //Fuel 2 table is treated as a % value. Table 1 and 2 are multiplied together and divded by 100
+      //Fuel 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
       uint16_t combinedVE = ((uint16_t)currentStatus.VE1 * (uint16_t)currentStatus.VE2) / 100;
       if(combinedVE <= 255) { currentStatus.VE = combinedVE; }
       else { currentStatus.VE = 255; }
@@ -88,7 +88,7 @@ void calculateSecondarySpark()
       currentStatus.advance2 = getAdvance2();
       //make sure we don't have a negative value in the multiplier table (sharing a signed 8 bit table)
       if(currentStatus.advance2 < 0) { currentStatus.advance2 = 0; }
-      //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divded by 100
+      //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
       int16_t combinedAdvance = ((int16_t)currentStatus.advance1 * (int16_t)currentStatus.advance2) / 100;
       //make sure we don't overflow and accidentally set negative timing, currentStatus.advance can only hold a signed 8 bit value
       if(combinedAdvance <= 127) { currentStatus.advance = combinedAdvance; }
@@ -172,7 +172,7 @@ byte getVE2()
   else if (configPage10.fuel2Algorithm == LOAD_SOURCE_TPS)
   {
     //Alpha-N
-    currentStatus.fuelLoad2 = currentStatus.TPS;
+    currentStatus.fuelLoad2 = currentStatus.TPS * 2;
   }
   else if (configPage10.fuel2Algorithm == LOAD_SOURCE_IMAPEMAP)
   {
@@ -201,7 +201,7 @@ byte getAdvance2()
   else if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS)
   {
     //Alpha-N
-    currentStatus.ignLoad2 = currentStatus.TPS;
+    currentStatus.ignLoad2 = currentStatus.TPS * 2;
 
   }
   else if (configPage10.spark2Algorithm == LOAD_SOURCE_IMAPEMAP)

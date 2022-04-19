@@ -34,7 +34,7 @@ void initialiseDisplay()
       break;
    }
 
-   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3C (for the 128x32)
+   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialise with the I2C addr 0x3C (for the 128x32)
    display.clearDisplay();
    display.setTextSize(1);
    display.setTextColor(WHITE);

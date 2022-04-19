@@ -2,7 +2,7 @@
  * @brief File for generating log files and meta data
  * @author Josh Stewart
  * 
- * This file contains functions for creating a log file for use eith by TunerStudio directly or to be written to an SD card
+ * This file contains functions for creating a log file for use with by TunerStudio directly or to be written to an SD card
  * 
  */
 

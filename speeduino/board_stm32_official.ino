@@ -17,6 +17,10 @@ Default CAN3 pins are PA8 & PA15. Alternative (ALT) pins are PB3 & PB4.
 */
 #endif
 
+#if defined SD_LOGGING
+    SPIClass SD_SPI(PC12, PC11, PC10); //SPI3_MOSI, SPI3_MISO, SPI3_SCK
+#endif
+
 #if defined(SRAM_AS_EEPROM)
     BackupSramAsEEPROM EEPROM;
 #elif defined(USE_SPI_EEPROM)
@@ -26,7 +30,7 @@ Default CAN3 pins are PA8 & PA15. Alternative (ALT) pins are PB3 & PB4.
       SPIClass SPI_for_flash(PB15, PB14, PB13);
     #endif
  
-    //windbond W25Q16 SPI flash EEPROM emulation
+    //winbond W25Q16 SPI flash EEPROM emulation
     EEPROM_Emulation_Config EmulatedEEPROMMconfig{255UL, 4096UL, 31, 0x00100000UL};
     Flash_SPI_Config SPIconfig{USE_SPI_EEPROM, SPI_for_flash};
     SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig, SPIconfig);
@@ -90,8 +94,8 @@ STM32RTC& rtc = STM32RTC::getInstance();
     * Real Time clock for datalogging/time stamping
     */
     #ifdef RTC_ENABLED
-      rtc.setClockSource(STM32RTC::LSE_CLOCK); //Initialize external clock for RTC. That is the only clock running of VBAT
-      rtc.begin(); // initialize RTC 24H format
+      rtc.setClockSource(STM32RTC::LSE_CLOCK); //Initialise external clock for RTC. That is the only clock running of VBAT
+      rtc.begin(); // initialise RTC 24H format
     #endif
     /*
     ***********************************************************************************************************
@@ -138,11 +142,11 @@ STM32RTC& rtc = STM32RTC::getInstance();
 
     /*
     ***********************************************************************************************************
-    * Auxilliaries
+    * Auxiliaries
     */
     //2uS resolution Min 8Hz, Max 5KHz
 
-    boost_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
+    boost_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow frequencies up to 511Hz
     vvt_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle
     fan_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.fanFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle
 
@@ -306,8 +310,21 @@ STM32RTC& rtc = STM32RTC::getInstance();
 
   uint16_t freeRam()
   {
-      char top = 't';
-      return &top - reinterpret_cast<char*>(sbrk(0));
+    uint32_t freeRam;
+    uint32_t stackTop;
+    uint32_t heapTop;
+
+    // current position of the stack.
+    stackTop = (uint32_t)&stackTop;
+
+    // current position of heap.
+    void *hTop = malloc(1);
+    heapTop = (uint32_t)hTop;
+    free(hTop);
+    freeRam = stackTop - heapTop;
+
+    if(freeRam>0xFFFF){return 0xFFFF;}
+    else{return freeRam;}
   }
 
   void doSystemReset( void )

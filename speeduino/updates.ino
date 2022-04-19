@@ -4,7 +4,7 @@
 /** Store and load various configs to/from EEPROM considering the the data format versions of various SW generations.
  * This routine is used for doing any data conversions that are required during firmware changes.
  * This prevents users getting difference reports in TS when such a data change occurs.
- * It also can be used for setting good values when there are viarables that move locations in the ini.
+ * It also can be used for setting good values when there are variables that move locations in the ini.
  * When a user skips multiple firmware versions at a time, this will roll through the updates 1 at a time.
  * The doUpdates() uses may lower level routines from Arduino EEPROM library and storage.ino to carry out EEPROM storage tasks.
  */
@@ -16,8 +16,8 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    19
-  //Only the latest updat for small flash devices must be retained
+  #define CURRENT_DATA_VERSION    20
+  //Only the latest update for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
@@ -141,7 +141,7 @@ void doUpdates()
 
   if (readEEPROMVersion() == 8)
   {
-    //May 2018 adds separate load sources for fuel and ignition. Copy the existing load alogirthm into Both
+    //May 2018 adds separate load sources for fuel and ignition. Copy the existing load algorithm into Both
     configPage2.fuelAlgorithm = configPage2.legacyMAP; //Was configPage2.unused2_38c
     configPage2.ignAlgorithm = configPage2.legacyMAP; //Was configPage2.unused2_38c
 
@@ -199,7 +199,7 @@ void doUpdates()
     configPage2.aseCount[1] = 10;
     configPage2.aseCount[2] = 10;
     configPage2.aseCount[3] = 10;
-    //Finally the coolant bins for the above are set to sane values (Rememerbing these are offset values)
+    //Finally the coolant bins for the above are set to sane values (Remembering these are offset values)
     configPage2.aseBins[0] = 0;
     configPage2.aseBins[1] = 20;
     configPage2.aseBins[2] = 60;
@@ -253,7 +253,7 @@ void doUpdates()
     //An option was added to select the older method of performing MAP reads with the pullup resistor active
     configPage2.legacyMAP = 0;
 
-    //Secondary fuel table was added for swtiching. Make sure it's all turned off initially
+    //Secondary fuel table was added for switching. Make sure it's all turned off initially
     configPage10.fuel2Mode = 0;
     configPage10.fuel2SwitchVariable = 0; //Set switch variable to RPM
     configPage10.fuel2SwitchValue = 7000; //7000 RPM switch point is safe
@@ -329,12 +329,12 @@ void doUpdates()
     configPage2.injAngRPM[2] = 45;
     configPage2.injAngRPM[3] = 65;
 
-    //Introdced a DFCO delay option. Default it to 0
+    //Introduced a DFCO delay option. Default it to 0
     configPage2.dfcoDelay = 0;
-    //Introdced a minimum temperature for DFCO. Default it to 40C
+    //Introduced a minimum temperature for DFCO. Default it to 40C
     configPage2.dfcoMinCLT = 80; //CALIBRATION_TEMPERATURE_OFFSET is 40
 
-    //Update flexfuel ignition config values for 40 degrees offset
+    //Update flex fuel ignition config values for 40 degrees offset
     for (int i=0; i<6; i++)
     {
       configPage10.flexAdvAdj[i] += 40;
@@ -365,7 +365,7 @@ void doUpdates()
     //ASE to run taper added. Default it to 0,1 secs
     configPage2.aseTaperTime = 1;
 
-    // there is now optioon for fixed and relative timing retard for soft limit. This sets the soft limiter to the old fixed timing mode.
+    // there is now option for fixed and relative timing retard for soft limit. This sets the soft limiter to the old fixed timing mode.
     configPage2.SoftLimitMode = SOFT_LIMIT_FIXED;
 
     //VSS was added for testing, disable it by default
@@ -374,7 +374,6 @@ void doUpdates()
     writeAllConfig();
     storeEEPROMVersion(14);
 
-    //
   }
 
   if(readEEPROMVersion() == 14)
@@ -403,7 +402,7 @@ void doUpdates()
     configPage10.oilPressureProtEnbl = false;
     configPage10.oilPressureEnable = false;
     configPage10.fuelPressureEnable = false;
-
+    
     //wmi
     configPage10.wmiEnabled = 0;
     configPage10.wmiMode = 0;
@@ -469,7 +468,7 @@ void doUpdates()
 
   if(readEEPROMVersion() == 17)
   {
-    //VVT stuff has now 0.5 accurasy, so shift values in vvt table by one.
+    //VVT stuff has now 0.5 accuracy, so shift values in vvt table by one.
     auto table_it = vvtTable.values.begin();
     while (!table_it.at_end())
     {
@@ -522,6 +521,7 @@ void doUpdates()
 
   if(readEEPROMVersion() == 18)
   {
+    //202202
     configPage2.fanEnable = configPage6.fanUnused; // PWM Fan mode added, but take the previous setting of Fan in use.
 
     //TPS resolution increased to 0.5%
@@ -582,6 +582,20 @@ void doUpdates()
     writeAllConfig();
     storeEEPROMVersion(19);
   }
+  
+  if(readEEPROMVersion() == 19)
+  {
+    //202204
+    if( configPage4.inj4cylPairing > INJ_PAIR_14_23 ) { configPage4.inj4cylPairing = 0; } //Check valid value
+    //Half/Full sequential mode
+    if( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage2.nCylinders == 4) ) { configPage4.inj4cylPairing = INJ_PAIR_13_24; } //Most of inline 4 uses 1-3-4-2 firing order
+
+    configPage9.hardRevMode = 1; //Set hard rev limiter to Fixed mode
+
+    
+    writeAllConfig();
+    storeEEPROMVersion(20);
+  }
 
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (readEEPROMVersion() == 0) || (readEEPROMVersion() == 255) )
@@ -612,7 +626,7 @@ void multiplyTableLoad(const void *pTable, table_type_t key, uint8_t multiplier)
   auto y_it = y_begin(pTable, key);
   while(!y_it.at_end())
   {
-    *y_it = (byte)*y_it * multiplier; 
+    *y_it = *y_it * multiplier; 
     ++y_it;
   }
 }
@@ -622,7 +636,7 @@ void divideTableLoad(const void *pTable, table_type_t key, uint8_t divisor)
   auto y_it = y_begin(pTable, key);
   while(!y_it.at_end())
   {
-    *y_it = (byte)*y_it / divisor; //Previous TS scale was 2.0, now is 0.5, 4x increase
+    *y_it = *y_it / divisor; //Previous TS scale was 2.0, now is 0.5, 4x increase
     ++y_it;
   }
 }

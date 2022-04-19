@@ -31,7 +31,7 @@
   void doSystemReset();
   void jumpToBootloader();
 
-  #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) ) //Forbiden pins like USB
+  #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) ) //Forbidden pins like USB
 
   #ifndef Serial
     #define Serial Serial1
@@ -180,7 +180,7 @@
 
 /*
 ***********************************************************************************************************
-* Auxilliaries
+* Auxiliaries
 */
   #define ENABLE_BOOST_TIMER()  (TIM1)->SR = ~TIM_FLAG_CC2; (TIM1)->DIER |= TIM_DIER_CC2IE
   #define DISABLE_BOOST_TIMER() (TIM1)->DIER &= ~TIM_DIER_CC2IE

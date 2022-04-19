@@ -3,13 +3,17 @@
 
 #ifdef SD_LOGGING
 
-#include <SD.h>
+#ifdef __SD_H__
+  #include <SD.h>
+#else
+  #include "SdFat.h"
+#endif
 //#include <SdSpiCard.h>
 #include "RingBuf.h"
 
 
 #define SD_STATUS_OFF               0 /**< SD system is inactive. FS and file remain closed */
-#define SD_STATUS_READY             1 /**< File has been openeed and preallocated, but a log session has not commenced */
+#define SD_STATUS_READY             1 /**< File has been opened and preallocated, but a log session has not commenced */
 #define SD_STATUS_ACTIVE            2 /**< Log session commenced */
 #define SD_STATUS_ERROR_NO_CARD     3 /**< No SD card found when attempting to open file */
 #define SD_STATUS_ERROR_NO_FS       4 /**< No filesystem found when attempting to open file */
@@ -30,8 +34,10 @@
 
 #define SD_SECTOR_SIZE              512 // Standard SD sector size
 
-#ifdef CORE_TEENSY
+#if defined CORE_TEENSY
     #define SD_CS_PIN BUILTIN_SDCARD
+#elif defined CORE_STM32
+    #define SD_CS_PIN PD2  //CS pin can be pretty much anything, but PD2 is one of the ones left unused from SDIO pins.
 #else
     #define SD_CS_PIN 10 //This is a made up value for now
 #endif

@@ -46,7 +46,7 @@
   #else
     #define micros_safe() micros() //If the timer5 method is not used, the micros_safe() macro is simply an alias for the normal micros()
   #endif
-  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbiden pins like USB on other boards
+  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbidden pins like USB on other boards
 
   //Additional analog pins (These won't work without other changes)
   #define PIN_A6               (8ul)
@@ -158,7 +158,7 @@
 
 /*
 ***********************************************************************************************************
-* Auxilliaries
+* Auxiliaries
 */
   //Uses the 2nd TC
   //The 2nd TC is referred to as TC4
