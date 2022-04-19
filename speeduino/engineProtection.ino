@@ -5,7 +5,7 @@
 byte checkEngineProtect()
 {
   byte protectActive = 0;
-  if(checkRevLimit() || checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit() || checkCoolantTempLimit())
+  if(checkRevLimit() || checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit() )
   {
     if( currentStatus.RPMdiv100 > configPage4.engineProtectMaxRPM ) { protectActive = 1; }
   }
@@ -19,16 +19,31 @@ byte checkRevLimit()
   byte revLimiterActive = 0;
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM);
+  BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT);
 
   if (configPage6.engineProtectType != PROTECT_CUT_OFF) 
   {
-    if ( (currentStatus.RPMdiv100 > configPage4.HardRevLim) || ((runSecsX10 - softStartTime) >= configPage4.SoftLimMax) )
-    { 
-      BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); //Legacy and likely to be removed at some point
-      BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
-      revLimiterActive = 1; 
-    } 
-    else { BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM); }
+    if(configPage9.hardRevMode == HARD_REV_FIXED)
+    {
+      if ( (currentStatus.RPMdiv100 >= configPage4.HardRevLim) || ((softLimitTime > configPage4.SoftLimMax) && (currentStatus.RPMdiv100 >= configPage4.SoftRevLim)) )
+      { 
+        BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); //Legacy and likely to be removed at some point
+        BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
+        revLimiterActive = 1; 
+      } 
+      else { BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM); }
+    }
+    else if(configPage9.hardRevMode == HARD_REV_COOLANT )
+    {
+      int8_t coolantLimit = (int16_t)(table2D_getValue(&coolantProtectTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET));
+      if(currentStatus.RPMdiv100 > coolantLimit)
+      {
+        BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT);
+        BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); //Legacy and likely to be removed at some point
+        BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
+        revLimiterActive = 1; 
+      } 
+    }
   }
 
   return revLimiterActive;
@@ -93,24 +108,6 @@ byte checkOilPressureLimit()
   }
 
   return oilProtectActive;
-}
-
-byte checkCoolantTempLimit()
-{
-  byte coolantProtectActive = 0;
-  BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT); //Will be set true below if required
-
-  if( (configPage9.coolantProtEnbl == true))
-  {
-    int8_t coolantLimit = (int16_t)(table2D_getValue(&coolantProtectTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET));
-    if(currentStatus.RPMdiv100 > coolantLimit)
-    {
-      BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT);
-      coolantProtectActive = 1;
-    }
-  }
-
-  return coolantProtectActive;
 }
 
 byte checkAFRLimit()

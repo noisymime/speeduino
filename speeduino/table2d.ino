@@ -5,7 +5,7 @@ A full copy of the license may be found in the projects root directory
 */
 
 /*
-Because the size of the table is dynamic, this functino is required to reallocate the array sizes
+Because the size of the table is dynamic, this function is required to reallocate the array sizes
 Note that this may clear some of the existing values of the table
 */
 #include "table2d.h"
@@ -24,7 +24,7 @@ static inline uint8_t getCacheTime() {
 
 /*
 This function pulls a 1D linear interpolated (ie averaged) value from a 2D table
-ie: Given a value on the X axis, it returns a Y value that coresponds to the point on the curve between the nearest two defined X values
+ie: Given a value on the X axis, it returns a Y value that corresponds to the point on the curve between the nearest two defined X values
 
 This function must take into account whether a table contains 8-bit or 16-bit values.
 Unfortunately this means many of the lines are duplicated depending on this
@@ -60,7 +60,7 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
   //Finally if none of that is found
   else
   {
-    fromTable->cacheTime = getCacheTime(); //As we're not using the cache value, set the current secl value to track when this new value was calc'd
+    fromTable->cacheTime = getCacheTime(); //As we're not using the cache value, set the current secl value to track when this new value was calculated
 
     //1st check is whether we're still in the same X bin as last time
     xMaxValue = table2D_getAxisValue(fromTable, fromTable->lastXMax);
@@ -81,7 +81,7 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
         //Checks the case where the X value is exactly what was requested
         if (X == xMaxValue)
         {
-          returnValue = table2D_getRawValue(fromTable, x); //Simply return the coresponding value
+          returnValue = table2D_getRawValue(fromTable, x); //Simply return the corresponding value
           valueFound = true;
           break;
         }

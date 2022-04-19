@@ -1,14 +1,18 @@
 #include "maths.h"
-#include "globals.h"
-#include "src/libdivide/libdivide.h"
+#include <stdlib.h>
 
 #ifdef USE_LIBDIVIDE
-  //Constants used for libdivide
-  struct libdivide::libdivide_u32_t libdiv_u32_10 = libdivide::libdivide_u32_gen(10);
-  struct libdivide::libdivide_u32_t libdiv_u32_100 = libdivide::libdivide_u32_gen(100);
-  struct libdivide::libdivide_s32_t libdiv_s32_100 = libdivide::libdivide_s32_gen(100);
-  struct libdivide::libdivide_u32_t libdiv_u32_200 = libdivide::libdivide_u32_gen(200);
-  struct libdivide::libdivide_u32_t libdiv_u32_360 = libdivide::libdivide_u32_gen(360);
+#include "src/libdivide/constant_fast_div.h"
+
+// Constants used for libdivide. Using predefined constants saves flash and RAM (.bss)
+// versus calling the libdivide generator functions (E.g. libdivide_s32_gen)
+libdivide::libdivide_s16_t libdiv_s16_100 = { .magic = S16_MAGIC(100), .more = S16_MORE(100) };
+libdivide::libdivide_u16_t libdiv_u16_100 = { .magic = U16_MAGIC(100), .more = U16_MORE(100) };
+// 32-bit constants generated here: https://godbolt.org/z/vP8Kfejo9
+libdivide::libdivide_u32_t libdiv_u32_100 = { .magic = 2748779070, .more = 6 };
+libdivide::libdivide_s32_t libdiv_s32_100 = { .magic = 1374389535, .more = 5 };
+libdivide::libdivide_u32_t libdiv_u32_200 = { .magic = 2748779070, .more = 7 };
+libdivide::libdivide_u32_t libdiv_u32_360 = { .magic = 1813430637, .more = 72 };
 #endif
 
 //Replace the standard arduino map() function to use the div function instead
@@ -23,74 +27,21 @@ int fastMap(unsigned long x, int in_min, int in_max, int out_min, int out_max)
   //return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-//Unsigned divide by 10
-uint32_t divu10(uint32_t n)
-{
-#ifdef USE_LIBDIVIDE
-  
-  //Check whether 16 or 32 bit divide is required
-  if( n <= UINT8_MAX) { return (uint8_t)n / 10; }
-  else if( n <= UINT16_MAX ) { return FAST_DIV16U(n, 10); }
-  else { return libdivide::libdivide_u32_do(n, &libdiv_u32_10); }
-  //return libdivide::libdivide_u32_do(n, &libdiv_u32_10);
-
-#else
-  return (n / 10);
-#endif
-}
-
-//Signed divide by 100
-int32_t divs100(int32_t n)
-{
-#ifdef USE_LIBDIVIDE
-  return libdivide::libdivide_s32_do(n, &libdiv_s32_100);
-#else
-  return (n / 100); // Amazingly, gcc is producing a better /divide by 100 function than this
-#endif
-}
-
-//Unsigned divide by 100
-unsigned long divu100(unsigned long n)
-{
-#ifdef USE_LIBDIVIDE
-
-  //Check whether 8, 16 or 32 bit divide is required
-  if( n <= UINT8_MAX) { return (uint8_t)n / 100; }
-  else if( n <= UINT16_MAX ) { return FAST_DIV16U(n, 100); }
-  else { return libdivide::libdivide_u32_do(n, &libdiv_u32_100); }
-  //return libdivide::libdivide_u32_do(n, &libdiv_u32_100);
-
-#else
-  return (n / 100);
-#endif
-}
-
-
 //Return x percent of y
 //This is a relatively fast approximation of a percentage value.
-unsigned long percentage(byte x, unsigned long y)
+unsigned long percentage(uint8_t x, unsigned long y)
 {
-#ifdef USE_LIBDIVIDE
-  return divu100((y * x));
-#else
-  return (y * x) / 100;
-#endif
+  return div100(y * x);
 }
 
 //Same as above, but 0.5% accuracy
-unsigned long halfPercentage(byte x, unsigned long y)
+unsigned long halfPercentage(uint8_t x, unsigned long y)
 {
-#ifdef USE_LIBDIVIDE
-  
-  uint32_t numerator = (y * x);
-  if( numerator <= UINT8_MAX) { return (uint8_t)numerator / 200; }
-  else if( numerator <= UINT16_MAX ) { return FAST_DIV16U((uint16_t)numerator, 200); }
-  else { return libdivide::libdivide_u32_do(numerator, &libdiv_u32_200); }
-  
-  //return libdivide::libdivide_u32_do((y * x), &libdiv_u32_200);
+#ifdef USE_LIBDIVIDE    
+    return libdivide::libdivide_u32_do(y * x, &libdiv_u32_200);
 #else
-  return (y * x) / 200;
-#endif
+    return (y * x) / 200;
+#endif  
 }
 
 /*

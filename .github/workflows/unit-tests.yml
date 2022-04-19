@@ -44,7 +44,6 @@ jobs:
       run: | 
         platformio run -e megaatmega2560
         platformio remote test --force-remote --environment megaatmega2560
-        platformio test -e native
 
     - name: Slack Notification (Passed)
       uses: rtCamp/action-slack-notify@v2

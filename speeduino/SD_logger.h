@@ -13,7 +13,7 @@
 
 
 #define SD_STATUS_OFF               0 /**< SD system is inactive. FS and file remain closed */
-#define SD_STATUS_READY             1 /**< File has been openeed and preallocated, but a log session has not commenced */
+#define SD_STATUS_READY             1 /**< File has been opened and preallocated, but a log session has not commenced */
 #define SD_STATUS_ACTIVE            2 /**< Log session commenced */
 #define SD_STATUS_ERROR_NO_CARD     3 /**< No SD card found when attempting to open file */
 #define SD_STATUS_ERROR_NO_FS       4 /**< No filesystem found when attempting to open file */

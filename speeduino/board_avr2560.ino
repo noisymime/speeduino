@@ -26,16 +26,16 @@ void initBoard()
 
     /*
     ***********************************************************************************************************
-    * Auxilliaries
+    * Auxiliaries
     */
     //PWM used by the Boost and VVT outputs. C Channel is used by ign5
-    TCCR1B = TIMER_PRESCALER_OFF;   //Disbale Timer1 while we set it up
+    TCCR1B = TIMER_PRESCALER_OFF;   //Disable Timer1 while we set it up
     TCNT1  = 0;                     //Reset Timer Count
     TCCR1A = TIMER_MODE_NORMAL;     //Timer1 Control Reg A: Wave Gen Mode normal (Simply counts up from 0 to 65535 (16-bit int)
     TCCR1B = TIMER_PRESCALER_256;   //Timer1 Control Reg B: Timer Prescaler set to 256. 1 tick = 16uS.
     TIFR1 = (1 << OCF1A) | (1<<OCF1B) | (1<<OCF1C) | (1<<TOV1) | (1<<ICF1); //Clear the compare flags, overflow flag and external input flag bits
 
-    boost_pwm_max_count = 1000000L / (16 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
+    boost_pwm_max_count = 1000000L / (16 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow frequencies up to 511Hz
     vvt_pwm_max_count = 1000000L / (16 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle
     // put idle_pwm_max_count calculation here?
 
@@ -44,7 +44,7 @@ void initBoard()
     * Timers
     */
     //Configure Timer2 for our low-freq interrupt code.
-    TCCR2B = TIMER_PRESCALER_OFF;   //Disbale Timer2 while we set it up
+    TCCR2B = TIMER_PRESCALER_OFF;   //Disable Timer2 while we set it up
     TCNT2  = 131;                   //Preload timer2 with 131 cycles, leaving 125 till overflow. As the timer runs at 125Khz, this causes overflow to occur at 1Khz = 1ms
     TIMSK2 = (1<<TOIE2);            //Timer2 Set Overflow Interrupt enabled.
     TCCR2A = TIMER_MODE_NORMAL;     //Timer2 Control Reg A: Wave Gen Mode normal

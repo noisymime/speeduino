@@ -47,7 +47,7 @@
 #endif
 #define USE_SERIAL3
 
-//When building for Black board Serial1 is instanciated,building generic STM32F4x7 has serial2 and serial 1 must be done here
+//When building for Black board Serial1 is instantiated,building generic STM32F4x7 has serial2 and serial 1 must be done here
 #if SERIAL_UART_INSTANCE==2
 HardwareSerial Serial1(PA10, PA9);
 #endif
@@ -78,9 +78,9 @@ extern "C" char* sbrk(int incr);
   #endif
 #else
   #ifdef USE_SPI_EEPROM
-    #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PB3) || ((pin) == PB4) || ((pin) == PB5) || ((pin) == USE_SPI_EEPROM) ) //Forbiden pins like USB
+    #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PB3) || ((pin) == PB4) || ((pin) == PB5) || ((pin) == USE_SPI_EEPROM) ) //Forbidden pins like USB
   #else
-    #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PB3) || ((pin) == PB4) || ((pin) == PB5) || ((pin) == PB0) ) //Forbiden pins like USB
+    #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PB3) || ((pin) == PB4) || ((pin) == PB5) || ((pin) == PB0) ) //Forbidden pins like USB
   #endif
 #endif
 
@@ -241,7 +241,7 @@ extern "C" char* sbrk(int incr);
 
 /*
 ***********************************************************************************************************
-* Auxilliaries
+* Auxiliaries
 */
 #define ENABLE_BOOST_TIMER()  (TIM1)->SR = ~TIM_FLAG_CC2; (TIM1)->DIER |= TIM_DIER_CC2IE
 #define DISABLE_BOOST_TIMER() (TIM1)->DIER &= ~TIM_DIER_CC2IE

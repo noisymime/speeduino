@@ -1,5 +1,5 @@
 /** @file
- * Speeduino Initialization (called at Arduino setup()).
+ * Speeduino Initialisation (called at Arduino setup()).
  */
 #include "globals.h"
 #include "init.h"
@@ -25,25 +25,25 @@
   #include "rtc_common.h"
 #endif
 
-/** Initialize Speeduino for the main loop.
- * Top level init entrypoint for all initializations:
- * - Intialize and set sizes of 3D tables
+/** Initialise Speeduino for the main loop.
+ * Top level init entry point for all initialisations:
+ * - Initialise and set sizes of 3D tables
  * - Load config from EEPROM, update config structures to current version of SW if needed.
- * - Initialize board (The initBoard() is for board X implemented in board_X.ino file)
- * - Initialize timers (See timers.ino)
+ * - Initialise board (The initBoard() is for board X implemented in board_X.ino file)
+ * - Initialise timers (See timers.ino)
  * - Perform optional SD card and RTC battery inits
- * - Load calibrarion tables from EEPROM
+ * - Load calibration tables from EEPROM
  * - Perform pin mapping (calling @ref setPinMapping() based on @ref config2.pinMapping)
  * - Stop any coil charging and close injectors
- * - Intialize schedulers, Idle, Fan, auxPWM, Corrections, AD-conversions, Programmable I/O
- * - Intialize baro (ambient pressure) by reading MAP (before engine runs)
- * - Intialize triggers (by @ref initialiseTriggers() )
- * - Perform cyl. count based initializations (@ref config2.nCylinders)
+ * - Initialise schedulers, Idle, Fan, auxPWM, Corrections, AD-conversions, Programmable I/O
+ * - Initialise baro (ambient pressure) by reading MAP (before engine runs)
+ * - Initialise triggers (by @ref initialiseTriggers() )
+ * - Perform cyl. count based initialisations (@ref config2.nCylinders)
  * - Perform injection and spark mode based setup
  *   - Assign injector open/close and coil charge begin/end functions to their dedicated global vars
  * - Perform fuel pressure priming by turning fuel pump on
  * - Read CLT and TPS sensors to have cranking pulsewidths computed correctly
- * - Mark Initialization completed (this flag-marking is used in code to prevent after-init changes)
+ * - Mark Initialisation completed (this flag-marking is used in code to prevent after-init changes)
  */
 void initialiseAll()
 {   
@@ -70,7 +70,7 @@ void initialiseAll()
     //only start routine when this pin is low because it is pulled low
     while (digitalRead(EEPROM_RESET_PIN) != HIGH && (millis() - start_time)<1050)
     {
-      //make sure the key is pressed for atleast 0.5 second 
+      //make sure the key is pressed for at least 0.5 second 
       if ((millis() - start_time)>500) {
         //if key is pressed afterboot for 0.5 second make led turn off
         digitalWrite(LED_BUILTIN, HIGH);
@@ -385,12 +385,12 @@ void initialiseAll()
 
     if (configPage4.trigPatternSec == SEC_TRIGGER_POLL)
     { configPage4.TrigEdgeSec = configPage4.PollLevelPolarity; } // set the secondary trigger edge automatically to correct working value with poll level mode to enable cam angle detection in closed loop vvt.
-    //Explanation: currently cam trigger for VVT is only captured when revolution one == 1. So we need to make sure that the edge trigger happens on the first revoluiton. So now when we set the poll level to be low
+    //Explanation: currently cam trigger for VVT is only captured when revolution one == 1. So we need to make sure that the edge trigger happens on the first revolution. So now when we set the poll level to be low
     //on revolution one and it's checked at tooth #1. This means that the cam signal needs to go high during the first revolution to be high on next revolution at tooth #1. So poll level low = cam trigger edge rising.
 
     //Begin the main crank trigger interrupt pin setup
     //The interrupt numbering is a bit odd - See here for reference: arduino.cc/en/Reference/AttachInterrupt
-    //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update acordingly.
+    //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update accordingly.
     currentStatus.RPM = 0;
     currentStatus.hasSync = false;
     BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
@@ -404,7 +404,7 @@ void initialiseAll()
     currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
     currentStatus.fuelPumpOn = false;
     currentStatus.engineProtectStatus = 0;
-    triggerFilterTime = 0; //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise. This is simply a default value, the actual values are set in the setup() functinos of each decoder
+    triggerFilterTime = 0; //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise. This is simply a default value, the actual values are set in the setup() functions of each decoder
     dwellLimit_uS = (1000 * configPage4.dwellLimit);
     currentStatus.nChannels = ((uint8_t)INJ_CHANNELS << 4) + IGN_CHANNELS; //First 4 bits store the number of injection channels, 2nd 4 store the number of ignition channels
     fpPrimeTime = 0;
@@ -421,7 +421,7 @@ void initialiseAll()
     noInterrupts();
     initialiseTriggers();
 
-    //End crank triger interrupt attachment
+    //End crank trigger interrupt attachment
     if(configPage2.strokes == FOUR_STROKE)
     {
       //Default is 1 squirt per revolution, so we halve the given req-fuel figure (Which would be over 2 revolutions)
@@ -429,15 +429,14 @@ void initialiseAll()
     }
 
     //Initial values for loop times
-    previousLoopTime = 0;
     currentLoopTime = micros_safe();
     mainLoopCount = 0;
 
-    currentStatus.nSquirts = configPage2.nCylinders / configPage2.divider; //The number of squirts being requested. This is manaully overriden below for sequential setups (Due to TS req_fuel calc limitations)
-    if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check. Should never happen as TS will give an error, but leave incase tune is manually altered etc. 
+    currentStatus.nSquirts = configPage2.nCylinders / configPage2.divider; //The number of squirts being requested. This is manually overridden below for sequential setups (Due to TS req_fuel calc limitations)
+    if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check. Should never happen as TS will give an error, but leave in case tune is manually altered etc. 
 
     //Calculate the number of degrees between cylinders
-    //Swet some default values. These will be updated below if required. 
+    //Set some default values. These will be updated below if required.
     CRANK_ANGLE_MAX = 720;
     CRANK_ANGLE_MAX_IGN = 360;
     CRANK_ANGLE_MAX_INJ = 360;
@@ -495,7 +494,7 @@ void initialiseAll()
         if (configPage2.engineType == EVEN_FIRE ) { channel2IgnDegrees = 180; }
         else { channel2IgnDegrees = configPage2.oddfire2; }
 
-        //Sequential ignition works identically on a 2 cylinder whether it's odd or even fire (With the default being a 180 degree second cylinder). 
+        //Sequential ignition works identically on a 2 cylinder whether it's odd or even fire (With the default being a 180 degree second cylinder).
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
 
         if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
@@ -534,7 +533,7 @@ void initialiseAll()
         maxIgnOutputs = 3;
         if (configPage2.engineType == EVEN_FIRE )
         {
-        //Sequential and Single channel modes both run over 720 crank degrees, but only on 4 stroke engines. 
+        //Sequential and Single channel modes both run over 720 crank degrees, but only on 4 stroke engines.
         if( ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage4.sparkMode == IGN_MODE_SINGLE) ) && (configPage2.strokes == FOUR_STROKE) )
         {
           channel2IgnDegrees = 240;
@@ -912,10 +911,20 @@ void initialiseAll()
         //Semi-Sequential injection. Currently possible with 4, 6 and 8 cylinders. 5 cylinder is a special case
         if( configPage2.nCylinders == 4 )
         {
-          inj1StartFunction = openInjector1and4;
-          inj1EndFunction = closeInjector1and4;
-          inj2StartFunction = openInjector2and3;
-          inj2EndFunction = closeInjector2and3;
+          if(configPage4.inj4cylPairing == INJ_PAIR_13_24)
+          {
+            inj1StartFunction = openInjector1and3;
+            inj1EndFunction = closeInjector1and3;
+            inj2StartFunction = openInjector2and4;
+            inj2EndFunction = closeInjector2and4;
+          }
+          else
+          {
+            inj1StartFunction = openInjector1and4;
+            inj1EndFunction = closeInjector1and4;
+            inj2StartFunction = openInjector2and3;
+            inj2EndFunction = closeInjector2and3;
+          }
         }
         else if( configPage2.nCylinders == 5 ) //This is similar to the paired injection but uses five injector outputs instead of four
         {
@@ -1090,7 +1099,7 @@ void initialiseAll()
         }
         else
         {
-          //If the person has inadvertantly selected this when running more than 4 cylinders or other than 6 cylinders, just use standard Wasted spark mode
+          //If the person has inadvertently selected this when running more than 4 cylinders or other than 6 cylinders, just use standard Wasted spark mode
           ign1StartFunction = beginCoil1Charge;
           ign1EndFunction = endCoil1Charge;
           ign2StartFunction = beginCoil2Charge;
@@ -1205,9 +1214,9 @@ void initialiseAll()
     initialisationComplete = true;
     digitalWrite(LED_BUILTIN, HIGH);
 }
-/** Set board / microcontroller specfic pin mappings / assignments.
+/** Set board / microcontroller specific pin mappings / assignments.
  * The boardID is switch-case compared against raw boardID integers (not enum or defined label, and probably no need for that either)
- * which are originated from tuning SW (e.g. TS) set values and are avilable in reference/speeduino.ini (See pinLayout, note also that
+ * which are originated from tuning SW (e.g. TS) set values and are available in reference/speeduino.ini (See pinLayout, note also that
  * numbering is not contiguous here).
  */
 void setPinMapping(byte boardID)
@@ -1692,7 +1701,7 @@ void setPinMapping(byte boardID)
       pinDisplayReset = 48; // OLED reset pin
       pinSpareTemp1 = A6;
       pinSpareTemp2 = A5;
-      pinTachOut = 41; //Tacho output pin transistori puuttuu 2n2222 tähän ja 1k 12v
+      pinTachOut = 41; //Tacho output pin transistor is missing 2n2222 for this and 1k for 12v
       pinFuelPump = 42; //Fuel pump output 2n2222
       pinFan = 47; //Pin for the fan output
       pinTachOut = 49; //Tacho output pin
@@ -2313,7 +2322,7 @@ void setPinMapping(byte boardID)
         // = PE15;  //
      #elif (defined(STM32F411xE) || defined(STM32F401xC))
         //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
-        //PB2 can't be used as input becuase is BOOT pin
+        //PB2 can't be used as input because is BOOT pin
         pinInjector1 = PB7; //Output pin injector 1 is on
         pinInjector2 = PB6; //Output pin injector 2 is on
         pinInjector3 = PB5; //Output pin injector 3 is on
@@ -2347,7 +2356,7 @@ void setPinMapping(byte boardID)
         //blue pill wiki.stm32duino.com/index.php?title=Blue_Pill
         //Maple mini wiki.stm32duino.com/index.php?title=Maple_Mini
         //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
-        //PB2 can't be used as input becuase is BOOT pin
+        //PB2 can't be used as input because is BOOT pin
         pinInjector1 = PB7; //Output pin injector 1 is on
         pinInjector2 = PB6; //Output pin injector 2 is on
         pinInjector3 = PB5; //Output pin injector 3 is on
@@ -2776,9 +2785,9 @@ void setPinMapping(byte boardID)
   flex_pin_mask = digitalPinToBitMask(pinFlex);
 
 }
-/** Initialize the chosen trigger decoder.
- * - Set Interrput numbers @ref triggerInterrupt, @ref triggerInterrupt2 and @ref triggerInterrupt3  by pin their numbers (based on board CORE_* define)
- * - Call decoder specific setup function triggerSetup_*() (by @ref config4.TrigPattern, set to one of the DECODER_* defines) and do any additional initializations needed.
+/** Initialise the chosen trigger decoder.
+ * - Set Interrupt numbers @ref triggerInterrupt, @ref triggerInterrupt2 and @ref triggerInterrupt3  by pin their numbers (based on board CORE_* define)
+ * - Call decoder specific setup function triggerSetup_*() (by @ref config4.TrigPattern, set to one of the DECODER_* defines) and do any additional initialisations needed.
  * 
  * @todo Explain why triggerSetup_*() alone cannot do all the setup, but there's ~10+ lines worth of extra init for each of decoders.
  */
@@ -3263,6 +3272,19 @@ void initialiseTriggers()
 
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+    case DECODER_VMAX:
+      triggerSetup_Vmax();
+      triggerHandler = triggerPri_Vmax;
+      getRPM = getRPM_Vmax;
+      getCrankAngle = getCrankAngle_Vmax;
+      triggerSetEndTeeth = triggerSetEndTeeth_Vmax;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = true; } // set as boolean so we can directly use it in decoder.
+      else { primaryTriggerEdge = false; }
+      
+      attachInterrupt(triggerInterrupt, triggerHandler, CHANGE); //Hardcoded change, the primaryTriggerEdge will be used in the decoder to select if it`s an inverted or non-inverted signal.
       break;
 
     default:

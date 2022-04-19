@@ -176,7 +176,7 @@ private:
          in 2 ways:<br> \
           1. Forcing uint8_t calculations. These are much faster than 16-bit calculations<br> \
           2. Compiling this per table *type*. This encodes the axis length as a constant \
-          thus allowing the optimizing compiler more opportunity. E.g. for axis lengths \
+          thus allowing the optimising compiler more opportunity. E.g. for axis lengths \
           that are a power of 2, the modulus can be optimised to add/multiply/shift - much \
           cheaper than calling a software division routine such as __udivmodqi4<br> \
          <br> \

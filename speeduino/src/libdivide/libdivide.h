@@ -16,9 +16,9 @@
 #define LIBDIVIDE_VERSION_MINOR 0
 
 #include <stdint.h>
+#include <stdlib.h>
 #if !defined(__AVR__)
 #include <stdio.h>
-#include <stdlib.h>
 #endif
 
 #if defined(LIBDIVIDE_SSE2)

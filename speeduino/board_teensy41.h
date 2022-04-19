@@ -26,7 +26,7 @@
 
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
   #define PWM_FAN_AVAILABLE
-  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbiden pins like USB
+  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbidden pins like USB
 
 /*
 ***********************************************************************************************************
@@ -125,7 +125,7 @@
 
 /*
 ***********************************************************************************************************
-* Auxilliaries
+* Auxiliaries
 */
   #define ENABLE_BOOST_TIMER()  TMR3_CSCTRL0 |= TMR_CSCTRL_TCF1EN
   #define DISABLE_BOOST_TIMER() TMR3_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN

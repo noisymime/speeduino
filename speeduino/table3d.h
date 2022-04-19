@@ -6,7 +6,7 @@
  *      - each 3D table is a continuous height map spread over a cartesian (x, y) plane
  *          - Continuous: we expect to interpolate between any 4 points
  *      - The axes are
- *          - Bounded. I.e. non-infnite 
+ *          - Bounded. I.e. non-infinite 
  *          - Non-linear. I.e. x[n]-x[n-1] != x[n+1]-x[n]
  *          - Increasing. I.e. x[n] >= x[n-1]
  *          - Do not have to start at [0,0]
@@ -59,7 +59,7 @@
  * which will use RAM.
  * 
  * Since we have a compile time fixed set of table types, we can map a unique
- * identifer to the type via a cast - this enum is that unique identifier.
+ * identifier to the type via a cast - this enum is that unique identifier.
  * 
  * Typically used in conjunction with the '#CONCRETE_TABLE_ACTION' macro
  */

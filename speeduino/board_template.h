@@ -19,7 +19,7 @@
   void doSystemReset();
   void jumpToBootloader();
 
-  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbiden pins like USB
+  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbidden pins like USB
 
 /*
 ***********************************************************************************************************
@@ -112,7 +112,7 @@
 
 /*
 ***********************************************************************************************************
-* Auxilliaries
+* Auxiliaries
 */
   //macro functions for enabling and disabling timer interrupts for the boost and vvt functions
   #define ENABLE_BOOST_TIMER()  <macro here>

@@ -1,12 +1,13 @@
 #include "pages.h"
 #include "globals.h"
 #include "utilities.h"
+#include "table3d_axis_io.h"
 
 // Maps from virtual page "addresses" to addresses/bytes of real in memory entities
 //
 // For TunerStudio:
 // 1. Each page has a numeric identifier (0 to N-1)
-// 2. A single page is a continguous block of data.
+// 2. A single page is a contiguous block of data.
 // So individual bytes are identified by a (page number, offset)
 //
 // The TS layout is not what is in memory. E.g.
@@ -62,7 +63,7 @@ public:
   // We take the offset & map it to a single value, x-axis or y-axis element
   //
   // Using a template here is a performance boost - we can call functions that
-  // are specialized per table type, which allows the compiler more optimization
+  // are specialised per table type, which allows the compiler more optimisation
   // opportunities. See get_table_value().
 
   offset_to_table(table_t *pTable, uint16_t table_offset)
@@ -79,10 +80,10 @@ public:
       case table_location_values:
         return get_value_value();
       case table_location_xaxis:
-        return *get_xaxis_value();
+        return table3d_axis_io::to_byte(table_t::xaxis_t::domain, get_xaxis_value());
       case table_location_yaxis:
       default:
-        return *get_yaxis_value();
+        return table3d_axis_io::to_byte(table_t::yaxis_t::domain, get_yaxis_value());
     }
   }
 
@@ -96,12 +97,12 @@ public:
         break;
 
       case table_location_xaxis:
-        get_xaxis_value() = new_value;
+        get_xaxis_value() = table3d_axis_io::from_byte(table_t::xaxis_t::domain, new_value);
         break;
 
       case table_location_yaxis:
       default:
-        get_yaxis_value() = new_value;
+        get_yaxis_value() = table3d_axis_io::from_byte(table_t::yaxis_t::domain, new_value);
     }
     invalidate_cache(&_pTable->get_value_cache);
     return *this;
@@ -114,14 +115,14 @@ private:
     return _pTable->values.value_at((uint8_t)_table_offset);
   }
 
-  inline int16_ref get_xaxis_value() const
+  inline table3d_axis_t& get_xaxis_value() const
   {
-    return *_pTable->axisX.begin().advance(_table_offset - get_table_value_end<table_t>());
+    return *(_pTable->axisX.begin().advance(_table_offset - get_table_value_end<table_t>()));
   }
 
-  inline int16_ref get_yaxis_value() const
+  inline table3d_axis_t& get_yaxis_value() const
   {
-    return *_pTable->axisY.begin().advance(_table_offset - get_table_axisx_end<table_t>());
+    return *(_pTable->axisY.begin().advance(_table_offset - get_table_axisx_end<table_t>()));
   }
 
   enum table_location {
@@ -398,7 +399,7 @@ page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
     }
 
     default:
-      abort(); // Unkown page number. Not a lot we can do.
+      abort(); // Unknown page number. Not a lot we can do.
       break;
   }
 }

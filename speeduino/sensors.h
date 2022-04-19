@@ -55,7 +55,7 @@ bool auxIsEnabled;
 byte TPSlast; /**< The previous TPS reading */
 unsigned long TPS_time; //The time the TPS sample was taken
 unsigned long TPSlast_time; //The time the previous TPS sample was taken
-byte MAPlast; /**< The previous MAP reading */
+uint16_t MAPlast; /**< The previous MAP reading */
 unsigned long MAP_time; //The time the MAP sample was taken
 unsigned long MAPlast_time; //The time the previous MAP sample was taken
 volatile unsigned long vssTimes[VSS_SAMPLES] = {0};

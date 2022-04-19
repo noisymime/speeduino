@@ -28,6 +28,10 @@ inline void openInjector8();
 inline void closeInjector8();
 
 // These are for Semi-Sequential and 5 Cylinder injection
+void openInjector1and3();
+void closeInjector1and3();
+void openInjector2and4();
+void closeInjector2and4();
 void openInjector1and4();
 void closeInjector1and4();
 void openInjector2and3();

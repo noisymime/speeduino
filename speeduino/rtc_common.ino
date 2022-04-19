@@ -114,7 +114,7 @@ void rtc_setTime(byte second, byte minute, byte hour, byte day, byte month, uint
     setTime(hour, minute, second, day, month, year);
   #elif defined(CORE_STM32)
     rtc.setTime(hour, minute, second);
-    //year in stm32 rtc is a byte. so substract year 2000 to fit
+    //year in stm32 rtc is a byte. so subtract year 2000 to fit
     rtc.setDate(day, month, (year-2000));
   #endif
 #endif

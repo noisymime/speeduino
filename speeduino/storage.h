@@ -135,7 +135,7 @@ uint32_t readCalibrationCRC32(uint8_t calibrationPageNum);
 uint16_t getEEPROMSize();
 bool isEepromWritePending();
 
-extern bool deferEEPROMWrites;
+extern uint32_t deferEEPROMWritesUntil;
 
 #define EEPROM_CONFIG1_MAP    3
 #define EEPROM_CONFIG2_START  291
@@ -182,5 +182,7 @@ extern bool deferEEPROMWrites;
 #define EEPROM_CALIBRATION_O2_OLD   2559
 #define EEPROM_CALIBRATION_IAT_OLD  3071
 #define EEPROM_CALIBRATION_CLT_OLD  3583
+
+#define EEPROM_DEFER_DELAY          1000000UL //1.0 second pause after large comms before writing to EEPROM
 
 #endif // STORAGE_H

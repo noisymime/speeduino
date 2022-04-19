@@ -3,7 +3,7 @@
  * @author Josh Stewart
  * 
  * This file contains the main system loop of the Speeduino core and thus much of the logic of the fuel and ignition algorithms is contained within this
- * It is where calls to all the auxilliary control systems, sensor reads, comms etc are made
+ * It is where calls to all the auxiliary control systems, sensor reads, comms etc are made
  * 
  * It also contains the setup() function that is called by the bootloader on system startup
  * 

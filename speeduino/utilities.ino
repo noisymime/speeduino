@@ -13,6 +13,9 @@
 #include "decoders.h"
 #include "comms.h"
 #include "logger.h"
+#include "scheduler.h"
+#include "scheduledIO.h"
+#include "speeduino.h"
 
 uint8_t ioDelay[sizeof(configPage13.outputPin)];
 uint8_t ioOutDelay[sizeof(configPage13.outputPin)];
@@ -115,6 +118,191 @@ void setResetControlPinState()
 }
 
 
+/** Change injectors or/and ignition angles to 720deg.
+ * Roll back req_fuel size and set number of outputs equal to cylinder count.
+* */
+void changeHalfToFullSync(void)
+{
+  //Need to do another check for injLayout as this function can be called from ignition
+  if( (configPage2.injLayout == INJ_SEQUENTIAL) && (CRANK_ANGLE_MAX_INJ != 720) )
+  {
+    CRANK_ANGLE_MAX_INJ = 720;
+    maxIgnOutputs = configPage2.nCylinders;
+    req_fuel_uS *= 2;
+    switch (configPage2.nCylinders)
+    {
+      case 4:
+        inj1StartFunction = openInjector1;
+        inj1EndFunction = closeInjector1;
+        inj2StartFunction = openInjector2;
+        inj2EndFunction = closeInjector2;
+        channel3InjEnabled = true;
+        channel4InjEnabled = true;
+        break;
+            
+      case 6:
+        inj1StartFunction = openInjector1;
+        inj1EndFunction = closeInjector1;
+        inj2StartFunction = openInjector2;
+        inj2EndFunction = closeInjector2;
+        inj3StartFunction = openInjector3;
+        inj3EndFunction = closeInjector3;
+        channel4InjEnabled = true;
+        channel5InjEnabled = true;
+        channel6InjEnabled = true;
+        break;
+
+      case 8:
+        inj1StartFunction = openInjector1;
+        inj1EndFunction = closeInjector1;
+        inj2StartFunction = openInjector2;
+        inj2EndFunction = closeInjector2;
+        inj3StartFunction = openInjector3;
+        inj3EndFunction = closeInjector3;
+        inj4StartFunction = openInjector4;
+        inj4EndFunction = closeInjector4;
+        channel5InjEnabled = true;
+        channel6InjEnabled = true;
+        channel7InjEnabled = true;
+        channel8InjEnabled = true;
+        break;
+
+    }
+  }
+
+  //Need to do another check for sparkMode as this function can be called from injection
+  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (CRANK_ANGLE_MAX_IGN != 720) )
+  {
+    CRANK_ANGLE_MAX_IGN = 720;
+    maxIgnOutputs = configPage2.nCylinders;
+    switch (configPage2.nCylinders)
+    {
+    case 4:
+      ign1StartFunction = beginCoil1Charge;
+      ign1EndFunction = endCoil1Charge;
+      ign2StartFunction = beginCoil2Charge;
+      ign2EndFunction = endCoil2Charge;
+      break;
+
+    case 6:
+      ign1StartFunction = beginCoil1Charge;
+      ign1EndFunction = endCoil1Charge;
+      ign2StartFunction = beginCoil2Charge;
+      ign2EndFunction = endCoil2Charge;
+      ign3StartFunction = beginCoil3Charge;
+      ign3EndFunction = endCoil3Charge;
+      break;
+
+    case 8:
+      ign1StartFunction = beginCoil1Charge;
+      ign1EndFunction = endCoil1Charge;
+      ign2StartFunction = beginCoil2Charge;
+      ign2EndFunction = endCoil2Charge;
+      ign3StartFunction = beginCoil3Charge;
+      ign3EndFunction = endCoil3Charge;
+      ign4StartFunction = beginCoil4Charge;
+      ign4EndFunction = endCoil4Charge;
+      break;
+    }
+  }
+}
+
+/** Change injectors or/and ignition angles to 360deg.
+ * In semi sequentiol mode req_fuel size is half.
+ * Set number of outputs equal to half cylinder count.
+* */
+void changeFullToHalfSync(void)
+{
+  if(configPage2.injLayout == INJ_SEQUENTIAL)
+  {
+    CRANK_ANGLE_MAX_INJ = 360;
+    maxIgnOutputs = configPage2.nCylinders / 2;
+    req_fuel_uS /= 2;
+    switch (configPage2.nCylinders)
+    {
+      case 4:
+        if(configPage4.inj4cylPairing == INJ_PAIR_13_24)
+        {
+          inj1StartFunction = openInjector1and3;
+          inj1EndFunction = closeInjector1and3;
+          inj2StartFunction = openInjector2and4;
+          inj2EndFunction = closeInjector2and4;
+        }
+        else
+        {
+          inj1StartFunction = openInjector1and4;
+          inj1EndFunction = closeInjector1and4;
+          inj2StartFunction = openInjector2and3;
+          inj2EndFunction = closeInjector2and3;
+        }
+        channel3InjEnabled = false;
+        channel4InjEnabled = false;
+        break;
+            
+      case 6:
+        inj1StartFunction = openInjector1and4;
+        inj1EndFunction = closeInjector1and4;
+        inj2StartFunction = openInjector2and5;
+        inj2EndFunction = closeInjector2and5;
+        inj3StartFunction = openInjector3and6;
+        inj3EndFunction = closeInjector3and6;
+        channel4InjEnabled = false;
+        channel5InjEnabled = false;
+        channel6InjEnabled = false;
+        break;
+
+      case 8:
+        inj1StartFunction = openInjector1and5;
+        inj1EndFunction = closeInjector1and5;
+        inj2StartFunction = openInjector2and6;
+        inj2EndFunction = closeInjector2and6;
+        inj3StartFunction = openInjector3and7;
+        inj3EndFunction = closeInjector3and7;
+        inj4StartFunction = openInjector4and8;
+        inj4EndFunction = closeInjector4and8;
+        channel5InjEnabled = false;
+        channel6InjEnabled = false;
+        channel7InjEnabled = false;
+        channel8InjEnabled = false;
+        break;
+    }
+  }
+
+  if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
+  {
+    CRANK_ANGLE_MAX_IGN = 360;
+    maxIgnOutputs = configPage2.nCylinders / 2;
+    switch (configPage2.nCylinders)
+    {
+      case 4:
+        ign1StartFunction = beginCoil1and3Charge;
+        ign1EndFunction = endCoil1and3Charge;
+        ign2StartFunction = beginCoil2and4Charge;
+        ign2EndFunction = endCoil2and4Charge;
+        break;
+            
+      case 6:
+        ign1StartFunction = beginCoil1and4Charge;
+        ign1EndFunction = endCoil1and4Charge;
+        ign2StartFunction = beginCoil2and5Charge;
+        ign2EndFunction = endCoil2and5Charge;
+        ign3StartFunction = beginCoil3and6Charge;
+        ign3EndFunction = endCoil3and6Charge;
+        break;
+
+      case 8:
+        ign1StartFunction = beginCoil1and5Charge;
+        ign1EndFunction = endCoil1and5Charge;
+        ign2StartFunction = beginCoil2and6Charge;
+        ign2EndFunction = endCoil2and6Charge;
+        ign3StartFunction = beginCoil3and7Charge;
+        ign3EndFunction = endCoil3and7Charge;
+        ign4StartFunction = beginCoil4and8Charge;
+        ign4EndFunction = endCoil4and8Charge;
+        break;
+    }
+  }
+}
 //*********************************************************************************************************************************************************************************
 void initialiseProgrammableIO()
 {
