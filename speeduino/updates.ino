@@ -491,7 +491,7 @@ void doUpdates()
     configPage10.TrigEdgeThrd = 0;
 
     //Old use as On/Off selection is removed, so change VVT mode to On/Off based on that
-    if(configPage6.unused_bit == 1) { configPage6.vvtMode = VVT_MODE_ONOFF; }
+    if(configPage6.tachoMode == 1) { configPage6.vvtMode = VVT_MODE_ONOFF; }
 
     //Closed loop VVT improvements. Set safety limits to max/min working values and filter to minimum.
     configPage10.vvtCLMinAng = 0;
@@ -579,6 +579,29 @@ void doUpdates()
 
     configPage4.vvtDelay = 0;
     configPage4.vvtMinClt = 0;
+
+    //Set SD logging related settings to zero.
+    configPage13.onboard_log_csv_separator = 0;
+    configPage13.onboard_log_file_style = 0;
+    configPage13.onboard_log_file_rate = 0;
+    configPage13.onboard_log_filenaming = 0;
+    configPage13.onboard_log_storage = 0;
+    configPage13.onboard_log_trigger_boot = 0;
+    configPage13.onboard_log_trigger_RPM = 0;
+    configPage13.onboard_log_trigger_prot = 0;
+    configPage13.onboard_log_trigger_Vbat = 0;
+    configPage13.onboard_log_trigger_Epin = 0;
+    configPage13.onboard_log_tr1_duration = 0;
+    configPage13.onboard_log_tr2_thr_on = 0;
+    configPage13.onboard_log_tr2_thr_off = 0;
+    configPage13.onboard_log_tr3_thr_RPM = 0;
+    configPage13.onboard_log_tr3_thr_MAP = 0;
+    configPage13.onboard_log_tr3_thr_Oil = 0;
+    configPage13.onboard_log_tr3_thr_AFR = 0;
+    configPage13.onboard_log_tr4_thr_on = 0;
+    configPage13.onboard_log_tr4_thr_off = 0;
+    configPage13.onboard_log_tr5_thr_on = 0;
+
     writeAllConfig();
     storeEEPROMVersion(19);
   }
@@ -586,12 +609,17 @@ void doUpdates()
   if(readEEPROMVersion() == 19)
   {
     //202204
+
+    //Option added to select injector pairing on 4 cylinder engines
     if( configPage4.inj4cylPairing > INJ_PAIR_14_23 ) { configPage4.inj4cylPairing = 0; } //Check valid value
-    //Half/Full sequential mode
-    if( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage2.nCylinders == 4) ) { configPage4.inj4cylPairing = INJ_PAIR_13_24; } //Most of inline 4 uses 1-3-4-2 firing order
+    if( configPage2.nCylinders == 4 ) { configPage4.inj4cylPairing = INJ_PAIR_14_23; } //Force setting to use the default mode from previous FW versions. This is to prevent issues on any setups that have been wired accordingly
 
     configPage9.hardRevMode = 1; //Set hard rev limiter to Fixed mode
+    configPage6.tachoMode = 0;
 
+    //CAN broadcast introduced
+    configPage2.canBMWCluster = 0;
+    configPage2.canVAGCluster = 0;
     
     writeAllConfig();
     storeEEPROMVersion(20);

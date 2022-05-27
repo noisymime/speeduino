@@ -637,6 +637,7 @@ struct statuses {
   byte TPS;    /**< The current TPS reading (0% - 100%). Is the tpsADC value after the calibration is applied */
   byte tpsADC; /**< byte (valued: 0-255) representation of the TPS. Downsampled from the original 10-bit (0-1023) reading, but before any calibration is applied */
   byte tpsDOT; /**< TPS delta over time. Measures the % per second that the TPS is changing. Value is divided by 10 to be stored in a byte */
+  byte TPSlast; /**< The previous TPS reading */
   byte mapDOT; /**< MAP delta over time. Measures the kpa per second that the MAP is changing. Value is divided by 10 to be stored in a byte */
   volatile int rpmDOT; /**< RPM delta over time (RPM increase / s ?) */
   byte VE;     /**< The current VE value being used in the fuel calculation. Can be the same as VE1 or VE2, or a calculated value of both. */
@@ -903,7 +904,13 @@ struct config2 {
   byte idleAdvVss;
   byte mapSwitchPoint;
 
-  byte unused2_95[2];
+  byte canBMWCluster : 1;
+  byte canVAGCluster : 1;
+  byte enableCluster1 : 1;
+  byte enableCluster2 : 1;
+  byte unusedClusterBits : 4;
+
+  byte unused2_95;
 
 #if defined(CORE_AVR)
   };
@@ -1044,7 +1051,7 @@ struct config6 {
   byte useExtBaro : 1;
   byte boostMode : 1; /// Boost control mode: 0=Simple (BOOST_MODE_SIMPLE) or 1=full (BOOST_MODE_FULL)
   byte boostPin : 6;
-  byte unused_bit : 1; //Previously was VVTasOnOff
+  byte tachoMode : 1; /// Whether to use fixed tacho pulse duration or match to dwell duration
   byte useEMAP : 1;    ///< Enable EMAP
   byte voltageCorrectionBins[6]; //X axis bins for voltage correction tables
   byte injVoltageCorrectionValues[6]; //Correction table for injector PW vs battery voltage

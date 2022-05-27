@@ -4618,6 +4618,7 @@ void triggerPri_Vmax()
             toothOneTime = curTime;
             currentStatus.hasSync = true;
             setFilter((curGap/1.75));//Angle to this tooth is 70, next is in 40, compensating.
+            currentStatus.startRevolutions++; //Counter
           }
           else if (toothCurrentCount==2)
           {
@@ -4651,7 +4652,6 @@ void triggerPri_Vmax()
           }
           toothLastMinusOneToothTime = toothLastToothTime;
           toothLastToothTime = curTime;
-          currentStatus.startRevolutions++; //Counter
           if (triggerFilterTime > 50000){//The first pulse seen 
             triggerFilterTime = 0;
           }

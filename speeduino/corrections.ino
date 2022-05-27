@@ -365,10 +365,10 @@ uint16_t correctionAccel()
   else if(configPage2.aeMode == AE_MODE_TPS)
   {
     //Get the TPS rate change
-    TPS_change = (currentStatus.TPS - TPSlast);
+    TPS_change = (currentStatus.TPS - currentStatus.TPSlast);
     //TPS_rateOfChange = ldiv(1000000, (TPS_time - TPSlast_time)).quot * TPS_change; //This is the % per second that the TPS has moved
-    TPS_rateOfChange = (TPS_READ_FREQUENCY * TPS_change) / 2; //This is the % per second that the TPS has moved, adjustd for the 0.5% resolution of the TPS
-    if(TPS_rateOfChange >= 0) { currentStatus.tpsDOT = TPS_rateOfChange / 10; } //The TAE bins are divided by 10 in order to allow them to be stored in a byte and then by 2 due to TPS being 0.5% resolution (0-200)
+    TPS_rateOfChange = (TPS_READ_FREQUENCY * TPS_change) / 2; //This is the % per second that the TPS has moved, adjusted for the 0.5% resolution of the TPS
+    if(TPS_rateOfChange >= 0) { currentStatus.tpsDOT = TPS_rateOfChange / 10; } //The TAE bins are divided by 10 in order to allow them to be stored in a byte
     else { currentStatus.tpsDOT = 0; } //Prevent overflow as tpsDOT is signed
   }
   
@@ -431,7 +431,7 @@ uint16_t correctionAccel()
             else 
             {
               int16_t taperRange = trueTaperMax - trueTaperMin;
-              int16_t taperPercent = ((currentStatus.RPM - trueTaperMin) * 100) / taperRange; //The percentage of the way through the RPM taper range
+              int16_t taperPercent = ((currentStatus.RPM - trueTaperMin) * 100UL) / taperRange; //The percentage of the way through the RPM taper range
               accelValue = percentage((100-taperPercent), accelValue); //Calculate the above percentage of the calculated accel amount. 
             }
           }
@@ -442,7 +442,7 @@ uint16_t correctionAccel()
             //If CLT is less than taper min temp, apply full modifier on top of accelValue
             if ( currentStatus.coolant <= (int)(configPage2.aeColdTaperMin - CALIBRATION_TEMPERATURE_OFFSET) )
             {
-              uint16_t accelValue_uint = (uint16_t) accelValue * configPage2.aeColdPct / 100;
+              uint16_t accelValue_uint = percentage(configPage2.aeColdPct, accelValue);
               accelValue = (int16_t) accelValue_uint;
             }
             //If CLT is between taper min and max, taper the modifier value and apply it on top of accelValue
@@ -450,8 +450,8 @@ uint16_t correctionAccel()
             {
               int16_t taperRange = (int16_t) configPage2.aeColdTaperMax - configPage2.aeColdTaperMin;
               int16_t taperPercent = (int)((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - configPage2.aeColdTaperMin) * 100) / taperRange;
-              int16_t coldPct = (int16_t) 100+ percentage((100-taperPercent), configPage2.aeColdPct-100);
-              uint16_t accelValue_uint = (uint16_t) accelValue * coldPct / 100; //Potential overflow (if AE is large) without using uint16_t
+              int16_t coldPct = (int16_t) 100 + percentage( (100-taperPercent), (configPage2.aeColdPct-100) );
+              uint16_t accelValue_uint = (uint16_t) accelValue * coldPct / 100; //Potential overflow (if AE is large) without using uint16_t (percentage() may overflow)
               accelValue = (int16_t) accelValue_uint;
             }
           }
@@ -465,7 +465,7 @@ uint16_t correctionAccel()
     
       //Check for deceleration (Deceleration adjustment not yet supported)
       //Also check for only very small movement (Movement less than or equal to 2% is ignored). This not only means we can skip the lookup, but helps reduce false triggering around 0-2% throttle openings
-      if (TPS_change <= 2)
+      if (TPS_change <= TPSAE_ABSOLUTE_THRESHOLD)
       {
         accelValue = 100;
         currentStatus.tpsDOT = 0;
@@ -490,8 +490,8 @@ uint16_t correctionAccel()
             else 
             {
               int16_t taperRange = trueTaperMax - trueTaperMin;
-              int16_t taperPercent = ((currentStatus.RPM - trueTaperMin) * 100) / taperRange; //The percentage of the way through the RPM taper range
-              accelValue = percentage((100-taperPercent), accelValue); //Calculate the above percentage of the calculated accel amount. 
+              int16_t taperPercent = ((currentStatus.RPM - trueTaperMin) * 100UL) / taperRange; //The percentage of the way through the RPM taper range
+              accelValue = percentage( (100 - taperPercent), accelValue); //Calculate the above percentage of the calculated accel amount. 
             }
           }
 
@@ -501,7 +501,7 @@ uint16_t correctionAccel()
             //If CLT is less than taper min temp, apply full modifier on top of accelValue
             if ( currentStatus.coolant <= (int)(configPage2.aeColdTaperMin - CALIBRATION_TEMPERATURE_OFFSET) )
             {
-              uint16_t accelValue_uint = (uint16_t) accelValue * configPage2.aeColdPct / 100;
+              uint16_t accelValue_uint = percentage(configPage2.aeColdPct, accelValue);
               accelValue = (int16_t) accelValue_uint;
             }
             //If CLT is between taper min and max, taper the modifier value and apply it on top of accelValue
@@ -509,7 +509,7 @@ uint16_t correctionAccel()
             {
               int16_t taperRange = (int16_t) configPage2.aeColdTaperMax - configPage2.aeColdTaperMin;
               int16_t taperPercent = (int)((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - configPage2.aeColdTaperMin) * 100) / taperRange;
-              int16_t coldPct = (int16_t) 100+ percentage((100-taperPercent), configPage2.aeColdPct-100);
+              int16_t coldPct = (int16_t)100 + percentage( (100 - taperPercent), (configPage2.aeColdPct-100) );
               uint16_t accelValue_uint = (uint16_t) accelValue * coldPct / 100; //Potential overflow (if AE is large) without using uint16_t
               accelValue = (int16_t) accelValue_uint;
             }
@@ -677,7 +677,7 @@ byte correctionAFRClosedLoop()
       AFRnextCycle = ignitionCount + configPage6.egoCount; //Set the target ignition event for the next calculation
         
       //Check all other requirements for closed loop adjustments
-      if( (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) && (currentStatus.TPS < configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) &&  (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 0) )
+      if( (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) && (currentStatus.TPS <= configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) &&  (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 0) )
       {
 
         //Check which algorithm is used, simple or PID

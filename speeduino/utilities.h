@@ -33,8 +33,6 @@ extern uint8_t currentRuleStatus;
 void setResetControlPinState();
 byte pinTranslate(byte);
 byte pinTranslateAnalog(byte);
-void changeHalfToFullSync(void);
-void changeFullToHalfSync(void);
 void initialiseProgrammableIO();
 void checkProgrammableIO();
 int16_t ProgrammableIOGetData(uint16_t index);

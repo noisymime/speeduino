@@ -1,5 +1,6 @@
 
 #include <Arduino.h>
+#include <globals.h>
 #include <unity.h>
 
 #include "missing_tooth/missing_tooth.h"

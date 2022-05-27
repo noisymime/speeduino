@@ -6,6 +6,7 @@ All functions in the gamma file return
 #define CORRECTIONS_H
 
 #define IGN_IDLE_THRESHOLD 200 //RPM threshold (below CL idle target) for when ign based idle control will engage
+#define TPSAE_ABSOLUTE_THRESHOLD 4 //TPS absolute threshold for when AE based idle control will engage, This equates to 2% throttle movement once the 0.5% resolution is applied
 
 void initialiseCorrections();
 

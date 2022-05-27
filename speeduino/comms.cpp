@@ -964,6 +964,7 @@ void sendToothLog(byte startOffset)
         //tx buffer is full. Store the current state so it can be resumed later
         inProgressOffset = x;
         toothLogSendInProgress = true;
+        legacySerial = false;
         return;
       }
 
@@ -1036,7 +1037,7 @@ void sendCompositeLog(byte startOffset)
         //tx buffer is full. Store the current state so it can be resumed later
         inProgressOffset = x;
         compositeLogSendInProgress = true;
-        
+        legacySerial = false;
         return;
       }
 

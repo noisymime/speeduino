@@ -397,8 +397,7 @@ static inline void readMAP()
 
 void readTPS(bool useFilter)
 {
-  TPSlast = currentStatus.TPS;
-  TPSlast_time = TPS_time;
+  currentStatus.TPSlast = currentStatus.TPS;
   #if defined(ANALOG_ISR)
     byte tempTPS = fastMap1023toX(AnChannel[pinTPS-A0], 255); //Get the current raw TPS ADC value and map it into a byte
   #else
@@ -439,7 +438,6 @@ void readTPS(bool useFilter)
     else { currentStatus.CTPSActive = digitalRead(pinCTPS); } //Inverted mode (5v activates closed throttle position sensor)
   }
   else { currentStatus.CTPSActive = 0; }
-  TPS_time = micros();
 }
 
 void readCLT(bool useFilter)
