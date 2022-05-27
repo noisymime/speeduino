@@ -41,6 +41,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "engineProtection.h"
 #include "scheduledIO.h"
 #include "secondaryTables.h"
+#include "canBroadcast.h"
 #include "SD_logger.h"
 #include RTC_LIB_H //Defined in each boards .h file
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
@@ -292,6 +293,7 @@ void loop()
       BIT_CLEAR(TIMER_mask, BIT_TIMER_10HZ);
       //updateFullStatus();
       checkProgrammableIO();
+      idleControl(); //Perform any idle related actions. This needs to be run at 10Hz to align with the idle taper resolution of 0.1s
 
       //if( (isEepromWritePending() == true) && (serialReceivePending == false) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } //Used for slower EEPROM writes (Currently this runs in the 30Hz block)
       
@@ -311,6 +313,10 @@ void loop()
       vvtControl();
       //Water methanol injection
       wmiControl();
+      #if defined(NATIVE_CAN_AVAILABLE)
+      if (configPage2.canBMWCluster == true) { sendBMWCluster(); }
+      if (configPage2.canVAGCluster == true) { sendVAGCluster(); }
+      #endif
       #if TPS_READ_FREQUENCY == 30
         readTPS();
       #endif
@@ -332,9 +338,8 @@ void loop()
       readIAT();
       readBat();
       nitrousControl();
-      idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
 
-      //Lookup the current target idle RPM
+      //Lookup the current target idle RPM. This is aligned with coolant and so needs to be calculated at the same rate CLT is read
       if( (configPage2.idleAdvEnabled >= 1) || (configPage6.iacAlgorithm != IAC_ALGORITHM_NONE) )
       {
         currentStatus.CLIdleTarget = (byte)table2D_getValue(&idleTargetTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees

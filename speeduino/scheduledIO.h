@@ -125,6 +125,9 @@ void coil6Toggle();
 void coil7Toggle();
 void coil8Toggle();
 
+void tachoOutputOn();
+void tachoOutputOff();
+
 /*
 #ifndef USE_MC33810
 #define openInjector1() *inj1_pin_port |= (inj1_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ1)

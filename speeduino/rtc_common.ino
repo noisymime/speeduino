@@ -112,6 +112,7 @@ void rtc_setTime(byte second, byte minute, byte hour, byte day, byte month, uint
 #ifdef RTC_ENABLED
   #if defined(CORE_TEENSY)
     setTime(hour, minute, second, day, month, year);
+    Teensy3Clock.set(now());
   #elif defined(CORE_STM32)
     rtc.setTime(hour, minute, second);
     //year in stm32 rtc is a byte. so subtract year 2000 to fit

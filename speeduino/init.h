@@ -4,5 +4,7 @@
 void initialiseAll();
 void initialiseTriggers();
 void setPinMapping(byte);
+void changeHalfToFullSync(void);
+void changeFullToHalfSync(void);
 
 #endif
