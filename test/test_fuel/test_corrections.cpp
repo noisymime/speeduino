@@ -297,7 +297,7 @@ void test_corrections_TAE_50pc_warmup_taper()
   currentStatus.TPS = 50; //25% actual value
 	
 	//Set a cold % of 50% increase
-	configPage2.aeColdPct = 200;
+	configPage2.aeColdPct = 150;
 	configPage2.aeColdTaperMax = 60 + CALIBRATION_TEMPERATURE_OFFSET;
 	configPage2.aeColdTaperMin = 0 + CALIBRATION_TEMPERATURE_OFFSET;
 	//Set the coolant to be 50% of the way through the warmup range

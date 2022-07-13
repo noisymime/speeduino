@@ -1,6 +1,4 @@
-# This is a basic workflow to help you get started with Actions
-
-name: Doxygen Action
+name: Build and update Doxygen documentation
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -8,8 +6,6 @@ on:
   push:
     branches: [ master ]
 
-
-  
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
@@ -22,21 +18,20 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
         
-    - name: Doxygen Action
-      uses: mattnotmitt/doxygen-action@v1.1.0
+    - name: Build Doxygen documentation
+      uses: mattnotmitt/doxygen-action@v1.9
       with:
-        # Path to Doxyfile
         doxyfile-path: "./Doxyfile" # default is ./Doxyfile
-        # Working directory
         working-directory: "." # default is .
 
     - name: Setup git config
+      if: github.repository_owner == 'noisymime'
       run: |
         git config --global user.name "GitHub Actions Bot"
         git config --global user.email "<>"
 
-    - name: Commit Doxygen HTML
-      if: github.event_name != 'pull_request'
+    - name: Commit updated Doxygen documentation
+      if: github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
       env:
         GH_DOXYGEN: ${{ secrets.GH_DOXYGEN }}
       run: |

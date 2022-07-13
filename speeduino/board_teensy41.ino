@@ -266,6 +266,12 @@ uint16_t freeRam()
     return (uint16_t)stackTop - heapTop;
 }
 
+//This function is used for attempting to set the RTC time during compile
+time_t getTeensy3Time()
+{
+  return Teensy3Clock.get();
+}
+
 void doSystemReset() { return; }
 void jumpToBootloader() { return; }
 

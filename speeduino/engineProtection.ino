@@ -112,7 +112,98 @@ byte checkOilPressureLimit()
 
 byte checkAFRLimit()
 {
-  byte checkAFRLimitActive = 0;
+  static bool checkAFRLimitActive = false;
+  static bool afrProtectCountEnabled = false;
+  static unsigned long afrProtectCount = 0;
+  static constexpr char X2_MULTIPLIER = 2;
+  static constexpr char X100_MULTIPLIER = 100;
+
+  /*
+    To use this function, a wideband sensor is required.
+
+    First of all, check whether engine protection is enabled,
+    thereafter check whether AFR protection is enabled and at last
+    if wideband sensor is used.
+    
+    After confirmation, the following conditions has to be met:
+    - MAP above x kPa
+    - RPM above x
+    - TPS above x %
+    - AFR threshold (AFR target + defined maximum deviation)
+    - Time before cut
+
+    See afrProtect variables in globals.h for more information.
+
+    If all conditions above are true, a specified time delay is starting
+    to count down in which leads to the engine protection function
+    to be activated using selected protection cut method (e.g. ignition,
+    fuel or both).
+
+    For reactivation, the following condition has to be met:
+    - TPS below x %
+  */
+
+  /*
+    Do 3 checks here;
+    - whether engine protection is enabled
+    - whether AFR protection is enabled
+    - whether wideband sensor is used
+  */
+  if(configPage6.engineProtectType != PROTECT_CUT_OFF && configPage9.afrProtectEnabled && configPage6.egoType == EGO_TYPE_WIDE) {
+    /* Conditions */
+    bool mapCondition = (currentStatus.MAP >= (configPage9.afrProtectMinMAP * X2_MULTIPLIER)) ? true : false;
+    bool rpmCondition = (currentStatus.RPMdiv100 >= configPage9.afrProtectMinRPM) ? true : false;
+    bool tpsCondition = (currentStatus.TPS >= configPage9.afrProtectMinTPS) ? true : false;
+
+    /*
+      Depending on selected mode, this could either be fixed AFR value or a
+      value set to be the maximum deviation from AFR target table.
+
+      1 = fixed value mode, 2 = target table mode
+    */
+    bool afrCondition;
+    switch(configPage9.afrProtectEnabled)
+    {
+      case 1: afrCondition = (currentStatus.O2 >= configPage9.afrProtectDeviation) ? true : false; break; /* Fixed value */
+      case 2: afrCondition = (currentStatus.O2 >= (currentStatus.afrTarget + configPage9.afrProtectDeviation)) ? true : false; break; /* Deviation from target table */
+      default: afrCondition = false; /* Unknown mode. Shouldn't even get here */
+    }
+
+    /* Check if conditions above are fulfilled */
+    if(mapCondition && rpmCondition && tpsCondition && afrCondition) 
+    {
+      /* All conditions fulfilled - start counter for 'protection delay' */
+      if(!afrProtectCountEnabled) 
+      {
+        afrProtectCountEnabled = true;
+        afrProtectCount = millis();
+      }
+
+      /* Check if countdown has reached its target, if so then instruct to cut */
+      if(millis() >= (afrProtectCount + (configPage9.afrProtectCutTime * X100_MULTIPLIER))) 
+      {
+        checkAFRLimitActive = true;
+        BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_AFR);
+      }
+    } 
+    else 
+    {
+      /* Conditions have presumably changed - deactivate and reset counter */
+      if(afrProtectCountEnabled) 
+      {
+        afrProtectCountEnabled = false;
+        afrProtectCount = 0;
+      }
+    }
+
+    /* Check if condition for reactivation is fulfilled */
+    if(checkAFRLimitActive && (currentStatus.TPS <= configPage9.afrProtectReactivationTPS)) 
+    {
+      checkAFRLimitActive = false;
+      afrProtectCountEnabled = false;
+      BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_AFR);
+    }
+  }
 
   return checkAFRLimitActive;
 }

@@ -356,9 +356,12 @@ void checkForSDStart()
 
   }
 
-  if(( configPage13.onboard_log_trigger_Epin) && (SD_status == SD_STATUS_READY) )
+  if((configPage13.onboard_log_trigger_Epin) && (SD_status == SD_STATUS_READY) )
   {
-
+    if(digitalRead(pinSDEnable) == LOW)
+    {
+       beginSDLogging(); //Setup the log file, preallocation, header row
+    }
   }
 }
 
@@ -372,6 +375,7 @@ void checkForSDStop()
   bool log_RPM = false;
   bool log_prot = false;
   bool log_Vbat = false;
+  bool log_Epin = false;
 
   //Logging only needs to be stopped if already active
   if(SD_status == SD_STATUS_ACTIVE)
@@ -404,8 +408,17 @@ void checkForSDStop()
 
     }
 
+    //External Pin
+    if(configPage13.onboard_log_trigger_Epin)
+    {
+      if(digitalRead(pinSDEnable) == LOW)
+      {
+        log_Epin = true;
+      }
+    }
+
     //Check all conditions to see if we should stop logging
-    if( (log_boot == false) && (log_RPM == false) && (log_prot == false) && (log_Vbat == false) && (manualLogActive == false) )
+    if( (log_boot == false) && (log_RPM == false) && (log_prot == false) && (log_Vbat == false) && (log_Epin == false) && (manualLogActive == false) )
     {
       endSDLogging(); //Setup the log file, preallocation, header row
     }

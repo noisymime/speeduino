@@ -451,8 +451,8 @@ void processSerialCommand()
 
     case 'Q': // send code version
     {
-      char productString[] = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','2','0','4','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
-      //char productString[] = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','2','0','4'} ; //Note no null terminator in array and statu variable at the start
+      //char productString[] = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','2','0','4','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
+      char productString[] = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','2','0','7'} ; //Note no null terminator in array and statu variable at the start
       sendSerialPayload(&productString, sizeof(productString));
       break;
     }
@@ -527,7 +527,7 @@ void processSerialCommand()
           serialPayload[13] = 0;
           serialPayload[14] = 0;
 
-          //Unkown purpose for last 2 bytes
+          //Unknown purpose for last 2 bytes
           serialPayload[15] = 0;
           serialPayload[16] = 0;
 
@@ -601,8 +601,8 @@ void processSerialCommand()
 
     case 'S': // send code version
     {
-      byte productString[] = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '2', '.', '0', '4', '-', 'd', 'e', 'v'};
-      //byte productString[] = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '2', '0', '2'};
+      //byte productString[] = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '2', '.', '0', '4', '-', 'd', 'e', 'v'};
+      byte productString[] = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '2', '0', '7'};
       sendSerialPayload(&productString, sizeof(productString));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;

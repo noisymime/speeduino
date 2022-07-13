@@ -7,9 +7,9 @@
 [![Build Status](https://img.shields.io/github/workflow/status/noisymime/speeduino/Build%20Firmware)](https://github.com/noisymime/speeduino/actions/workflows/build-firmware.yml)
 [![Unit Tests](https://img.shields.io/github/workflow/status/noisymime/speeduino/Unit%20Tests?label=Unit%20Tests)](https://github.com/noisymime/speeduino/actions/workflows/unit-tests.yml)
 [![Open Bounties](https://img.shields.io/bountysource/team/speeduino/activity.svg)](https://www.bountysource.com/teams/speeduino)
-[![GitHub commits](https://img.shields.io/github/commits-since/noisymime/speeduino/202108.svg)](https://github.com/noisymime/speeduino/compare/202108...master)
+[![GitHub commits](https://img.shields.io/github/commits-since/noisymime/speeduino/202207.svg)](https://github.com/noisymime/speeduino/compare/202207...master)
 ![MISRA](https://img.shields.io/azure-devops/tests/speeduino/Speeduino/1?label=MISRA&passed_label=warnings&failed_label=violations)
-[![Chat on Slack](https://img.shields.io/badge/slack-speeduino-CC2B5E.svg?style=flat&logo=slack)](https://speeduino.com/home/community/slack)
+[![Chat on Discord](https://img.shields.io/badge/discord-speeduino-CC2B5E.svg?style=flat&logo=discord)](https://speeduino.com/home/community/discord)
 
 ##### A low cost, DIY friendly Engine Management System (ECU) based on the Arduino framework
 </div>

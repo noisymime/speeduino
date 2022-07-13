@@ -220,7 +220,7 @@ void doUpdates()
     configPage4.cltAdvValues[5] = 0;
 
 
-    //March 19 added a tacho pulse duration that could default to stupidly high values. Check if this is the case and fix it if found. 6ms is tha maximum allowed value
+    //March 19 added a tacho pulse duration that could default to stupidly high values. Check if this is the case and fix it if found. 6ms is the maximum allowed value
     if(configPage2.tachoDuration > 6) { configPage2.tachoDuration = 3; }
 
     //MAP based AE was introduced, force the AE mode to be TPS for all existing tunes
@@ -600,7 +600,7 @@ void doUpdates()
     configPage13.onboard_log_tr3_thr_AFR = 0;
     configPage13.onboard_log_tr4_thr_on = 0;
     configPage13.onboard_log_tr4_thr_off = 0;
-    configPage13.onboard_log_tr5_thr_on = 0;
+    configPage13.onboard_log_tr5_Epin_pin = 0;
 
     writeAllConfig();
     storeEEPROMVersion(19);
@@ -612,7 +612,11 @@ void doUpdates()
 
     //Option added to select injector pairing on 4 cylinder engines
     if( configPage4.inj4cylPairing > INJ_PAIR_14_23 ) { configPage4.inj4cylPairing = 0; } //Check valid value
-    if( configPage2.nCylinders == 4 ) { configPage4.inj4cylPairing = INJ_PAIR_14_23; } //Force setting to use the default mode from previous FW versions. This is to prevent issues on any setups that have been wired accordingly
+    if( configPage2.nCylinders == 4 )
+    {
+      if ( configPage2.injLayout == INJ_SEQUENTIAL ) { configPage4.inj4cylPairing = INJ_PAIR_13_24; } //Since #478 engine will always start in semi, make the sequence right for the majority of inlie 4 engines
+      else { configPage4.inj4cylPairing = INJ_PAIR_14_23; } //Force setting to use the default mode from previous FW versions. This is to prevent issues on any setups that have been wired accordingly
+    }
 
     configPage9.hardRevMode = 1; //Set hard rev limiter to Fixed mode
     configPage6.tachoMode = 0;
@@ -621,10 +625,55 @@ void doUpdates()
     configPage2.canBMWCluster = 0;
     configPage2.canVAGCluster = 0;
     
+
+    configPage15.boostDCWhenDisabled = 0;
+    configPage15.boostControlEnable = EN_BOOST_CONTROL_BARO;
+    
+    //Fill the boostTableLookupDuty with all 50% duty cycle. This is the same as the hardcoded 50% DC that had been used before.
+    //This makes the boostcontrol fully backwards compatible.  
+    auto table_it = boostTableLookupDuty.values.begin();
+    while (!table_it.at_end())
+    {
+      auto row = *table_it;
+      while (!row.at_end())
+      {
+        *row = 50*2;
+        ++row;
+      }      
+      ++table_it;
+    }
+
+    //Set some sensible values at the RPM axis
+    auto table_X = boostTableLookupDuty.axisX.begin();
+    uint16_t i = 0;
+    while (!table_X.at_end())
+    {
+      ++i;
+      *table_X = 1000+(500*i);
+      ++table_X;
+    }
+
+    //Set some sensible values at the boosttarget axis
+    auto table_Y = boostTableLookupDuty.axisY.begin();
+    i = 0;
+    while (!table_Y.at_end())
+    {
+      ++i;
+      *table_Y = (120 + 10*i);
+      ++table_Y;
+    }
+
+    //AFR Protection added, add default values
+    configPage9.afrProtectEnabled = 0; //Disable by default
+    configPage9.afrProtectMinMAP = 90; //Is divided by 2, vlue represents 180kPa
+    configPage9.afrProtectMinRPM = 40; //4000 RPM min
+    configPage9.afrProtectMinTPS = 160; //80% TPS min
+    configPage9.afrProtectDeviation = 14; //1.4 AFR deviation
+
     writeAllConfig();
     storeEEPROMVersion(20);
   }
-
+  
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (readEEPROMVersion() == 0) || (readEEPROMVersion() == 255) )
   {

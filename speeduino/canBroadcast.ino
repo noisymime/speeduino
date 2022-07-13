@@ -74,7 +74,7 @@ void DashMessage(uint16_t DashMessageID)
       outMsg.buf[0] = 0x00;  //Check engine light (binary 10), Cruise light (binary 1000), EML (binary 10000).
       outMsg.buf[1] = 0x00;  //LSB Fuel consumption
       outMsg.buf[2] = 0x00;  //MSB Fuel Consumption
-      if (currentStatus.coolant > 159) { outMsg.buf[3] = 0x08; } //Turn on overheat light if coolant temp hits 120 degrees celcius.
+      if (currentStatus.coolant > 159) { outMsg.buf[3] = 0x08; } //Turn on overheat light if coolant temp hits 120 degrees celsius.
       else { outMsg.buf[3] = 0x00; } //Overheat light off at normal engine temps.
       outMsg.buf[4] = 0x7E; //this is oil temp
     break;
