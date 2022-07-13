@@ -30,7 +30,7 @@ struct StepperIdle
   int curIdleStep; //Tracks the current location of the stepper
   int targetIdleStep; //What the targeted step is
   volatile StepperStatus stepperStatus;
-  volatile unsigned long stepStartTime; //The time the curren
+  volatile unsigned long stepStartTime;
   byte lessAirDirection;
   byte moreAirDirection;
 };

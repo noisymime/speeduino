@@ -175,6 +175,10 @@ class integerPID_ideal
                                           //   called every time loop() cycles. ON/OFF and
                                           //   calculation frequency can be set using SetMode
                                           //   SetSampleTime respectively
+    bool Compute(uint16_t);               // * performs the PID calculation.  it should be
+                                          //   called every time loop() cycles. ON/OFF and
+                                          //   calculation frequency can be set using SetMode
+                                          //   SetSampleTime respectively
 
     void SetOutputLimits(long, long); //clamps the output to a specific range. 0-255 by default, but
 										  //it's likely the user will want to change this depending on

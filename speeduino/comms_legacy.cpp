@@ -320,7 +320,7 @@ void legacySerialCommand()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 202204-dev"));
+      Serial.print(F("speeduino 202207"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -352,7 +352,7 @@ void legacySerialCommand()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2022.04-dev"));
+      Serial.print(F("Speeduino 2022.07"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -1041,6 +1041,11 @@ void sendPageASCII()
     case ignMap2Page:
       Serial.println(F("\n2nd Ignition Map"));
       serial_print_3dtable(&ignitionTable2, ignitionTable2.type_key);
+      break;
+
+    case boostvvtPage2:
+      Serial.println(F("\nBoost lookup table"));
+      serial_print_3dtable(&boostTableLookupDuty, boostTableLookupDuty.type_key);
       break;
 
     case warmupPage:

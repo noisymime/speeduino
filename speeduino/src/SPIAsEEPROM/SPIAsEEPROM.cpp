@@ -394,6 +394,14 @@ int8_t InternalSTM32F4_EEPROM_Class::writeFlashBytes(uint32_t flashAddress, byte
   uint16_t data = 0;
   uint32_t offset = 0;
   uint32_t countaddress = translatedAddress; 
+
+  //Clear any flash errors before try writing to flash to prevent write failures.
+  if(__HAL_FLASH_GET_FLAG(FLASH_FLAG_WRPERR) != RESET) __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_WRPERR);
+  if(__HAL_FLASH_GET_FLAG(FLASH_FLAG_PGAERR) != RESET) __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_PGAERR);
+  if(__HAL_FLASH_GET_FLAG(FLASH_FLAG_PGPERR) != RESET) __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_PGPERR);
+  if(__HAL_FLASH_GET_FLAG(FLASH_FLAG_PGSERR) != RESET) __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_PGSERR);
+  if(__HAL_FLASH_GET_FLAG(FLASH_FLAG_OPERR ) != RESET) __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_OPERR);
+  
   HAL_FLASH_Unlock();
   while (countaddress < translatedAddress + length) {
       memcpy(&data, buf + offset, sizeof(uint16_t));

@@ -12,7 +12,7 @@
 typedef uint8_t byte;
 
 /** @brief Represents a 16-bit value as a byte. Useful for I/O. 
- * 
+ *
  * Often we need to deal internally with values that fit in 16-bits but do
  * not require much accuracy. E.g. table axes in RPM. For these values we can 
  * save storage space (EEPROM) by scaling to/from 8-bits using a fixed divisor.
@@ -23,11 +23,12 @@ public:
 
     /**
      * @brief Construct
+     *
      * @param factor The factor to multiply when converting \c byte to \c int16_t
      * @param divider The factor to divide by when converting \c int16_t to \c byte
      * 
      * \c divider could be computed from \c factor, but including it as a parameter
-     * allows callers to create \c factor instances at compile tiem.
+     * allows callers to create \c factor instances at compile time.
      */
     constexpr int16_byte(uint8_t factor, const libdivide::libdivide_s16_t &divider) 
         : _factor(factor), _divider(divider)

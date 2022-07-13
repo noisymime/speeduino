@@ -24,7 +24,7 @@ Hence we will preload the timer with 131 cycles to leave 125 until overflow (1ms
 volatile bool tachoAlt = false;
 #define TACHO_PULSE_HIGH() *tach_pin_port |= (tach_pin_mask)
 #define TACHO_PULSE_LOW() *tach_pin_port &= ~(tach_pin_mask)
-enum TachoOutputStatus {DEACTIVE, READY, ACTIVE}; //The 3 statuses that the tacho output pulse can have
+enum TachoOutputStatus {TACHO_INACTIVE, READY, ACTIVE}; //The 3 statuses that the tacho output pulse can have. NOTE: Cannot just use 'INACTIVE' as this is already defined within the Teensy Libs
 
 volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
 volatile TachoOutputStatus tachoOutputFlag;

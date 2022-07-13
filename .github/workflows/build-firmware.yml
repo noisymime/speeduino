@@ -34,11 +34,17 @@ jobs:
         python -m pip install --upgrade pip
         pip install --upgrade platformio
 
-    - name: Run PlatformIO
-      run: platformio run -e teensy35 -e teensy36 -e teensy41 -e black_F407VE -e megaatmega2561 -e megaatmega2560
+    - name: Build test atmel
+      run: platformio run -e megaatmega2560 -e megaatmega2561
+
+    - name: Build test teensy
+      run: platformio run -e teensy35 -e teensy36 -e teensy41
+
+    - name: Build test STM32
+      run: platformio run -e black_F407VE -e BlackPill_F401CC -e BlackPill_F411CE_USB
 
     - name: Upload to Speeduino server
-      if: github.event_name != 'pull_request'
+      if: github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
       env:
         WEB_PWD: ${{ secrets.WEB_PWD }}
       run: |
@@ -51,7 +57,7 @@ jobs:
           
     - name: Slack Notification (Passed)
       uses: rtCamp/action-slack-notify@v2
-      if: success() && github.event_name != 'pull_request'
+      if: success() && github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
       env:
         SLACK_CHANNEL: git
         SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
@@ -63,7 +69,7 @@ jobs:
     
     - name: Slack Notification (Failed)
       uses: rtCamp/action-slack-notify@v2
-      if: failure() && github.event_name != 'pull_request'
+      if: failure() && github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
       env:
         SLACK_CHANNEL: git
         SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'

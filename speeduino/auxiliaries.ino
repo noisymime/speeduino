@@ -367,7 +367,6 @@ void boostByGear()
   }
 }
 
-#define BOOST_HYSTER  40
 void boostControl()
 {
   if( configPage6.boostEnabled==1 )
@@ -392,7 +391,7 @@ void boostControl()
         if ( (configPage9.boostByGearEnabled > 0) && (configPage2.vssMode > 1) ){ boostByGear(); }
         else{ currentStatus.boostTarget = get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM) << 1; } //Boost target table is in kpa and divided by 2
       } 
-      if(currentStatus.MAP >= currentStatus.baro ) //Only engage boost control above baro pressure
+      if(((configPage15.boostControlEnable == EN_BOOST_CONTROL_BARO) & (currentStatus.MAP >= currentStatus.baro)) | ((configPage15.boostControlEnable == EN_BOOST_CONTROL_FIXED) & (currentStatus.MAP >= configPage15.boostControlEnableThreshold))) //Only enables boost control above baro pressure or above user defined threshold (User defined level is usually set to boost with wastegate actuator only boost level)
       {
         //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
         if( configPage2.flexEnabled == 1 )
@@ -415,7 +414,7 @@ void boostControl()
             else { boostPID.SetTunings(configPage6.boostKP, configPage6.boostKI, configPage6.boostKD); }
           }
 
-          bool PIDcomputed = boostPID.Compute(); //Compute() returns false if the required interval has not yet passed.
+          bool PIDcomputed = boostPID.Compute(get3DTableValue(&boostTableLookupDuty, currentStatus.boostTarget, currentStatus.RPM) * 100/2); //Compute() returns false if the required interval has not yet passed.
           if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
           else
           {
@@ -433,8 +432,15 @@ void boostControl()
       }
       else
       {
-        //Boost control does nothing if kPa below the hysteresis point
-        boostDisable();
+        boostPID.Initialize(); //This resets the ITerm value to prevent rubber banding
+        //Boost control needs to have a high duty cycle if control is below threshold (baro or fixed value). This ensures the waste gate is closed as much as possible, this build boost as fast as possible.
+        currentStatus.boostDuty = configPage15.boostDCWhenDisabled*100;
+        boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multiplied by 100) to a pwm count
+        ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
+        if(currentStatus.boostDuty==0){
+          //If boost control does nothing disable PWM completely
+          boostDisable();
+        }     
       } //MAP above boost + hyster
     } //Open / Cloosed loop
 

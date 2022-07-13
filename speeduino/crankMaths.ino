@@ -21,7 +21,7 @@ int rpmDelta;
 * 
 * Currently 4 methods are planned and/or available:
 * 1) Last interval based on a full revolution
-* 2) Last interval based on the time between the last 2 teeth (Crank Pattern dependant)
+* 2) Last interval based on the time between the last 2 teeth (Crank Pattern dependent)
 * 3) Closed loop error correction (Alpha-beta filter) 
 * 4) 2nd derivative prediction (Speed + acceleration)
 */
@@ -55,7 +55,7 @@ unsigned long angleToTime(int16_t angle, byte method)
 * Convert a time (uS) into an angle at current speed
 * Currently 4 methods are planned and/or available:
 * 1) Last interval based on a full revolution
-* 2) Last interval based on the time between the last 2 teeth (Crank Pattern dependant)
+* 2) Last interval based on the time between the last 2 teeth (Crank Pattern dependent)
 * 3) Closed loop error correction (Alpha-beta filter) 
 * 4) 2nd derivative prediction (Speed + acceleration)
 */
@@ -134,7 +134,7 @@ void doCrankSpeedCalcs()
           rpmDelta = (toothDeltaV << 10) / (6 * toothDeltaT);
         }
 
-          timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpmDelta).quot; //This give accuracy down to 0.1 of a degree and can provide noticably better timing results on low res triggers
+          timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpmDelta).quot; //This gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low resolution triggers
           timePerDegree = timePerDegreex16 / 16;
       }
       else
@@ -155,10 +155,10 @@ void doCrankSpeedCalcs()
         {
           //long timeThisRevolution = (micros_safe() - toothOneTime);
           interrupts();
-          //Take into account any likely accleration that has occurred since the last full revolution completed:
+          //Take into account any likely acceleration that has occurred since the last full revolution completed:
           //long rpm_adjust = (timeThisRevolution * (long)currentStatus.rpmDOT) / 1000000; 
           long rpm_adjust = 0;
-          timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpm_adjust).quot; //The use of a x16 value gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low res triggers
+          timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpm_adjust).quot; //The use of a x16 value gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low resolution triggers
           timePerDegree = timePerDegreex16 / 16;
         }
       }

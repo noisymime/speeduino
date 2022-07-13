@@ -73,7 +73,7 @@ void secondserial_Command()
             Glow = Gdata[(configPage9.caninput_source_start_byte[destcaninchannel]&7)];
             if ((BIT_CHECK(configPage9.caninput_source_num_bytes,destcaninchannel) > 0))  //if true then num bytes is 2
                {
-                if ((configPage9.caninput_source_start_byte[destcaninchannel]&7) < 8)   //you cant have a 2 byte value starting at byte 7(8 on the list)
+                if ((configPage9.caninput_source_start_byte[destcaninchannel]&7) < 8)   //you can't have a 2 byte value starting at byte 7(8 on the list)
                    {
                     Ghigh = Gdata[((configPage9.caninput_source_start_byte[destcaninchannel]&7)+1)];
                    }
@@ -423,7 +423,7 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
         break;
 
      case 2:                                          // requests via serial3
-        CANSerial.print("R");                         //send "R" to request data from the sourcecanAddress whos value is sent next
+        CANSerial.print("R");                         //send "R" to request data from the sourcecanAddress whose value is sent next
         CANSerial.write(candata1);                    //the currentStatus.current_caninchannel
         CANSerial.write(lowByte(sourcecanAddress) );       //send lsb first
         CANSerial.write(highByte(sourcecanAddress) );
