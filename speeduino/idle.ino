@@ -70,7 +70,7 @@ void initialiseIdle()
       iacPWMIATTable.xSize = 9;
       iacPWMIATTable.valueSize = SIZE_BYTE;
       iacPWMIATTable.axisSize = SIZE_BYTE;
-      iacPWMIATTable.values = configPage9.iacOLPWMIATVal;
+      iacPWMIATTable.values = configPage15.iacOLPWMIATVal;
       iacPWMIATTable.axisX = configPage6.airDenBins;
 
       iacCrankDutyTable.xSize = 4;
@@ -100,7 +100,7 @@ void initialiseIdle()
       iacPWMIATTable.xSize = 9;
       iacPWMIATTable.valueSize = SIZE_BYTE;
       iacPWMIATTable.axisSize = SIZE_BYTE;
-      iacPWMIATTable.values = configPage9.iacOLPWMIATVal;
+      iacPWMIATTable.values = configPage15.iacOLPWMIATVal;
       iacPWMIATTable.axisX = configPage6.airDenBins;
 
       iacCrankDutyTable.xSize = 4;
