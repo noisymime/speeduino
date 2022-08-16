@@ -36,6 +36,7 @@ struct StepperIdle
 };
 
 struct table2D iacPWMTable;
+struct table2D iacPWMIATTable;
 struct table2D iacStepTable;
 //Open loop tables specifically for cranking
 struct table2D iacCrankStepsTable;
