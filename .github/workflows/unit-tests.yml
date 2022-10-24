@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  test:
     # Only try to run hardware unit tests on the upstream repository
     if: github.repository_owner == 'noisymime'
 
@@ -25,25 +25,13 @@ jobs:
         version: latest
         platform: x32
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.7'
-
-    - name: Install PlatformIO
-      run: |
-        python -m pip install --upgrade pip
-        pip install --upgrade platformio
-        pip install wheel
-        platformio update
-        platformio platform update
-        
     - name: Run Unit Tests
+      uses: karniv00l/platformio-remote-test-action@v1
+      with:
+        environments: megaatmega2560
+        force-remote: true
       env:
         PLATFORMIO_AUTH_TOKEN: ${{ secrets.PLATFORMIO_AUTH_TOKEN }}
-      run: | 
-        platformio run -e megaatmega2560
-        platformio remote test --force-remote --environment megaatmega2560
 
     - name: Slack Notification (Passed)
       uses: rtCamp/action-slack-notify@v2
@@ -56,7 +44,7 @@ jobs:
         SLACK_USERNAME: Github
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
         MSG_MINIMAL: actions url,commit
-    
+
     - name: Slack Notification (Failed)
       uses: rtCamp/action-slack-notify@v2
       if: failure()

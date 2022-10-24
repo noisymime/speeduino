@@ -8,40 +8,15 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Cache pip
-      uses: actions/cache@v2
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Build
+      uses: karniv00l/platformio-run-action@v1
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-    - name: Cache PlatformIO
-      uses: actions/cache@v2
-      with:
-        path: ~/.platformio
-        key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-
-    - name: Install PlatformIO
-      run: |
-        python -m pip install --upgrade pip
-        pip install --upgrade platformio
-
-    - name: Build test atmel
-      run: platformio run -e megaatmega2560 -e megaatmega2561
-
-    - name: Build test teensy
-      run: platformio run -e teensy35 -e teensy36 -e teensy41
-
-    - name: Build test STM32
-      run: platformio run -e black_F407VE -e BlackPill_F401CC -e BlackPill_F411CE_USB
+        environments: "teensy35,teensy36,teensy41,black_F407VE,megaatmega2561,megaatmega2560"
 
     - name: Upload to Speeduino server
       if: github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
@@ -54,7 +29,7 @@ jobs:
         curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/teensy36/firmware.hex" "https://speeduino.com:2078/teensy36/master-teensy36.hex"
         curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/teensy41/firmware.hex" "https://speeduino.com:2078/teensy41/master-teensy41.hex"
         curl --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
-          
+
     - name: Slack Notification (Passed)
       uses: rtCamp/action-slack-notify@v2
       if: success() && github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
@@ -66,7 +41,7 @@ jobs:
         SLACK_USERNAME: Github
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
         MSG_MINIMAL: actions url,commit
-    
+
     - name: Slack Notification (Failed)
       uses: rtCamp/action-slack-notify@v2
       if: failure() && github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
