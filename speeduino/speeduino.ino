@@ -63,11 +63,21 @@ uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a diffe
 
 uint16_t staged_req_fuel_mult_pri = 0;
 uint16_t staged_req_fuel_mult_sec = 0;   
+
+#ifdef USE_LIBDIVIDE
+#include "src/libdivide/libdivide.h"
+static struct libdivide::libdivide_u32_t libdiv_u32_nsquirts;
+#endif
+
 #ifndef UNIT_TEST // Scope guard for unit testing
 void setup(void)
 {
   currentStatus.initialisationComplete = false; //Tracks whether the initialiseAll() function has run completely
   initialiseAll();
+
+#ifdef USE_LIBDIVIDE
+  libdiv_u32_nsquirts = libdivide::libdivide_u32_gen(currentStatus.nSquirts);
+#endif
 }
 
 static inline uint16_t pwApplyNitrousStage(uint16_t pw, uint8_t minRPM, uint8_t maxRPM, uint8_t adderMin, uint8_t adderMax)
@@ -1456,29 +1466,14 @@ uint16_t calculatePWLimit()
   uint32_t tempLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
   //Handle multiple squirts per rev
   if (configPage2.strokes == FOUR_STROKE) { tempLimit = tempLimit * 2; }
-  //Optimise for power of two divisions where possible
-  switch(currentStatus.nSquirts)
-  {
-    case 1:
-      //No action needed
-      break;
-    case 2:
-      tempLimit = tempLimit / 2;
-      break;
-    case 4:
-      tempLimit = tempLimit / 4;
-      break;
-    case 8:
-      tempLimit = tempLimit / 8;
-      break;
-    default:
-      //Non-PoT squirts value. Perform (slow) uint32_t division
-      tempLimit = tempLimit / currentStatus.nSquirts;
-      break;
-  }
-  if(tempLimit > UINT16_MAX) { tempLimit = UINT16_MAX; }
 
-  return tempLimit;
+#ifdef USE_LIBDIVIDE
+  return libdivide::libdivide_u32_do(tempLimit, &libdiv_u32_nsquirts);
+#else
+  return tempLimit / currentStatus.nSquirts; 
+#endif  
+
+  return min(tempLimit, (uint32_t)UINT16_MAX);
 }
 
 void calculateStaging(uint32_t pwLimit)
