@@ -96,7 +96,6 @@ static inline uint16_t pwApplyNitrous(uint16_t pw)
   return pw;
 }
 
-
 inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int16_t RPM, uint16_t currentPW)
 {
     uint8_t pw1percent = 100U + get3DTableValue(pTrimTable, fuelLoad, RPM) - OFFSET_FUELTRIM;
@@ -491,7 +490,9 @@ void loop(void)
       //Check that the duty cycle of the chosen pulsewidth isn't too high.
       uint16_t pwLimit = calculatePWLimit();
       //Apply the pwLimit if staging is disabled and engine is not cranking
-      if( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && (configPage10.stagingEnabled == false) ) { if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; } }
+      if( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && (configPage10.stagingEnabled == false) ) { 
+        currentStatus.PW1 = min((uint16_t)pwLimit, currentStatus.PW1);
+      }
 
       calculateStaging(pwLimit);
 
