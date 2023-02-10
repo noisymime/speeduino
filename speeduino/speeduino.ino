@@ -51,7 +51,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 // Forward declarations
 static byte getVE1(void);
-static byte getAdvance1(void);
 
 uint16_t req_fuel_uS = 0; /**< The required fuel variable (As calculated by TunerStudio) in uS */
 uint16_t inj_opentime_uS = 0;
@@ -1211,6 +1210,38 @@ void loop(void)
 } //loop()
 #endif //Unit test guard
 
+static inline uint16_t getPwIMapMultiplier(long MAP) {
+  //Check whether either of the multiply MAP modes is turned on
+  if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { 
+    return div100((uint16_t)MAP << 7U);
+  }
+  if( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { 
+    return ((uint16_t)MAP << 7U) / currentStatus.baro; 
+  }
+  return 100U;
+}
+
+static inline uint16_t getPwiAFR() {
+  if ( (configPage2.includeAFR == true) && (configPage6.egoType == EGO_TYPE_WIDE) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
+    return ((uint16_t)currentStatus.O2 << 7U) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
+  }
+  if ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ) {
+    return ((uint16_t)configPage2.stoich << 7U) / currentStatus.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
+  }
+  return 147U;
+}
+
+static inline uint32_t applyCorrections(uint32_t intermediate, uint16_t corrections) {
+  if (corrections < 512 ) { 
+    intermediate = rshift<7U>(intermediate * div100(lshift<7U>(corrections))); 
+  } else if (corrections < 1024 ) { 
+    intermediate = rshift<6U>(intermediate * div100(lshift<6U>(corrections)));
+  } else {
+    intermediate = rshift<5U>(intermediate * div100(lshift<5U>(corrections)));
+  }  
+  return intermediate;
+}
+
 /**
  * @brief This function calculates the required pulsewidth time (in us) given the current system state
  * 
@@ -1226,67 +1257,41 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
   //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
-  uint16_t iVE;
-  uint16_t iMAP = 100;
-  uint16_t iAFR = 147;
 
   //100% float free version, does sacrifice a little bit of accuracy, but not much.
- 
-  //iVE = ((unsigned int)VE << 7) / 100;
-  iVE = div100(((uint16_t)VE << 7U));
 
-  //Check whether either of the multiply MAP modes is turned on
-  //if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = ((unsigned int)MAP << 7) / 100; }
-  if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = div100( ((uint16_t)MAP << 7U) ); }
-  else if( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { iMAP = ((unsigned int)MAP << 7U) / currentStatus.baro; }
-  
-  if ( (configPage2.includeAFR == true) && (configPage6.egoType == EGO_TYPE_WIDE) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
-    iAFR = ((unsigned int)currentStatus.O2 << 7U) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
-  }
-  if ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ) {
-    iAFR = ((unsigned int)configPage2.stoich << 7U) / currentStatus.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
-  }
+  uint16_t iVE = div100((uint16_t)(VE << 7U));
 
   uint32_t intermediate = rshift<7U>((uint32_t)REQ_FUEL * (uint32_t)iVE); //Need to use an intermediate value to avoid overflowing the long
-  if ( configPage2.multiplyMAP > 0 ) { intermediate = rshift<7U>(intermediate * (uint32_t)iMAP); }
+  if ( configPage2.multiplyMAP!=0U ) { 
+    intermediate = rshift<7U>(intermediate * (uint32_t)getPwIMapMultiplier(MAP)); 
+  }
   
-  if ( (configPage2.includeAFR == true) && (configPage6.egoType == EGO_TYPE_WIDE) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
+  if (( (configPage2.includeAFR == true) && (configPage6.egoType == EGO_TYPE_WIDE) && (currentStatus.runSecs > configPage6.ego_sdelay) )
+  || ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ))
+  {
     //EGO type must be set to wideband and the AFR warmup time must've elapsed for this to be used
-    intermediate = rshift<7U>(intermediate * (uint32_t)iAFR);  
+    intermediate = rshift<7U>(intermediate * getPwiAFR());  
   }
-  if ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ) {
-    intermediate = rshift<7U>(intermediate * (uint32_t)iAFR);
-  }
-
-  //If corrections are huge, use less bitshift to avoid overflow. Sacrifices a bit more accuracy (basically only during very cold temp cranking)
-  if (corrections < 512 ) { 
-    intermediate = rshift<7U>(intermediate * div100(lshift<7U>(corrections))); 
-  } else if (corrections < 1024 ) { 
-    intermediate = rshift<6U>(intermediate * div100(lshift<6U>(corrections)));
-  } else {
-    intermediate = rshift<5U>(intermediate * div100(lshift<5U>(corrections)));
-  }
-
+  
+  intermediate = applyCorrections(intermediate, corrections);
   if (intermediate != 0)
   {
     //If intermediate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
     intermediate += injOpen; //Add the injector opening time
+    
     //AE calculation only when ACC is active.
     if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) )
     {
       //AE Adds % of req_fuel
       if ( configPage2.aeApplyMode == AE_MODE_ADDER )
-        {
-          intermediate += div100(((uint32_t)REQ_FUEL) * (currentStatus.AEamount - 100U));
-        }
-    }
-
-    if ( intermediate > UINT16_MAX)
-    {
-      intermediate = UINT16_MAX;  //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
+      {
+        intermediate += div100( (uint32_t)REQ_FUEL * (currentStatus.AEamount - 100U) );
+      }
     }
   }
-  return (unsigned int)(intermediate);
+  // Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
+  return (uint16_t)min(intermediate, 65535UL);
 }
 
 /** Lookup the current VE value from the primary 3D fuel map.
