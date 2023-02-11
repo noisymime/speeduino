@@ -17,7 +17,7 @@
 
 void setup(void);
 void loop(void);
-uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen);
+uint16_t PW(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections, uint16_t injOpen);
 uint16_t calculatePWLimit();
 void calculateStaging(uint32_t);
 void calculateIgnitionAngles(uint16_t dwellAngle);
