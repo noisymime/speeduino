@@ -225,9 +225,9 @@
 #define COMPOSITE_LOG_SYNC 4
 #define COMPOSITE_ENGINE_CYCLE 5
 
-#define EGO_TYPE_OFF      0
-#define EGO_TYPE_NARROW   1
-#define EGO_TYPE_WIDE     2
+#define EGO_TYPE_OFF      0U
+#define EGO_TYPE_NARROW   1U
+#define EGO_TYPE_WIDE     2U
 
 #define INJ_TYPE_PORT 0
 #define INJ_TYPE_TBODY 1
@@ -284,10 +284,10 @@
 #define STAGING_MODE_TABLE  0
 #define STAGING_MODE_AUTO   1
 
-#define NITROUS_OFF         0
-#define NITROUS_STAGE1      1
-#define NITROUS_STAGE2      2
-#define NITROUS_BOTH        3
+#define NITROUS_OFF         0U
+#define NITROUS_STAGE1      1U
+#define NITROUS_STAGE2      2U
+#define NITROUS_BOTH        3U
 
 #define PROTECT_CUT_OFF     0
 #define PROTECT_CUT_IGN     1
@@ -298,8 +298,8 @@
 #define AE_MODE_TPS         0
 #define AE_MODE_MAP         1
 
-#define AE_MODE_MULTIPLIER  0
-#define AE_MODE_ADDER       1
+#define AE_MODE_MULTIPLIER  0U
+#define AE_MODE_ADDER       1U
 
 #define KNOCK_MODE_OFF      0
 #define KNOCK_MODE_DIGITAL  1
@@ -347,9 +347,9 @@
 #define VVT_LOAD_MAP      0
 #define VVT_LOAD_TPS      1
 
-#define MULTIPLY_MAP_MODE_OFF   0
-#define MULTIPLY_MAP_MODE_BARO  1
-#define MULTIPLY_MAP_MODE_100   2
+#define MULTIPLY_MAP_MODE_OFF   0U
+#define MULTIPLY_MAP_MODE_BARO  1U
+#define MULTIPLY_MAP_MODE_100   2U
 
 #define FOUR_STROKE         0U
 #define TWO_STROKE          1U
