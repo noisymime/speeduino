@@ -1460,13 +1460,15 @@ uint16_t calculatePWLimit()
 {
   uint32_t tempLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
   //Handle multiple squirts per rev
-  if (configPage2.strokes == FOUR_STROKE) { tempLimit = tempLimit * 2; }
+  if (configPage2.strokes == FOUR_STROKE) { tempLimit = tempLimit * 2U; }
 
+  if (currentStatus.nSquirts>1U) {
 #ifdef USE_LIBDIVIDE
-  return libdivide::libdivide_u32_do(tempLimit, &libdiv_u32_nsquirts);
+    return libdivide::libdivide_u32_do(tempLimit, &libdiv_u32_nsquirts);
 #else
-  return tempLimit / currentStatus.nSquirts; 
-#endif  
+    return tempLimit / currentStatus.nSquirts; 
+#endif
+  }
 
   return min(tempLimit, (uint32_t)UINT16_MAX);
 }
