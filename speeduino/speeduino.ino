@@ -50,7 +50,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
 // Forward declarations
-static byte getVE1(void);
+static uint8_t getVE1(void);
 
 uint16_t req_fuel_uS = 0; /**< The required fuel variable (As calculated by TunerStudio) in uS */
 uint16_t inj_opentime_uS = 0;
@@ -1206,6 +1206,29 @@ void loop(void)
 } //loop()
 #endif //Unit test guard
 
+static inline uint32_t pwApplyMapMode(uint32_t intermediate, uint16_t MAP) {
+  if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { 
+    uint16_t mutiplier = div100((uint16_t)(MAP << 7U));
+    return (intermediate * (uint32_t)mutiplier) >> 7UL; 
+  }
+  if( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { 
+     uint16_t mutiplier = (MAP << 7U) / currentStatus.baro; 
+    return (intermediate * (uint32_t)mutiplier) >> 7UL; 
+  }
+  return intermediate;
+}
+
+static inline uint32_t pwApplyAFRMultiplier(uint32_t intermediate) {
+  if ( (configPage2.includeAFR == true) && (configPage6.egoType == EGO_TYPE_WIDE) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
+    uint16_t mutiplier = ((uint16_t)currentStatus.O2 << 7U) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
+    return (intermediate * (uint32_t)mutiplier) >> 7UL; 
+  }
+  if ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ) {
+    uint16_t mutiplier = ((uint16_t)configPage2.stoich << 7U) / currentStatus.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
+    return (intermediate * (uint32_t)mutiplier) >> 7UL; 
+  }
+  return intermediate;
+}
 
 static inline uint8_t getPwBitShift(uint16_t corrections) {
   //If corrections are huge, use less bitshift to avoid overflow. Sacrifices a bit more accuracy (basically only during very cold temp cranking)
@@ -1214,31 +1237,15 @@ static inline uint8_t getPwBitShift(uint16_t corrections) {
   return 7U;
 }
 
-static inline uint16_t getPwIMapMultiplier(long MAP) {
-  //Check whether either of the multiply MAP modes is turned on
-  if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { 
-    return div100((uint16_t)MAP << 7U);
-  }
-  if( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { 
-    return ((uint16_t)MAP << 7U) / currentStatus.baro; 
-  }
-  return 100U;
-}
-
-static inline uint16_t getPwiAFR() {
-  if ( (configPage2.includeAFR == true) && (configPage6.egoType == EGO_TYPE_WIDE) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
-    return ((uint16_t)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
-  }
-  if ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ) {
-    return ((uint16_t)configPage2.stoich << 7) / currentStatus.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
-  }
-  return 147U;
-}
-
-static inline uint32_t applyCorrections(uint32_t intermediate, uint16_t corrections) {
+static inline uint32_t pwApplyCorrections(uint32_t intermediate, uint16_t corrections) {
   uint8_t bitShift = getPwBitShift(corrections); 
   uint16_t iCorrections = div100((uint16_t)(corrections << bitShift));
   return (intermediate * (uint32_t)iCorrections) >> bitShift;
+}
+
+static inline uint32_t pwComputeInitial(uint16_t REQ_FUEL, uint8_t VE) {
+  uint16_t iVE = div100((uint16_t)(VE << 7U));
+  return ((uint32_t)REQ_FUEL * (uint32_t)iVE) >> 7UL; //Need to use an intermediate value to avoid overflowing the long
 }
 
 /**
@@ -1251,29 +1258,13 @@ static inline uint32_t applyCorrections(uint32_t intermediate, uint16_t correcti
  * @param injOpen Injector opening time. The time the injector take to open minus the time it takes to close (Both in uS)
  * @return uint16_t The injector pulse width in uS
  */
-uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
+uint16_t PW(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections, uint16_t injOpen)
 {
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
   //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
 
-  //100% float free version, does sacrifice a little bit of accuracy, but not much.
-
-  uint16_t iVE = div100((uint16_t)(VE << 7U));
-
-  uint32_t intermediate = ((uint32_t)REQ_FUEL * (uint32_t)iVE) >> 7UL; //Need to use an intermediate value to avoid overflowing the long
-  if ( configPage2.multiplyMAP > 0 ) { 
-    intermediate = (intermediate * (uint32_t)getPwIMapMultiplier(MAP)) >> 7UL; 
-  }
-  
-  if (( (configPage2.includeAFR == true) && (configPage6.egoType == EGO_TYPE_WIDE) && (currentStatus.runSecs > configPage6.ego_sdelay) )
-  || ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ))
-  {
-    //EGO type must be set to wideband and the AFR warmup time must've elapsed for this to be used
-    intermediate = (intermediate * getPwiAFR()) >> 7U;  
-  }
-  
-  intermediate = applyCorrections(intermediate, corrections);
+  uint32_t intermediate = pwApplyCorrections(pwApplyAFRMultiplier(pwApplyMapMode(pwComputeInitial(REQ_FUEL, VE), MAP)), corrections);
   if (intermediate != 0)
   {
     //If intermediate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
@@ -1298,9 +1289,8 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
  * 
  * @return byte The current VE value
  */
-byte getVE1(void)
+uint8_t getVE1(void)
 {
-  byte tempVE = 100;
   if (configPage2.fuelAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
   {
     //Speed Density
@@ -1317,9 +1307,8 @@ byte getVE1(void)
     currentStatus.fuelLoad = ((int16_t)currentStatus.MAP * 100U) / currentStatus.EMAP;
   }
   else { currentStatus.fuelLoad = currentStatus.MAP; } //Fallback position
-  tempVE = get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
 
-  return tempVE;
+  return get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
 }
 
 /** Lookup the ignition advance from 3D ignition table.
