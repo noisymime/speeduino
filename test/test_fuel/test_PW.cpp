@@ -2,6 +2,7 @@
 #include <speeduino.h>
 #include <unity.h>
 #include "test_PW.h"
+#include "pw_calcs.h"
 
 #define PW_ALLOWED_ERROR  30
 
