@@ -11,14 +11,12 @@
 
 #ifndef SPEEDUINO_H
 #define SPEEDUINO_H
-//#include "globals.h"
 
 #define CRANK_RUN_HYSTER    15
 
 void setup(void);
 void loop(void);
-uint16_t PW(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections, uint16_t injOpen);
-uint16_t calculatePWLimit();
+
 void calculateStaging(uint32_t);
 void calculateIgnitionAngles(uint16_t dwellAngle);
 void checkLaunchAndFlatShift();

@@ -20,6 +20,7 @@
 #include "idle.h"
 #include "table2d.h"
 #include "acc_mc33810.h"
+#include "pw_calcs.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 #if defined(EEPROM_RESET_PIN)
   #include EEPROM_LIB_H
@@ -1232,9 +1233,11 @@ void initialiseAll(void)
        tachoSweepIncr is also the number of tach pulses per second */
     tachoSweepIncr = configPage2.tachoSweepMaxRPM * maxIgnOutputs * 5 / 3;
     
-    currentStatus.initialisationComplete = true;
-    digitalWrite(LED_BUILTIN, HIGH);
+    initialisePWCalcs();
 
+    currentStatus.initialisationComplete = true;
+
+    digitalWrite(LED_BUILTIN, HIGH);
 }
 /** Set board / microcontroller specific pin mappings / assignments.
  * The boardID is switch-case compared against raw boardID integers (not enum or defined label, and probably no need for that either)
