@@ -50,9 +50,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 
-// Forward declarations
-static uint8_t getVE1(void);
-
 uint16_t req_fuel_uS = 0; /**< The required fuel variable (As calculated by TunerStudio) in uS */
 uint16_t inj_opentime_uS = 0;
 
@@ -71,6 +68,63 @@ void setup(void)
   initialiseAll();
 }
 
+/** Lookup the ignition advance from 3D ignition table.
+ * The values used to look this up will be RPM and whatever load source the user has configured.
+ * 
+ * @return byte The current target advance value in degrees
+ */
+static inline byte getAdvance1(void)
+{
+  byte tempAdvance = 0;
+  if (configPage2.ignAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
+  {
+    //Speed Density
+    currentStatus.ignLoad = currentStatus.MAP;
+  }
+  else if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS)
+  {
+    //Alpha-N
+    currentStatus.ignLoad = currentStatus.TPS * 2;
+
+  }
+  else if (configPage2.fuelAlgorithm == LOAD_SOURCE_IMAPEMAP)
+  {
+    //IMAP / EMAP
+    currentStatus.ignLoad = ((int16_t)currentStatus.MAP * 100U) / currentStatus.EMAP;
+  }
+  tempAdvance = get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
+  tempAdvance = correctionsIgn(tempAdvance);
+
+  return tempAdvance;
+}
+
+
+/** Lookup the current VE value from the primary 3D fuel map.
+ * The Y axis value used for this lookup varies based on the fuel algorithm selected (speed density, alpha-n etc).
+ * 
+ * @return byte The current VE value
+ */
+static inline uint8_t getVE1(void)
+{
+  if (configPage2.fuelAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
+  {
+    //Speed Density
+    currentStatus.fuelLoad = currentStatus.MAP;
+  }
+  else if (configPage2.fuelAlgorithm == LOAD_SOURCE_TPS)
+  {
+    //Alpha-N
+    currentStatus.fuelLoad = currentStatus.TPS * 2;
+  }
+  else if (configPage2.fuelAlgorithm == LOAD_SOURCE_IMAPEMAP)
+  {
+    //IMAP / EMAP
+    currentStatus.fuelLoad = ((int16_t)currentStatus.MAP * 100U) / currentStatus.EMAP;
+  }
+  else { currentStatus.fuelLoad = currentStatus.MAP; } //Fallback position
+
+  return get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
+}
 
 /** Speeduino main loop.
  * 
@@ -1170,63 +1224,6 @@ void loop(void)
     }
 } //loop()
 #endif //Unit test guard
-
-/** Lookup the current VE value from the primary 3D fuel map.
- * The Y axis value used for this lookup varies based on the fuel algorithm selected (speed density, alpha-n etc).
- * 
- * @return byte The current VE value
- */
-uint8_t getVE1(void)
-{
-  if (configPage2.fuelAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
-  {
-    //Speed Density
-    currentStatus.fuelLoad = currentStatus.MAP;
-  }
-  else if (configPage2.fuelAlgorithm == LOAD_SOURCE_TPS)
-  {
-    //Alpha-N
-    currentStatus.fuelLoad = currentStatus.TPS * 2;
-  }
-  else if (configPage2.fuelAlgorithm == LOAD_SOURCE_IMAPEMAP)
-  {
-    //IMAP / EMAP
-    currentStatus.fuelLoad = ((int16_t)currentStatus.MAP * 100U) / currentStatus.EMAP;
-  }
-  else { currentStatus.fuelLoad = currentStatus.MAP; } //Fallback position
-
-  return get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
-}
-
-/** Lookup the ignition advance from 3D ignition table.
- * The values used to look this up will be RPM and whatever load source the user has configured.
- * 
- * @return byte The current target advance value in degrees
- */
-byte getAdvance1(void)
-{
-  byte tempAdvance = 0;
-  if (configPage2.ignAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
-  {
-    //Speed Density
-    currentStatus.ignLoad = currentStatus.MAP;
-  }
-  else if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS)
-  {
-    //Alpha-N
-    currentStatus.ignLoad = currentStatus.TPS * 2;
-
-  }
-  else if (configPage2.fuelAlgorithm == LOAD_SOURCE_IMAPEMAP)
-  {
-    //IMAP / EMAP
-    currentStatus.ignLoad = ((int16_t)currentStatus.MAP * 100U) / currentStatus.EMAP;
-  }
-  tempAdvance = get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
-  tempAdvance = correctionsIgn(tempAdvance);
-
-  return tempAdvance;
-}
 
 /** Calculate the Ignition angles for all cylinders (based on @ref config2.nCylinders).
  * both start and end angles are calculated for each channel.
