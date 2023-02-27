@@ -113,29 +113,29 @@ void initialiseSchedulers()
     reset(ignitionSchedule8);
 #endif
 
-  fuelSchedule1.pStartFunction = nullCallback;
-  fuelSchedule1.pEndFunction = nullCallback;
-  fuelSchedule2.pStartFunction = nullCallback;
-  fuelSchedule2.pEndFunction = nullCallback;
-  fuelSchedule3.pStartFunction = nullCallback;
-  fuelSchedule3.pEndFunction = nullCallback;
-  fuelSchedule4.pStartFunction = nullCallback;
-  fuelSchedule4.pEndFunction = nullCallback;
+  fuelSchedule1.pStartCallback = nullCallback;
+  fuelSchedule1.pEndCallback = nullCallback;
+  fuelSchedule2.pStartCallback = nullCallback;
+  fuelSchedule2.pEndCallback = nullCallback;
+  fuelSchedule3.pStartCallback = nullCallback;
+  fuelSchedule3.pEndCallback = nullCallback;
+  fuelSchedule4.pStartCallback = nullCallback;
+  fuelSchedule4.pEndCallback = nullCallback;
 #if (INJ_CHANNELS >= 5)  
-  fuelSchedule5.pStartFunction = nullCallback;
-  fuelSchedule5.pEndFunction = nullCallback;
+  fuelSchedule5.pStartCallback = nullCallback;
+  fuelSchedule5.pEndCallback = nullCallback;
 #endif
 #if (INJ_CHANNELS >= 6)
-  fuelSchedule6.pStartFunction = nullCallback;
-  fuelSchedule6.pEndFunction = nullCallback;
+  fuelSchedule6.pStartCallback = nullCallback;
+  fuelSchedule6.pEndCallback = nullCallback;
 #endif
 #if (INJ_CHANNELS >= 7)
-  fuelSchedule7.pStartFunction = nullCallback;
-  fuelSchedule7.pEndFunction = nullCallback;
+  fuelSchedule7.pStartCallback = nullCallback;
+  fuelSchedule7.pEndCallback = nullCallback;
 #endif
 #if (INJ_CHANNELS >= 8)
-  fuelSchedule8.pStartFunction = nullCallback;
-  fuelSchedule8.pEndFunction = nullCallback;
+  fuelSchedule8.pStartCallback = nullCallback;
+  fuelSchedule8.pEndCallback = nullCallback;
 #endif
 
   ignitionSchedule1.pStartCallback = nullCallback;
@@ -321,13 +321,13 @@ static inline __attribute__((always_inline)) void fuelScheduleISR(FuelSchedule &
 {
   if (schedule.Status == PENDING) //Check to see if this schedule is turn on
   {
-    schedule.pStartFunction();
+    schedule.pStartCallback();
     schedule.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
     SET_COMPARE(schedule.compare, schedule.counter + uS_TO_TIMER_COMPARE(schedule.duration) ); //Doing this here prevents a potential overflow on restarts
   }
   else if (schedule.Status == RUNNING)
   {
-      schedule.pEndFunction();
+      schedule.pEndCallback();
       schedule.Status = OFF; //Turn off the schedule
 
       //If there is a next schedule queued up, activate it
