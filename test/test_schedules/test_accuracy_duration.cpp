@@ -15,8 +15,8 @@ static void endCallback(void) { end_time = micros(); }
 void test_accuracy_duration_inj(FuelSchedule &schedule)
 {
     initialiseSchedulers();
-    schedule.pStartFunction = startCallback;
-    schedule.pEndFunction = endCallback;
+    schedule.pStartCallback = startCallback;
+    schedule.pEndCallback = endCallback;
     setFuelSchedule(schedule, TIMEOUT, DURATION);
     while(schedule.Status != OFF) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
