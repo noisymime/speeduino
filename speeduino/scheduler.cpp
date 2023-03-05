@@ -30,38 +30,38 @@ A full copy of the license may be found in the projects root directory
 #include "timers.h"
 #include "schedule_calcs.h"
 
-FuelSchedule fuelSchedule1(FUEL1_COUNTER, FUEL1_COMPARE, FUEL1_TIMER_DISABLE, FUEL1_TIMER_ENABLE);
-FuelSchedule fuelSchedule2(FUEL2_COUNTER, FUEL2_COMPARE, FUEL2_TIMER_DISABLE, FUEL2_TIMER_ENABLE);
-FuelSchedule fuelSchedule3(FUEL3_COUNTER, FUEL3_COMPARE, FUEL3_TIMER_DISABLE, FUEL3_TIMER_ENABLE);
-FuelSchedule fuelSchedule4(FUEL4_COUNTER, FUEL4_COMPARE, FUEL4_TIMER_DISABLE, FUEL4_TIMER_ENABLE);
+FuelSchedule fuelSchedule1(FUEL1_COUNTER, FUEL1_COMPARE);
+FuelSchedule fuelSchedule2(FUEL2_COUNTER, FUEL2_COMPARE);
+FuelSchedule fuelSchedule3(FUEL3_COUNTER, FUEL3_COMPARE);
+FuelSchedule fuelSchedule4(FUEL4_COUNTER, FUEL4_COMPARE);
 
 #if (INJ_CHANNELS >= 5)
-FuelSchedule fuelSchedule5(FUEL5_COUNTER, FUEL5_COMPARE, FUEL5_TIMER_DISABLE, FUEL5_TIMER_ENABLE);
+FuelSchedule fuelSchedule5(FUEL5_COUNTER, FUEL5_COMPARE);
 #endif
 #if (INJ_CHANNELS >= 6)
-FuelSchedule fuelSchedule6(FUEL6_COUNTER, FUEL6_COMPARE, FUEL6_TIMER_DISABLE, FUEL6_TIMER_ENABLE);
+FuelSchedule fuelSchedule6(FUEL6_COUNTER, FUEL6_COMPARE);
 #endif
 #if (INJ_CHANNELS >= 7)
-FuelSchedule fuelSchedule7(FUEL7_COUNTER, FUEL7_COMPARE, FUEL7_TIMER_DISABLE, FUEL7_TIMER_ENABLE);
+FuelSchedule fuelSchedule7(FUEL7_COUNTER, FUEL7_COMPARE);
 #endif
 #if (INJ_CHANNELS >= 8)
-FuelSchedule fuelSchedule8(FUEL8_COUNTER, FUEL8_COMPARE, FUEL8_TIMER_DISABLE, FUEL8_TIMER_ENABLE);
+FuelSchedule fuelSchedule8(FUEL8_COUNTER, FUEL8_COMPARE);
 #endif
 
-IgnitionSchedule ignitionSchedule1(IGN1_COUNTER, IGN1_COMPARE, IGN1_TIMER_DISABLE, IGN1_TIMER_ENABLE);
-IgnitionSchedule ignitionSchedule2(IGN2_COUNTER, IGN2_COMPARE, IGN2_TIMER_DISABLE, IGN2_TIMER_ENABLE);
-IgnitionSchedule ignitionSchedule3(IGN3_COUNTER, IGN3_COMPARE, IGN3_TIMER_DISABLE, IGN3_TIMER_ENABLE);
-IgnitionSchedule ignitionSchedule4(IGN4_COUNTER, IGN4_COMPARE, IGN4_TIMER_DISABLE, IGN4_TIMER_ENABLE);
-IgnitionSchedule ignitionSchedule5(IGN5_COUNTER, IGN5_COMPARE, IGN5_TIMER_DISABLE, IGN5_TIMER_ENABLE);
+IgnitionSchedule ignitionSchedule1(IGN1_COUNTER, IGN1_COMPARE);
+IgnitionSchedule ignitionSchedule2(IGN2_COUNTER, IGN2_COMPARE);
+IgnitionSchedule ignitionSchedule3(IGN3_COUNTER, IGN3_COMPARE);
+IgnitionSchedule ignitionSchedule4(IGN4_COUNTER, IGN4_COMPARE);
+IgnitionSchedule ignitionSchedule5(IGN5_COUNTER, IGN5_COMPARE);
 
 #if IGN_CHANNELS >= 6
-IgnitionSchedule ignitionSchedule6(IGN6_COUNTER, IGN6_COMPARE, IGN6_TIMER_DISABLE, IGN6_TIMER_ENABLE);
+IgnitionSchedule ignitionSchedule6(IGN6_COUNTER, IGN6_COMPARE);
 #endif
 #if IGN_CHANNELS >= 7
-IgnitionSchedule ignitionSchedule7(IGN7_COUNTER, IGN7_COMPARE, IGN7_TIMER_DISABLE, IGN7_TIMER_ENABLE);
+IgnitionSchedule ignitionSchedule7(IGN7_COUNTER, IGN7_COMPARE);
 #endif
 #if IGN_CHANNELS >= 8
-IgnitionSchedule ignitionSchedule8(IGN8_COUNTER, IGN8_COMPARE, IGN8_TIMER_DISABLE, IGN8_TIMER_ENABLE);
+IgnitionSchedule ignitionSchedule8(IGN8_COUNTER, IGN8_COMPARE);
 #endif
 
 static void reset(Schedule &schedule)
@@ -69,7 +69,6 @@ static void reset(Schedule &schedule)
     schedule.Status = OFF;
     schedule.pStartCallback = nullCallback;
     schedule.pEndCallback = nullCallback;
-    schedule.pTimerEnable();
 }
 
 static void reset(FuelSchedule &schedule) 
@@ -175,6 +174,41 @@ void initialiseSchedulers()
 
 }
 
+void startSchedulers(void)
+{
+  FUEL1_TIMER_ENABLE();
+  FUEL2_TIMER_ENABLE();
+  FUEL3_TIMER_ENABLE();
+  FUEL4_TIMER_ENABLE();
+#if INJ_CHANNELS >= 5
+  FUEL5_TIMER_ENABLE();
+#endif
+#if INJ_CHANNELS >= 6
+  FUEL6_TIMER_ENABLE();
+#endif
+#if INJ_CHANNELS >= 7
+  FUEL7_TIMER_ENABLE();
+#endif
+#if INJ_CHANNELS >= 8
+  FUEL8_TIMER_ENABLE();
+#endif
+
+  IGN1_TIMER_ENABLE();
+  IGN2_TIMER_ENABLE();
+  IGN3_TIMER_ENABLE();
+  IGN4_TIMER_ENABLE();
+  IGN5_TIMER_ENABLE();
+#if IGN_CHANNELS >= 6
+  IGN6_TIMER_ENABLE();
+#endif
+#if IGN_CHANNELS >= 7
+  IGN7_TIMER_ENABLE();
+#endif
+#if IGN_CHANNELS >= 8
+  IGN8_TIMER_ENABLE();
+#endif  
+}
+
 static inline bool hasNextSchedule(const Schedule &schedule) {
   return schedule.nextDuration!=0;
 }
@@ -191,7 +225,6 @@ void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsi
   SET_COMPARE(schedule._compare, schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeout));
   schedule.Status = PENDING; //Turn this schedule on
   interrupts();
-  schedule.pTimerEnable();
 }
 
 void _setScheduleNext(Schedule &schedule, uint32_t timeout, uint32_t duration)
@@ -214,7 +247,6 @@ void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeo
   }
   schedule.Status = PENDING; //Turn this schedule on
   interrupts();
-  schedule.pTimerEnable();
 }
 
 void refreshIgnitionSchedule1(unsigned long timeToEnd)
@@ -289,15 +321,7 @@ static inline __attribute__((always_inline)) void fuelScheduleISR(FuelSchedule &
         schedule.Status = PENDING;
         clearNextSchedule(schedule);
       }
-      else 
-      { 
-        schedule.pTimerDisable(); 
-      }
   }
-  else if (schedule.Status == OFF) 
-  { 
-    schedule.pTimerDisable(); //Safety check. Turn off this output compare unit and return without performing any action
-  } 
 } 
 
 /*******************************************************************************************************************************************************************************************************/
@@ -420,15 +444,6 @@ static inline __attribute__((always_inline)) void ignitionScheduleISR(IgnitionSc
         schedule.Status = PENDING;
         clearNextSchedule(schedule);
     }
-    else
-    { 
-      schedule.pTimerDisable(); 
-    }
-  }
-  else if (schedule.Status == OFF)
-  {
-    //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-    schedule.pTimerDisable(); 
   }
 }
 

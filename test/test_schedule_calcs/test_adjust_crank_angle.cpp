@@ -4,13 +4,11 @@
 #include "schedule_calcs.h"
 #include "../test_utils.h"
 
-static void nullIgnCallback(void) {};
-
 void test_adjust_crank_angle_pending_below_minrevolutions()
 {
     auto counter = decltype(+IGN4_COUNTER){0};
     auto compare = decltype(+IGN4_COMPARE){0};
-    IgnitionSchedule schedule(counter, compare, nullIgnCallback, nullIgnCallback);
+    IgnitionSchedule schedule(counter, compare);
 
     schedule.Status = PENDING;
     currentStatus.startRevolutions = 0;
@@ -31,7 +29,7 @@ void test_adjust_crank_angle_pending_above_minrevolutions()
 {
     auto counter = decltype(+IGN4_COUNTER){0};
     auto compare = decltype(+IGN4_COMPARE){0};
-    IgnitionSchedule schedule(counter, compare, nullIgnCallback, nullIgnCallback);
+    IgnitionSchedule schedule(counter, compare);
     
     schedule.Status = PENDING;
     currentStatus.startRevolutions = 2000;
@@ -53,7 +51,7 @@ void test_adjust_crank_angle_running()
 {
     auto counter = decltype(+IGN4_COUNTER){0};
     auto compare = decltype(+IGN4_COMPARE){0};
-    IgnitionSchedule schedule(counter, compare, nullIgnCallback, nullIgnCallback);
+    IgnitionSchedule schedule(counter, compare);
     
     schedule.Status = RUNNING;
     currentStatus.startRevolutions = 2000;
