@@ -64,16 +64,22 @@ IgnitionSchedule ignitionSchedule7(IGN7_COUNTER, IGN7_COMPARE, IGN7_TIMER_DISABL
 IgnitionSchedule ignitionSchedule8(IGN8_COUNTER, IGN8_COMPARE, IGN8_TIMER_DISABLE, IGN8_TIMER_ENABLE);
 #endif
 
-static void reset(FuelSchedule &schedule) 
+static void reset(Schedule &schedule)
 {
     schedule.Status = OFF;
+    schedule.pStartCallback = nullCallback;
+    schedule.pEndCallback = nullCallback;
     schedule.pTimerEnable();
+}
+
+static void reset(FuelSchedule &schedule) 
+{
+    reset((Schedule&)schedule);
 }
 
 static void reset(IgnitionSchedule &schedule) 
 {
-    schedule.Status = OFF;
-    schedule.pTimerEnable();
+    reset((Schedule&)schedule);
 }
 
 void initialiseSchedulers()
@@ -113,79 +119,38 @@ void initialiseSchedulers()
     reset(ignitionSchedule8);
 #endif
 
-  fuelSchedule1.pStartCallback = nullCallback;
-  fuelSchedule1.pEndCallback = nullCallback;
-  fuelSchedule2.pStartCallback = nullCallback;
-  fuelSchedule2.pEndCallback = nullCallback;
-  fuelSchedule3.pStartCallback = nullCallback;
-  fuelSchedule3.pEndCallback = nullCallback;
-  fuelSchedule4.pStartCallback = nullCallback;
-  fuelSchedule4.pEndCallback = nullCallback;
-#if (INJ_CHANNELS >= 5)  
-  fuelSchedule5.pStartCallback = nullCallback;
-  fuelSchedule5.pEndCallback = nullCallback;
-#endif
-#if (INJ_CHANNELS >= 6)
-  fuelSchedule6.pStartCallback = nullCallback;
-  fuelSchedule6.pEndCallback = nullCallback;
-#endif
-#if (INJ_CHANNELS >= 7)
-  fuelSchedule7.pStartCallback = nullCallback;
-  fuelSchedule7.pEndCallback = nullCallback;
-#endif
-#if (INJ_CHANNELS >= 8)
-  fuelSchedule8.pStartCallback = nullCallback;
-  fuelSchedule8.pEndCallback = nullCallback;
-#endif
-
-  ignitionSchedule1.pStartCallback = nullCallback;
-  ignitionSchedule1.pEndCallback = nullCallback;
   ignition1StartAngle=0;
   ignition1EndAngle=0;
   channel1IgnDegrees=0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
 
-  ignitionSchedule2.pStartCallback = nullCallback;
-  ignitionSchedule2.pEndCallback = nullCallback;
   ignition2StartAngle=0;
   ignition2EndAngle=0;
   channel2IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
 
-  ignitionSchedule3.pStartCallback = nullCallback;
-  ignitionSchedule3.pEndCallback = nullCallback;
   ignition3StartAngle=0;
   ignition3EndAngle=0;
   channel3IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
 
-  ignitionSchedule4.pStartCallback = nullCallback;
-  ignitionSchedule4.pEndCallback = nullCallback;
   ignition4StartAngle=0;
   ignition4EndAngle=0;
   channel4IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
 
 #if (IGN_CHANNELS >= 5)
-  ignitionSchedule5.pStartCallback = nullCallback;
-  ignitionSchedule5.pEndCallback = nullCallback;
   ignition5StartAngle=0;
   ignition5EndAngle=0;
   channel5IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
 #endif
 #if (IGN_CHANNELS >= 6)
-  ignitionSchedule6.pStartCallback = nullCallback;
-  ignitionSchedule6.pEndCallback = nullCallback;
   ignition6StartAngle=0;
   ignition6EndAngle=0;
   channel6IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
 #endif
 #if (IGN_CHANNELS >= 7)
-  ignitionSchedule7.pStartCallback = nullCallback;
-  ignitionSchedule7.pEndCallback = nullCallback;
   ignition7StartAngle=0;
   ignition7EndAngle=0;
   channel7IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
 #endif
 #if (IGN_CHANNELS >= 8)
-  ignitionSchedule8.pStartCallback = nullCallback;
-  ignitionSchedule8.pEndCallback = nullCallback;
   ignition8StartAngle=0;
   ignition8EndAngle=0;
   channel8IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
@@ -215,15 +180,13 @@ void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsi
   schedule.duration = duration;
 
   //Need to check that the timeout doesn't exceed the overflow
-  COMPARE_TYPE timeout_timer_compare;
-  if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS on a mega2560, other boards will be different) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous squirts
-  else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
+  timeout = min(timeout, (MAX_TIMER_PERIOD - 1));
 
   //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
   noInterrupts();
-  schedule.startCompare = schedule.counter + timeout_timer_compare;
+  schedule.startCompare = schedule._counter + uS_TO_TIMER_COMPARE(timeout);
   schedule.endCompare = schedule.startCompare + uS_TO_TIMER_COMPARE(duration);
-  SET_COMPARE(schedule.compare, schedule.startCompare); //Use the B compare unit of timer 3
+  SET_COMPARE(schedule._compare, schedule.startCompare); //Use the B compare unit of timer 3
   schedule.Status = PENDING; //Turn this schedule on
   interrupts();
   schedule.pTimerEnable();
@@ -233,7 +196,7 @@ void _setFuelScheduleNext(FuelSchedule &schedule, unsigned long timeout, unsigne
 {
   //If the schedule is already running, we can set the next schedule so it is ready to go
   //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-  schedule.nextStartCompare = schedule.counter + uS_TO_TIMER_COMPARE(timeout);
+  schedule.nextStartCompare = schedule._counter + uS_TO_TIMER_COMPARE(timeout);
   schedule.nextEndCompare = schedule.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
   schedule.hasNextSchedule = true;
 }
@@ -248,9 +211,9 @@ void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeo
   else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
   noInterrupts();
-  schedule.startCompare = schedule.counter + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+  schedule.startCompare = schedule._counter + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
   if(schedule.endScheduleSetByDecoder == false) { schedule.endCompare = schedule.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-  SET_COMPARE(schedule.compare, schedule.startCompare);
+  SET_COMPARE(schedule._compare, schedule.startCompare);
   schedule.Status = PENDING; //Turn this schedule on
   interrupts();
   schedule.pTimerEnable();
@@ -260,7 +223,7 @@ void _setIgnitionScheduleNext(IgnitionSchedule &schedule, unsigned long timeout,
 {
   //If the schedule is already running, we can set the next schedule so it is ready to go
   //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-  schedule.nextStartCompare = schedule.counter + uS_TO_TIMER_COMPARE(timeout);
+  schedule.nextStartCompare = schedule._counter + uS_TO_TIMER_COMPARE(timeout);
   schedule.nextEndCompare = schedule.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
   schedule.hasNextSchedule = true;
 }
@@ -323,7 +286,7 @@ static inline __attribute__((always_inline)) void fuelScheduleISR(FuelSchedule &
   {
     schedule.pStartCallback();
     schedule.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-    SET_COMPARE(schedule.compare, schedule.counter + uS_TO_TIMER_COMPARE(schedule.duration) ); //Doing this here prevents a potential overflow on restarts
+    SET_COMPARE(schedule._compare, schedule._counter + uS_TO_TIMER_COMPARE(schedule.duration) ); //Doing this here prevents a potential overflow on restarts
   }
   else if (schedule.Status == RUNNING)
   {
@@ -333,7 +296,7 @@ static inline __attribute__((always_inline)) void fuelScheduleISR(FuelSchedule &
       //If there is a next schedule queued up, activate it
       if(schedule.hasNextSchedule == true)
       {
-        SET_COMPARE(schedule.compare, schedule.nextStartCompare);
+        SET_COMPARE(schedule._compare, schedule.nextStartCompare);
         SET_COMPARE(schedule.endCompare, schedule.nextEndCompare);
         schedule.Status = PENDING;
         schedule.hasNextSchedule = false;
@@ -451,8 +414,8 @@ static inline __attribute__((always_inline)) void ignitionScheduleISR(IgnitionSc
     schedule.pStartCallback();
     schedule.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
     schedule.startTime = micros();
-    if(schedule.endScheduleSetByDecoder == true) { SET_COMPARE(schedule.compare, schedule.endCompare); }
-    else { SET_COMPARE(schedule.compare, schedule.counter + uS_TO_TIMER_COMPARE(schedule.duration) ); } //Doing this here prevents a potential overflow on restarts
+    if(schedule.endScheduleSetByDecoder == true) { SET_COMPARE(schedule._compare, schedule.endCompare); }
+    else { SET_COMPARE(schedule._compare, schedule._counter + uS_TO_TIMER_COMPARE(schedule.duration) ); } //Doing this here prevents a potential overflow on restarts
   }
   else if (schedule.Status == RUNNING)
   {
@@ -465,7 +428,7 @@ static inline __attribute__((always_inline)) void ignitionScheduleISR(IgnitionSc
     //If there is a next schedule queued up, activate it
     if(schedule.hasNextSchedule == true)
     {
-      SET_COMPARE(schedule.compare, schedule.nextStartCompare);
+      SET_COMPARE(schedule._compare, schedule.nextStartCompare);
       schedule.Status = PENDING;
       schedule.hasNextSchedule = false;
     }
