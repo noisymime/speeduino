@@ -175,6 +175,14 @@ void initialiseSchedulers()
 
 }
 
+static inline bool hasNextSchedule(const Schedule &schedule) {
+  return schedule.nextDuration!=0;
+}
+
+static inline void clearNextSchedule(Schedule &schedule) {
+  schedule.nextDuration = 0;
+}
+
 void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsigned long duration)
 {
   //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
@@ -192,7 +200,6 @@ void _setScheduleNext(Schedule &schedule, uint32_t timeout, uint32_t duration)
   //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
   schedule.nextStartCompare = schedule._counter + uS_TO_TIMER_COMPARE(timeout);
   schedule.nextDuration = uS_TO_TIMER_COMPARE(duration);
-  schedule.hasNextSchedule = true;
 }
 
 void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration)
@@ -275,12 +282,12 @@ static inline __attribute__((always_inline)) void fuelScheduleISR(FuelSchedule &
       schedule.Status = OFF; //Turn off the schedule
 
       //If there is a next schedule queued up, activate it
-      if(schedule.hasNextSchedule == true)
+      if(hasNextSchedule(schedule))
       {
         SET_COMPARE(schedule._compare, schedule.nextStartCompare);
         schedule.Duration = schedule.nextDuration;
         schedule.Status = PENDING;
-        schedule.hasNextSchedule = false;
+        clearNextSchedule(schedule);
       }
       else 
       { 
@@ -406,12 +413,12 @@ static inline __attribute__((always_inline)) void ignitionScheduleISR(IgnitionSc
     currentStatus.actualDwell = DWELL_AVERAGE( (micros() - schedule.startTime) );
 
     //If there is a next schedule queued up, activate it
-    if(schedule.hasNextSchedule == true)
+    if(hasNextSchedule(schedule))
     {
         SET_COMPARE(schedule._compare, schedule.nextStartCompare);
         schedule.Duration = schedule.nextDuration;
         schedule.Status = PENDING;
-        schedule.hasNextSchedule = false;
+        clearNextSchedule(schedule);
     }
     else
     { 
