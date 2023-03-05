@@ -176,6 +176,10 @@ struct Schedule {
   void (&pTimerEnable)();   ///< **Reference** to the timer enable function
 };
 
+
+void _setScheduleNext(Schedule &schedule, uint32_t timeout, uint32_t duration);
+
+
 /** Ignition schedule.
  */
 struct IgnitionSchedule : public Schedule {
@@ -187,16 +191,17 @@ struct IgnitionSchedule : public Schedule {
 };
 
 void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration);
-void _setIgnitionScheduleNext(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration);
 
 inline __attribute__((always_inline)) void setIgnitionSchedule(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration) {
+  noInterrupts();
   if(schedule.Status != RUNNING) { //Check that we're not already part way through a schedule
     _setIgnitionScheduleRunning(schedule, timeout, duration);
   }
   // Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
   else if(timeout < MAX_TIMER_PERIOD){
-    _setIgnitionScheduleNext(schedule, timeout, duration);
+    _setScheduleNext(schedule, timeout, duration);
   }
+  interrupts();
 }
 
 /** Fuel injection schedule.
@@ -210,17 +215,18 @@ struct FuelSchedule : public Schedule {
 };
 
 void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsigned long duration);
-void _setFuelScheduleNext(FuelSchedule &schedule, unsigned long timeout, unsigned long duration);
 
-inline __attribute__((always_inline)) void setFuelSchedule(FuelSchedule &schedule, unsigned long timeout, unsigned long duration) 
-{
-  if(schedule.Status != RUNNING) 
-  { //Check that we're not already part way through a schedule
-    _setFuelScheduleRunning(schedule, timeout, duration);
-  }
-  else if(timeout < MAX_TIMER_PERIOD) 
-  {
-    _setFuelScheduleNext(schedule, timeout, duration);
+inline __attribute__((always_inline)) void setFuelSchedule(FuelSchedule &schedule, unsigned long timeout, unsigned long duration) {
+    //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
+  if(timeout < MAX_TIMER_PERIOD) {
+    noInterrupts();
+    if(schedule.Status != RUNNING) { //Check that we're not already part way through a schedule
+      _setFuelScheduleRunning(schedule, timeout, duration);
+    }
+    else {
+      _setScheduleNext(schedule, timeout, duration);
+    }
+    interrupts();
   }
 }
 
