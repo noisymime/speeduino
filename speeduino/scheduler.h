@@ -101,28 +101,59 @@ void refreshIgnitionSchedule1(unsigned long timeToEnd);
   void ignitionSchedule8Interrupt(void);
 #endif
 #endif
-/** Schedule statuses.
- * - OFF - Schedule turned off and there is no scheduled plan
- * - PENDING - There's a scheduled plan, but is has not started to run yet
- * - STAGED - (???, Not used)
- * - RUNNING - Schedule is currently running
- */
-enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The statuses that a schedule can have
 
-/** Ignition schedule.
- */
-struct IgnitionSchedule {
+/** \enum ScheduleStatus
+ * @brief The current state of a schedule
+ * */
+enum ScheduleStatus {
+  /** Not running */
+  OFF, 
+  /** The delay phase of the schedule is active */
+  PENDING,
+  /** The schedule action is running */
+  RUNNING,
+}; 
 
+
+/**
+ * @brief A schedule for a single output channel. 
+ * 
+ * @details
+ * @par A schedule consists of 3 independent parts:
+ * - an action that can be started and stopped. E.g. charge ignition coil or injection pulse
+ * - a delay until the action is started
+ * - a duration until the action is stopped
+ * 
+ * I.e.\n 
+ * \code 
+ *   <--------------- Delay ---------------><---- Duration ---->
+ *                                          ^                  ^
+ *                              Action starts                  Action ends
+ * \endcode
+ * 
+ * @par Timers are modelled as registers
+ * Once set, Schedule instances are usually driven externally by a timer
+ * ISR calling moveToNextState()
+ */
+struct Schedule {
   // Deduce the real types of the counter and compare registers.
   // COMPARE_TYPE is NOT the same - it's just an integer type wide enough to
   // store 16-bit counter/compare calculation results.
-  using counter_t = decltype(IGN1_COUNTER);
-  using compare_t = decltype(IGN1_COMPARE);
+  /** @brief The type of a timer counter register (this varies between platforms) */
+  using counter_t = decltype(FUEL1_COUNTER /* <-- Arbitrary choice of macro, assumes all have the same type */);
+  /** @brief The type of a timer compare register (this varies between platforms) */
+  using compare_t = decltype(FUEL1_COMPARE /* <-- Arbitrary choice of macro, assumes all have the same type */);
 
-  IgnitionSchedule( counter_t &counter, compare_t &compare,
-            void (&_pTimerDisable)(), void (&_pTimerEnable)())
-  : counter(counter)
-  , compare(compare)
+  /**
+   * @brief Construct a new Schedule object
+   * 
+   * @param counter A <b>reference</b> to the timer counter
+   * @param compare A <b>reference</b> to the timer comparator
+   */
+  Schedule( counter_t &counter, compare_t &compare,
+            void (&_pTimerDisable)(void), void (&_pTimerEnable)(void))
+  : _counter(counter)
+  , _compare(compare)
   , pTimerDisable(_pTimerDisable)
   , pTimerEnable(_pTimerEnable)
   {
@@ -132,19 +163,27 @@ struct IgnitionSchedule {
   volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
   void (*pStartCallback)(void);        ///< Start Callback function for schedule
   void (*pEndCallback)(void);          ///< End Callback function for schedule
-  volatile unsigned long startTime; /**< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino */
   volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
   volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
 
   COMPARE_TYPE nextStartCompare;      ///< Planned start of next schedule (when current schedule is RUNNING)
   COMPARE_TYPE nextEndCompare;        ///< Planned end of next schedule (when current schedule is RUNNING)
   volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
-  volatile bool endScheduleSetByDecoder = false;
+  
+  counter_t &_counter;       ///< **Reference** to the counter register. E.g. TCNT3
+  compare_t &_compare;       ///< **Reference**to the compare register. E.g. OCR3A
+  void (&pTimerDisable)();  ///< **Reference** to the timer disable function
+  void (&pTimerEnable)();   ///< **Reference** to the timer enable function
+};
 
-  counter_t &counter;  // Reference to the counter register. E.g. TCNT3
-  compare_t &compare;  // Reference to the compare register. E.g. OCR3A
-  void (&pTimerDisable)();    // Reference to the timer disable function
-  void (&pTimerEnable)();     // Reference to the timer enable function  
+/** Ignition schedule.
+ */
+struct IgnitionSchedule : public Schedule {
+
+  using Schedule::Schedule;
+
+  volatile unsigned long startTime; /**< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino */
+  volatile bool endScheduleSetByDecoder = false;
 };
 
 void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration);
@@ -164,37 +203,10 @@ inline __attribute__((always_inline)) void setIgnitionSchedule(IgnitionSchedule 
 * Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.
 * They are removed in this struct to save RAM.
 */
-struct FuelSchedule {
+struct FuelSchedule : public Schedule {
 
-  // Deduce the real types of the counter and compare registers.
-  // COMPARE_TYPE is NOT the same - it's just an integer type wide enough to
-  // store 16-bit counter/compare calculation results.
-  using counter_t = decltype(FUEL1_COUNTER);
-  using compare_t = decltype(FUEL1_COMPARE);
+  using Schedule::Schedule;
 
-  FuelSchedule( counter_t &counter, compare_t &compare,
-            void (&_pTimerDisable)(), void (&_pTimerEnable)())
-  : counter(counter)
-  , compare(compare)
-  , pTimerDisable(_pTimerDisable)
-  , pTimerEnable(_pTimerEnable)
-  {
-  }
-
-  volatile unsigned long duration;///< Scheduled duration (uS ?)
-  volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
-  volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
-  volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
-  void (*pStartCallback)(void);
-  void (*pEndCallback)(void);  
-  COMPARE_TYPE nextStartCompare;
-  COMPARE_TYPE nextEndCompare;
-  volatile bool hasNextSchedule = false;
-
-  counter_t &counter;  // Reference to the counter register. E.g. TCNT3
-  compare_t &compare;  // Reference to the compare register. E.g. OCR3A
-  void (&pTimerDisable)();    // Reference to the timer disable function
-  void (&pTimerEnable)();     // Reference to the timer enable function  
 };
 
 void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsigned long duration);
