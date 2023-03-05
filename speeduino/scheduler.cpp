@@ -184,9 +184,9 @@ void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsi
 
   //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
   noInterrupts();
-  schedule.startCompare = schedule._counter + uS_TO_TIMER_COMPARE(timeout);
-  schedule.endCompare = schedule.startCompare + uS_TO_TIMER_COMPARE(duration);
-  SET_COMPARE(schedule._compare, schedule.startCompare); //Use the B compare unit of timer 3
+  COMPARE_TYPE startCompare = schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeout);
+  schedule.endCompare = startCompare + uS_TO_TIMER_COMPARE(duration);
+  SET_COMPARE(schedule._compare, startCompare); //Use the B compare unit of timer 3
   schedule.Status = PENDING; //Turn this schedule on
   interrupts();
   schedule.pTimerEnable();
@@ -211,9 +211,9 @@ void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeo
   else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
   noInterrupts();
-  schedule.startCompare = schedule._counter + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
-  if(schedule.endScheduleSetByDecoder == false) { schedule.endCompare = schedule.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-  SET_COMPARE(schedule._compare, schedule.startCompare);
+  COMPARE_TYPE startCompare = schedule._counter + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+  if(schedule.endScheduleSetByDecoder == false) { schedule.endCompare = startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
+  SET_COMPARE(schedule._compare, startCompare);
   schedule.Status = PENDING; //Turn this schedule on
   interrupts();
   schedule.pTimerEnable();
