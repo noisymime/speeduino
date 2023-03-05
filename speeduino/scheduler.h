@@ -51,6 +51,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 //#define DWELL_AVERAGE(input) (currentStatus.dwell) //Can be use to disable the above for testing
 
 void initialiseSchedulers(void);
+void startSchedulers(void);
 void beginInjectorPriming(void);
 
 void disablePendingFuelSchedule(byte channel);
@@ -150,12 +151,9 @@ struct Schedule {
    * @param counter A <b>reference</b> to the timer counter
    * @param compare A <b>reference</b> to the timer comparator
    */
-  Schedule( counter_t &counter, compare_t &compare,
-            void (&_pTimerDisable)(void), void (&_pTimerEnable)(void))
+  Schedule( counter_t &counter, compare_t &compare)
   : _counter(counter)
   , _compare(compare)
-  , pTimerDisable(_pTimerDisable)
-  , pTimerEnable(_pTimerEnable)
   {
   }
 
@@ -169,8 +167,6 @@ struct Schedule {
   
   counter_t &_counter;       ///< **Reference** to the counter register. E.g. TCNT3
   compare_t &_compare;       ///< **Reference**to the compare register. E.g. OCR3A
-  void (&pTimerDisable)();  ///< **Reference** to the timer disable function
-  void (&pTimerEnable)();   ///< **Reference** to the timer enable function
 };
 
 
