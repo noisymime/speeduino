@@ -159,14 +159,13 @@ struct Schedule {
   {
   }
 
-  volatile unsigned long duration;///< Scheduled duration (uS ?)
+  volatile COMPARE_TYPE Duration; ///< Scheduled duration (timer ticks)
   volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
-  void (*pStartCallback)(void);        ///< Start Callback function for schedule
-  void (*pEndCallback)(void);          ///< End Callback function for schedule
-  volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
+  void (*pStartCallback)(void);   ///< Start Callback function for schedule
+  void (*pEndCallback)(void);     ///< End Callback function for schedule
 
-  COMPARE_TYPE nextStartCompare;      ///< Planned start of next schedule (when current schedule is RUNNING)
-  COMPARE_TYPE nextEndCompare;        ///< Planned end of next schedule (when current schedule is RUNNING)
+  volatile COMPARE_TYPE nextStartCompare;      ///< Planned start of next schedule (when current schedule is RUNNING)
+  volatile COMPARE_TYPE nextDuration;        ///< Planned end of next schedule (when current schedule is RUNNING)
   volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
   
   counter_t &_counter;       ///< **Reference** to the counter register. E.g. TCNT3
