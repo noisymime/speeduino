@@ -16,8 +16,7 @@ static void endCallback(void) { /*Empty*/ }
 void test_accuracy_timeout_inj(FuelSchedule &schedule)
 {
     initialiseSchedulers();
-    schedule.pStartCallback = startCallback;
-    schedule.pEndCallback = endCallback;
+    setCallbacks(schedule, startCallback, endCallback);
     start_time = micros();
     setFuelSchedule(schedule, TIMEOUT, DURATION);
     while(schedule.Status == PENDING) /*Wait*/ ;
@@ -75,8 +74,7 @@ void test_accuracy_timeout_inj8(void)
 void test_accuracy_timeout_ign(IgnitionSchedule &schedule)
 {
     initialiseSchedulers();
-    schedule.pStartCallback = startCallback;
-    schedule.pEndCallback = endCallback;
+    setCallbacks(schedule, startCallback, endCallback);
     start_time = micros();
     setIgnitionSchedule(schedule, TIMEOUT, DURATION);
     while(schedule.Status == PENDING) /*Wait*/ ;
