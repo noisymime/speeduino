@@ -23,6 +23,9 @@
 
 byte getTSLogEntry(uint16_t);
 int16_t getReadableLogEntry(uint16_t);
+#if FPU_MAX_SIZE >= 32
+  float getReadableFloatLogEntry(uint16_t);
+#endif
 bool is2ByteEntry(uint8_t);
 
 // This array indicates which index values from the log are 2 byte values

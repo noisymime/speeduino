@@ -35,7 +35,7 @@ void initBoard()
     ***********************************************************************************************************
     * Idle
     */
-    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) )
+    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL))
     {
       PIT_TCTRL0 = 0;
       PIT_TCTRL0 |= PIT_TCTRL_TIE; // enable Timer 1 interrupts

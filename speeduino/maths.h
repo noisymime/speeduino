@@ -10,11 +10,11 @@ inline long powint(int, unsigned int);
 
 #ifdef USE_LIBDIVIDE
 #include "src/libdivide/libdivide.h"
-extern struct libdivide::libdivide_u16_t libdiv_u16_100;
-extern struct libdivide::libdivide_s16_t libdiv_s16_100;
-extern struct libdivide::libdivide_u32_t libdiv_u32_100;
-extern struct libdivide::libdivide_s32_t libdiv_s32_100;
-extern struct libdivide::libdivide_u32_t libdiv_u32_360;
+extern const struct libdivide::libdivide_u16_t libdiv_u16_100;
+extern const struct libdivide::libdivide_s16_t libdiv_s16_100;
+extern const struct libdivide::libdivide_u32_t libdiv_u32_100;
+extern const struct libdivide::libdivide_s32_t libdiv_s32_100;
+extern const struct libdivide::libdivide_u32_t libdiv_u32_360;
 #endif
 
 inline uint8_t div100(uint8_t n) {
@@ -71,6 +71,7 @@ inline uint32_t div360(uint32_t n) {
 }
 
 #define DIV_ROUND_CLOSEST(n, d) ((((n) < 0) ^ ((d) < 0)) ? (((n) - (d)/2)/(d)) : (((n) + (d)/2)/(d)))
+#define IS_INTEGER(d) (d == (int32_t)d)
 
 //This is a dedicated function that specifically handles the case of mapping 0-1023 values into a 0 to X range
 //This is a common case because it means converting from a standard 10-bit analog input to a byte or 10-bit analog into 0-511 (Eg the temperature readings)

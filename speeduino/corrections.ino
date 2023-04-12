@@ -605,7 +605,7 @@ byte correctionAFRClosedLoop()
     if( (currentStatus.runSecs > configPage6.ego_sdelay) || (configPage2.incorporateAFR == true) ) { currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.fuelLoad, currentStatus.RPM); } //Perform the target lookup
   }
   
-  if((configPage6.egoType > 0)  & (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) != 1  ) ) //egoType of 0 means no O2 sensor. If DFCO is active do not run the ego controllers to prevent interator wind-up.
+  if((configPage6.egoType > 0) && (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) != 1  ) ) //egoType of 0 means no O2 sensor. If DFCO is active do not run the ego controllers to prevent interator wind-up.
   {
     AFRValue = currentStatus.egoCorrection; //Need to record this here, just to make sure the correction stays 'on' even if the nextCycle count isn't ready
     

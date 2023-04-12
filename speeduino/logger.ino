@@ -195,7 +195,7 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 11: statusValue = currentStatus.iatCorrection; break; //Air temperature Correction (%)
     case 12: statusValue = currentStatus.wueCorrection; break; //Warmup enrichment (%)
     case 13: statusValue = currentStatus.RPM; break; //rpm HB
-    case 14: statusValue = currentStatus.AEamount; break; //TPS acceleration enrichment (%) divided by 2 (Can exceed 255)
+    case 14: statusValue = currentStatus.AEamount; break; //TPS acceleration enrichment (%)
     case 15: statusValue = currentStatus.corrections; break; //Total GammaE (%)
     case 16: statusValue = currentStatus.VE1; break; //VE 1 (%)
     case 17: statusValue = currentStatus.VE2; break; //VE 2 (%)
@@ -289,6 +289,37 @@ int16_t getReadableLogEntry(uint16_t logIndex)
 
   return statusValue;
 }
+
+/** 
+ * An expansion to the @ref getReadableLogEntry function for systems that have an FPU. It will provide a floating point value for any parameter that this is appropriate for, otherwise will return the result of @ref getReadableLogEntry.
+ * See logger.h for the field names and order
+ * @param logIndex - The log index required. Note that this is NOT the byte number, but the index in the log
+ * @return float value of the requested log entry. 
+ */
+#if FPU_MAX_SIZE >= 32
+float getReadableFloatLogEntry(uint16_t logIndex)
+{
+  float statusValue = 0.0;
+
+  switch(logIndex)
+  {
+    case 8: statusValue = currentStatus.battery10 / 10.0; break; //battery voltage
+    case 9: statusValue = currentStatus.O2 / 10.0; break;
+    case 18: statusValue = currentStatus.afrTarget / 10.0; break;
+    case 21: statusValue = currentStatus.TPS / 2.0; break; // TPS (0% to 100% = 0 to 200)
+    case 33: statusValue = currentStatus.O2_2 / 10.0; break; //O2
+
+    case 53: statusValue = currentStatus.PW1 / 1000.0; break; //Pulsewidth 1 Have to convert from uS to mS.
+    case 54: statusValue = currentStatus.PW2 / 1000.0; break; //Pulsewidth 2 Have to convert from uS to mS.
+    case 55: statusValue = currentStatus.PW3 / 1000.0; break; //Pulsewidth 3 Have to convert from uS to mS.
+    case 56: statusValue = currentStatus.PW4 / 1000.0; break; //Pulsewidth 4 Have to convert from uS to mS.
+
+    default: statusValue = getReadableLogEntry(logIndex); break; //If logIndex value is NOT a float based one, use the regular function
+  }
+
+  return statusValue;
+}
+#endif
 
 /** 
  * Searches the log 2 byte array to determine whether a given index is a regular single byte or a 2 byte field

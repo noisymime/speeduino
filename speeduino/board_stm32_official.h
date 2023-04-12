@@ -25,6 +25,7 @@
 #define COMPARE_TYPE uint16_t
 #define COUNTER_TYPE uint16_t
 #define SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
+#define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
 #define TIMER_RESOLUTION 4
 
@@ -266,7 +267,7 @@ extern "C" char* sbrk(int incr);
 #define IDLE_COUNTER   (TIM1)->CNT
 #define IDLE_COMPARE   (TIM1)->CCR4
 
-#define IDLE_TIMER_ENABLE()  (TIM1)->SR = ~TIM_FLAG_CC4; (TIM1)->DIER |= TIM_DIER_CC4IE
+#define IDLE_TIMER_ENABLE()  (TIM1)->SR = ~TIM_FLAG_CC4; (TIM1)->DIER |= TIM_DIER_CC4IE; (TIM1)->CR1 |= TIM_CR1_CEN;
 #define IDLE_TIMER_DISABLE() (TIM1)->DIER &= ~TIM_DIER_CC4IE
 
 /*

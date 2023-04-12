@@ -41,9 +41,10 @@ unsigned long angleToTime(int16_t angle, byte method)
         {
           noInterrupts();
           unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime);
+          uint16_t tempTriggerToothAngle = triggerToothAngle; // triggerToothAngle is set by interrupts
           interrupts();
           
-          returnTime = ( (toothTime * angle) / triggerToothAngle );
+          returnTime = ( (toothTime * angle) / tempTriggerToothAngle );
         }
         else { returnTime = angleToTime(angle, CRANKMATH_METHOD_INTERVAL_REV); } //Safety check. This can occur if the last tooth seen was outside the normal pattern etc
     }
@@ -76,9 +77,10 @@ uint16_t timeToAngle(unsigned long time, byte method)
         {
           noInterrupts();
           unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime);
+          uint16_t tempTriggerToothAngle = triggerToothAngle; // triggerToothAngle is set by interrupts
           interrupts();
 
-          returnAngle = ( (unsigned long)(time * triggerToothAngle) / toothTime );
+          returnAngle = ( (unsigned long)(time * tempTriggerToothAngle) / toothTime );
         }
         else { returnAngle = timeToAngle(time, CRANKMATH_METHOD_INTERVAL_REV); } //Safety check. This can occur if the last tooth seen was outside the normal pattern etc
     }

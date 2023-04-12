@@ -6,13 +6,13 @@
 
 // Constants used for libdivide. Using predefined constants saves flash and RAM (.bss)
 // versus calling the libdivide generator functions (E.g. libdivide_s32_gen)
-libdivide::libdivide_s16_t libdiv_s16_100 = { .magic = S16_MAGIC(100), .more = S16_MORE(100) };
-libdivide::libdivide_u16_t libdiv_u16_100 = { .magic = U16_MAGIC(100), .more = U16_MORE(100) };
+const libdivide::libdivide_s16_t libdiv_s16_100 = { .magic = S16_MAGIC(100), .more = S16_MORE(100) };
+const libdivide::libdivide_u16_t libdiv_u16_100 = { .magic = U16_MAGIC(100), .more = U16_MORE(100) };
 // 32-bit constants generated here: https://godbolt.org/z/vP8Kfejo9
-libdivide::libdivide_u32_t libdiv_u32_100 = { .magic = 2748779070, .more = 6 };
-libdivide::libdivide_s32_t libdiv_s32_100 = { .magic = 1374389535, .more = 5 };
-libdivide::libdivide_u32_t libdiv_u32_200 = { .magic = 2748779070, .more = 7 };
-libdivide::libdivide_u32_t libdiv_u32_360 = { .magic = 1813430637, .more = 72 };
+const libdivide::libdivide_u32_t libdiv_u32_100 = { .magic = 2748779070, .more = 6 };
+const libdivide::libdivide_s32_t libdiv_s32_100 = { .magic = 1374389535, .more = 5 };
+const libdivide::libdivide_u32_t libdiv_u32_200 = { .magic = 2748779070, .more = 7 };
+const libdivide::libdivide_u32_t libdiv_u32_360 = { .magic = 1813430637, .more = 72 };
 #endif
 
 //Replace the standard arduino map() function to use the div function instead

@@ -76,7 +76,7 @@ volatile unsigned int secondaryToothCount; //Used for identifying the current se
 volatile unsigned long secondaryLastToothTime = 0; //The time (micros()) that the last tooth was registered (Cam input)
 volatile unsigned long secondaryLastToothTime1 = 0; //The time (micros()) that the last tooth was registered (Cam input)
 
-volatile uint16_t triggerActualTeeth;
+uint16_t triggerActualTeeth;
 volatile unsigned long triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 volatile unsigned long triggerSecFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering) for the secondary input
 volatile bool validTrigger; //Is set true when the last trigger (Primary or secondary) was valid (ie passed filters)
