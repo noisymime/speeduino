@@ -14,7 +14,7 @@ Note that this may clear some of the existing values of the table
 #endif
 
 
-static inline uint8_t getCacheTime() {
+static inline uint8_t getCacheTime(void) {
 #if !defined(UNIT_TEST)
   return currentStatus.secl;
 #else

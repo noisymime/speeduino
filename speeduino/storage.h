@@ -99,7 +99,11 @@
  * | 3201       |64          | boostLUT table (8x8)                 | @ref EEPROM_CONFIG15_MAP           |
  * | 3265       |8           | boostLUT table (X axis) (RPM)        |                                    |
  * | 3273       |8           | boostLUT table (Y axis) (targetBoost)|                                    |
- * | 3281       |176         | Page 15 settings                     | @ref EEPROM_CONFIG15_START         |
+ * | 3281       |1           | boostLUT enable                      | @ref EEPROM_CONFIG15_START         |
+ * | 3282       |1           | boostDCWhenDisabled                  |                                    |
+ * | 3283       |1           | boostControlEnableThreshold          |                                    |
+ * | 3284       |14          | A/C Control Settings                 |                                    |
+ * | 3298       |159         | Page 15 spare                        |                                    |
  * | 3457       |217         | EMPTY                                |                                    |
  * | 3674       |4           | CLT Calibration CRC32                |                                    |
  * | 3678       |4           | IAT Calibration CRC32                |                                    |
@@ -116,27 +120,27 @@
  *
  */
 
-void writeAllConfig();
+void writeAllConfig(void);
 void writeConfig(uint8_t pageNum);
 void EEPROMWriteRaw(uint16_t address, uint8_t data);
 uint8_t EEPROMReadRaw(uint16_t address);
-void loadConfig();
-void loadCalibration();
-void writeCalibration();
+void loadConfig(void);
+void loadCalibration(void);
+void writeCalibration(void);
 void writeCalibrationPage(uint8_t pageNum);
-void resetConfigPages();
+void resetConfigPages(void);
 
 //These are utility functions that prevent other files from having to use EEPROM.h directly
-byte readLastBaro();
-void storeLastBaro(byte);
-uint8_t readEEPROMVersion();
-void storeEEPROMVersion(uint8_t);
+byte readLastBaro(void);
+void storeLastBaro(byte newValue);
+uint8_t readEEPROMVersion(void);
+void storeEEPROMVersion(byte newVersion);
 void storePageCRC32(uint8_t pageNum, uint32_t crcValue);
 uint32_t readPageCRC32(uint8_t pageNum);
 void storeCalibrationCRC32(uint8_t calibrationPageNum, uint32_t calibrationCRC);
 uint32_t readCalibrationCRC32(uint8_t calibrationPageNum);
-uint16_t getEEPROMSize();
-bool isEepromWritePending();
+uint16_t getEEPROMSize(void);
+bool isEepromWritePending(void);
 
 extern uint32_t deferEEPROMWritesUntil;
 

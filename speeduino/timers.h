@@ -28,6 +28,12 @@ enum TachoOutputStatus {TACHO_INACTIVE, READY, ACTIVE}; //The 3 statuses that th
 
 volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
 volatile TachoOutputStatus tachoOutputFlag;
+volatile bool tachoSweepEnabled;
+volatile uint16_t tachoSweepIncr;
+volatile uint16_t tachoSweepAccum;
+#define TACHO_SWEEP_TIME_MS 1500
+#define TACHO_SWEEP_RAMP_MS (TACHO_SWEEP_TIME_MS * 2 / 3)
+#define MS_PER_SEC  1000
 
 volatile byte loop33ms;
 volatile byte loop66ms;
@@ -41,10 +47,10 @@ volatile uint16_t last250msLoopCount = 1000; //Set to effectively random number 
 
 #if defined (CORE_TEENSY)
   IntervalTimer lowResTimer;
-  void oneMSInterval();
+  void oneMSInterval(void);
 #elif defined (ARDUINO_ARCH_STM32)
-  void oneMSInterval();
+  void oneMSInterval(void);
 #endif
-void initialiseTimers();
+void initialiseTimers(void);
 
 #endif // TIMERS_H

@@ -1,4 +1,4 @@
-void calculateSecondaryFuel();
-void calculateSecondarySpark();
-byte getVE2();
-byte getAdvance2();
+void calculateSecondaryFuel(void);
+void calculateSecondarySpark(void);
+byte getVE2(void);
+byte getAdvance2(void);

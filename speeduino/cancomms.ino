@@ -46,7 +46,7 @@ bool canCmdPending = false;
   HardwareSerial &CANSerial = Serial2;
 #endif
 
-void secondserial_Command()
+void secondserial_Command(void)
 {
   #if defined(CANSerial_AVAILABLE)
   if (! canCmdPending) {  currentsecondserialCommand = CANSerial.read();  }
@@ -229,7 +229,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[19] = currentStatus.afrTarget;
   fullStatus[20] = lowByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
   fullStatus[21] = highByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[22] = currentStatus.tpsDOT; //TPS DOT
+  fullStatus[22] = (uint8_t)(currentStatus.tpsDOT / 10); //TPS DOT
   fullStatus[23] = currentStatus.advance;
   fullStatus[24] = currentStatus.TPS; // TPS (0% to 100%)
   //Need to split the int loopsPerSecond value into 2 bytes
@@ -313,7 +313,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[89] = highByte(currentStatus.injAngle); 
   fullStatus[90] = currentStatus.idleLoad;
   fullStatus[91] = currentStatus.CLIdleTarget; //closed loop idle target
-  fullStatus[92] = currentStatus.mapDOT; //rate of change of the map 
+  fullStatus[92] = (uint8_t)(currentStatus.mapDOT / 10); //rate of change of the map 
   fullStatus[93] = (int8_t)currentStatus.vvt1Angle;
   fullStatus[94] = currentStatus.vvt1TargetAngle;
   fullStatus[95] = currentStatus.vvt1Duty;
@@ -343,6 +343,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[119] = lowByte(currentStatus.EMAP); //2 bytes for EMAP
   fullStatus[120] = highByte(currentStatus.EMAP);
   fullStatus[121] = currentStatus.fanDuty;
+  fullStatus[122] = currentStatus.airConStatus;
 
   for(byte x=0; x<packetLength; x++)
   {
@@ -361,7 +362,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
 
 }
 
-void can_Command()
+void can_Command(void)
 {
  //int currentcanCommand = inMsg.id;
  #if defined (NATIVE_CAN_AVAILABLE)

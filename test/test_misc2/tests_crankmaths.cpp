@@ -75,7 +75,7 @@ void testCrankMaths()
     { .rpm = 20000, .triggerToothAngle = 180, .toothTime = 1500,   .angle = 720, .expected = 6000 },
   };
   // The same for all tests
-  triggerToothAngleIsCorrect = true;
+  BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
   toothLastMinusOneToothTime = 200000;
 
   for (auto testdata : crankmaths_tooth_testdatas) {

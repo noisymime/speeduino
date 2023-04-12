@@ -11,7 +11,9 @@
 
 #include "int16_byte.h"
 #include "table3d_axes.h"
+#ifdef USE_LIBDIVIDE
 #include "src/libdivide/constant_fast_div.h"
+#endif
 
 /** @brief table axis I/O support 
  * 
@@ -59,9 +61,15 @@ public:
     static inline int16_t from_byte(axis_domain domain, byte in ) { return get_converter(domain)->from_byte(in); }    
 
 private:
+#ifdef USE_LIBDIVIDE
     static constexpr int16_byte converter_100 = { 100, { S16_MAGIC(100), S16_MORE(100) } };
     static constexpr int16_byte converter_2 = { 2, { S16_MAGIC(2), S16_MORE(2) } };
     static constexpr int16_byte converter_1 = { 1, { S16_MAGIC(1), S16_MORE(1) } };
+#else
+    static constexpr int16_byte converter_100 = { 100 };
+    static constexpr int16_byte converter_2 = { 2 };
+    static constexpr int16_byte converter_1 = { 1 };
+#endif
 };
 
 /** @} */

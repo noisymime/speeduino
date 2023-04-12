@@ -20,8 +20,11 @@
  * </pre>
  *
  * In memory, we store rows in reverse:
- *      - The X axis is conventional: <c>x[0]</c> stores \c X-Min
- *      - The Y-axis is inverted: <c>y[0]</c> stores \c Y-Max
+ *      - Both axes are inverted:
+ *        - <c>x[0]</c> stores \c X-Max
+ *        - <c>x[2]</c> stores \c X-Min
+ *        - <c>y[0]</c> stores \c Y-Max
+ *        - <c>y[2]</c> stores \c Y-Min
  *      - The value locations match the axes.
  *          - <c>value[0][0]</c> stores \c V6.
  *          - <c>value[2][0]</c> stores \c V0.
@@ -74,22 +77,22 @@ enum table_type_t {
     /** @brief A 3D table with size x size dimensions, xDom x-axis and yDom y-axis */ \
     struct TABLE3D_TYPENAME_BASE(size, xDom, yDom) \
     { \
-        typedef TABLE3D_TYPENAME_XAXIS(size, xDom, yDom) xaxis_t; \
-        typedef TABLE3D_TYPENAME_YAXIS(size, xDom, yDom) yaxis_t; \
+        typedef TABLE3D_TYPENAME_AXIS(size, xDom) xaxis_t; \
+        typedef TABLE3D_TYPENAME_AXIS(size, yDom) yaxis_t; \
         typedef TABLE3D_TYPENAME_VALUE(size, xDom, yDom) value_t; \
         /* This will take up zero space unless we take the address somewhere */ \
         static constexpr table_type_t type_key = TO_TYPE_KEY(size, xDom, yDom); \
         \
         table3DGetValueCache get_value_cache; \
-        TABLE3D_TYPENAME_VALUE(size, xDom, yDom) values; \
-        TABLE3D_TYPENAME_XAXIS(size, xDom, yDom) axisX; \
-        TABLE3D_TYPENAME_YAXIS(size, xDom, yDom) axisY; \
+        value_t values; \
+        xaxis_t axisX; \
+        yaxis_t axisY; \
     };
 TABLE3D_GENERATOR(TABLE3D_GEN_TYPE)
 
 // Generate get3DTableValue() functions
 #define TABLE3D_GEN_GET_TABLE_VALUE(size, xDom, yDom) \
-    inline int get3DTableValue(TABLE3D_TYPENAME_BASE(size, xDom, yDom) *pTable, table3d_axis_t y, table3d_axis_t x) \
+    static inline table3d_value_t get3DTableValue(TABLE3D_TYPENAME_BASE(size, xDom, yDom) *pTable, table3d_axis_t y, table3d_axis_t x) \
     { \
       return get3DTableValue( &pTable->get_value_cache, \
                               TABLE3D_TYPENAME_BASE(size, xDom, yDom)::value_t::row_size, \
@@ -118,6 +121,9 @@ table_value_iterator rows_begin(const void *pTable, table_type_t key);
 
 table_axis_iterator x_begin(const void *pTable, table_type_t key);
 
+table_axis_iterator x_rbegin(const void *pTable, table_type_t key);
+
 table_axis_iterator y_begin(const void *pTable, table_type_t key);
 
+table_axis_iterator y_rbegin(const void *pTable, table_type_t key);
 /** @} */

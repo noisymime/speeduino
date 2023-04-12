@@ -16,7 +16,7 @@
 #define TIMER_MODE_CTC       ((1<<WGM01)|(0<<WGM00))
 #define TIMER_MODE_FASTPWM   ((1<<WGM01)|(1<<WGM00))
 
-void initBoard()
+void initBoard(void)
 {
     /*
     ***********************************************************************************************************
@@ -93,7 +93,7 @@ void initBoard()
   Returns how much free dynamic memory exists (between heap and stack)
   This function is one big MISRA violation. MISRA advisories forbid directly poking at memory addresses, however there is no other way of determining heap size on embedded systems.
 */
-uint16_t freeRam()
+uint16_t freeRam(void)
 {
     extern int __heap_start, *__brkval;
     int currentVal;
@@ -108,8 +108,8 @@ uint16_t freeRam()
     return (uint16_t) &v - currentVal; //cppcheck-suppress misra-c2012-11.4
 }
 
-void doSystemReset() { return; }
-void jumpToBootloader() { return; }
+void doSystemReset(void) { return; }
+void jumpToBootloader(void) { return; }
 #if defined(TIMER5_MICROS)
 //This is used by the fast version of micros(). We just need to increment the timer overflow counter
 ISR(TIMER5_OVF_vect)
@@ -117,7 +117,7 @@ ISR(TIMER5_OVF_vect)
     ++timer5_overflow_count;
 }
 
-static inline unsigned long micros_safe()
+static inline unsigned long micros_safe(void)
 {
   unsigned long newMicros;
   noInterrupts();

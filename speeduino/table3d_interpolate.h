@@ -33,7 +33,7 @@ struct table3DGetValueCache {
 };
 
 
-inline void invalidate_cache(table3DGetValueCache *pCache)
+static inline void invalidate_cache(table3DGetValueCache *pCache)
 {
     pCache->last_lookup.x = INT16_MAX;
 }

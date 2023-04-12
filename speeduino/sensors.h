@@ -71,26 +71,26 @@ byte cltErrorCount = 0;
  */
 #define ADC_FILTER(input, alpha, prior) (((long)input * (256 - alpha) + ((long)prior * alpha))) >> 8
 
-static inline void instanteneousMAPReading() __attribute__((always_inline));
-static inline void readMAP() __attribute__((always_inline));
-static inline void validateMAP();
-void initialiseADC();
-void readTPS(bool=true); //Allows the option to override the use of the filter
-void readO2_2();
-void flexPulse();
-uint32_t vssGetPulseGap(byte);
-void vssPulse();
-uint16_t getSpeed();
-byte getGear();
-byte getFuelPressure();
-byte getOilPressure();
+static inline void instanteneousMAPReading(void) __attribute__((always_inline));
+static inline void readMAP(void) __attribute__((always_inline));
+static inline void validateMAP(void);
+void initialiseADC(void);
+void readTPS(bool useFilter=true); //Allows the option to override the use of the filter
+void readO2_2(void);
+void flexPulse(void);
+uint32_t vssGetPulseGap(byte toothHistoryIndex);
+void vssPulse(void);
+uint16_t getSpeed(void);
+byte getGear(void);
+byte getFuelPressure(void);
+byte getOilPressure(void);
 uint16_t readAuxanalog(uint8_t analogPin);
 uint16_t readAuxdigital(uint8_t digitalPin);
-void readCLT(bool=true); //Allows the option to override the use of the filter
-void readIAT();
-void readO2();
-void readBat();
-void readBaro();
+void readCLT(bool useFilter=true); //Allows the option to override the use of the filter
+void readIAT(void);
+void readO2(void);
+void readBat(void);
+void readBaro(void);
 
 #if defined(ANALOG_ISR)
 volatile int AnChannel[15];

@@ -20,7 +20,7 @@ integerPID idlePID(&currentStatus.longRPM, &idle_pid_target_value, &idle_cl_targ
 
 //Any common functions associated with starting the Idle
 //Typically this is enabling the PWM interrupt
-static inline void enableIdle()
+static inline void enableIdle(void)
 {
   if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL) )
   {
@@ -32,7 +32,7 @@ static inline void enableIdle()
   }
 }
 
-void initialiseIdle()
+void initialiseIdle(bool forcehoming)
 {
   //By default, turn off the PWM interrupt (It gets turned on below if needed)
   IDLE_TIMER_DISABLE();
@@ -116,7 +116,7 @@ void initialiseIdle()
       #elif defined(CORE_TEENSY41)
         idle_pwm_max_count = 1000000L / (2 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
       #endif
-      idlePID.SetOutputLimits(percentage(configPage2.iacCLminDuty, idle_pwm_max_count<<2), percentage(configPage2.iacCLmaxDuty, idle_pwm_max_count<<2));
+      idlePID.SetOutputLimits(percentage(configPage2.iacCLminValue, idle_pwm_max_count<<2), percentage(configPage2.iacCLmaxValue, idle_pwm_max_count<<2));
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
       idle_pid_target_value = 0;
@@ -140,7 +140,7 @@ void initialiseIdle()
       #elif defined(CORE_TEENSY41)
         idle_pwm_max_count = 1000000L / (2 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
       #endif
-      idlePID.SetOutputLimits(percentage(configPage2.iacCLminDuty, idle_pwm_max_count<<2), percentage(configPage2.iacCLmaxDuty, idle_pwm_max_count<<2));
+      idlePID.SetOutputLimits(percentage(configPage2.iacCLminValue, idle_pwm_max_count<<2), percentage(configPage2.iacCLmaxValue, idle_pwm_max_count<<2));
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
       idle_pid_target_value = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
@@ -165,7 +165,7 @@ void initialiseIdle()
       iacStepTime_uS = configPage6.iacStepTime * 1000;
       iacCoolTime_uS = configPage9.iacCoolTime * 1000;
 
-      if( completedHomeSteps < (configPage6.iacStepHome * 3) )
+      if (forcehoming)
       {
         //Change between modes running make engine stall
         completedHomeSteps = 0;
@@ -196,7 +196,7 @@ void initialiseIdle()
       iacStepTime_uS = configPage6.iacStepTime * 1000;
       iacCoolTime_uS = configPage9.iacCoolTime * 1000;
 
-      if( completedHomeSteps < (configPage6.iacStepHome * 3) )
+      if (forcehoming)
       {
         //Change between modes running make engine stall
         completedHomeSteps = 0;
@@ -216,7 +216,7 @@ void initialiseIdle()
       }
 
       idlePID.SetSampleTime(250); //4Hz means 250ms
-      idlePID.SetOutputLimits((configPage6.iacOLStepVal[9]*3)<<1, (configPage9.iacMaxSteps * 3)<<2); //Maximum number of steps; always less than home steps count.
+      idlePID.SetOutputLimits((configPage2.iacCLminValue * 3)<<2, (configPage2.iacCLmaxValue * 3)<<2); //Maximum number of steps; always less than home steps count.
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
       configPage6.iacPWMrun = false; // just in case. This needs to be false with stepper idle
@@ -240,7 +240,7 @@ void initialiseIdle()
       iacStepTime_uS = configPage6.iacStepTime * 1000;
       iacCoolTime_uS = configPage9.iacCoolTime * 1000;
 
-      if( completedHomeSteps < (configPage6.iacStepHome * 3) )
+      if (forcehoming)
       {
         //Change between modes running make engine stall
         completedHomeSteps = 0;
@@ -260,7 +260,7 @@ void initialiseIdle()
       }
 
       idlePID.SetSampleTime(250); //4Hz means 250ms
-      idlePID.SetOutputLimits((configPage6.iacOLStepVal[9]*3)<<1, (configPage9.iacMaxSteps * 3)<<2); //Maximum number of steps; always less than home steps count.
+      idlePID.SetOutputLimits((configPage2.iacCLminValue * 3)<<2, (configPage2.iacCLmaxValue * 3)<<2); //Maximum number of steps; always less than home steps count.
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
       configPage6.iacPWMrun = false; // just in case. This needs to be false with stepper idle
@@ -279,7 +279,7 @@ void initialiseIdle()
   currentStatus.idleLoad = 0;
 }
 
-void initialiseIdleUpOutput()
+void initialiseIdleUpOutput(void)
 {
   if (configPage2.idleUpOutputInv == 1) { idleUpOutputHIGH = LOW; idleUpOutputLOW = HIGH; }
   else { idleUpOutputHIGH = HIGH; idleUpOutputLOW = LOW; }
@@ -297,7 +297,7 @@ Returns:
 True: If a step is underway or motor is 'cooling'
 False: If the motor is ready for another step
 */
-static inline byte checkForStepping()
+static inline byte checkForStepping(void)
 {
   bool isStepping = false;
   unsigned int timeCheck;
@@ -352,7 +352,7 @@ static inline byte checkForStepping()
 /*
 Performs a step
 */
-static inline void doStep()
+static inline void doStep(void)
 {
   if ( (idleStepper.targetIdleStep <= (idleStepper.curIdleStep - configPage6.iacStepHyster)) || (idleStepper.targetIdleStep >= (idleStepper.curIdleStep + configPage6.iacStepHyster)) ) //Hysteresis check
   {
@@ -385,7 +385,7 @@ Returns:
 True: If the system has been homed. No other action is taken
 False: If the motor has not yet been homed. Will also perform another homing step.
 */
-static inline byte isStepperHomed()
+static inline byte isStepperHomed(void)
 {
   bool isHomed = true; //As it's the most common scenario, default value is true
   if( completedHomeSteps < (configPage6.iacStepHome * 3) ) //Home steps are divided by 3 from TS
@@ -402,9 +402,9 @@ static inline byte isStepperHomed()
   return isHomed;
 }
 
-void idleControl()
+void idleControl(void)
 {
-  if( idleInitComplete != configPage6.iacAlgorithm) { initialiseIdle(); }
+  if( idleInitComplete != configPage6.iacAlgorithm) { initialiseIdle(false); }
   if( (currentStatus.RPM > 0) || (configPage6.iacPWMrun == true) ) { enableIdle(); }
 
   //Check whether the idleUp is active
@@ -484,9 +484,12 @@ void idleControl()
           //Standard running
           currentStatus.idleLoad = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) + table2D_getValue(&iacPWMIATTable, currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees 
         }
+        // Add air conditioning idle-up - we only do this if the engine is running (A/C should never engage with engine off).
+        if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true) { currentStatus.idleLoad += configPage15.airConIdleSteps; }
       }
 
       if(currentStatus.idleUpActive == true) { currentStatus.idleLoad += configPage2.idleUpAdder; } //Add Idle Up amount if active
+      
       if( currentStatus.idleLoad > 100 ) { currentStatus.idleLoad = 100; } //Safety Check
       idle_pwm_target_value = percentage(currentStatus.idleLoad, idle_pwm_max_count);
       
@@ -515,17 +518,38 @@ void idleControl()
       {
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
         if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ) ) { idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); } //Re-read the PID settings once per second
-
+        
         PID_computed = idlePID.Compute(true);
+        long TEMP_idle_pwm_target_value;
         if(PID_computed == true)
         {
-          idle_pwm_target_value = idle_pid_target_value>>2; //increased resolution
-          currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count);
-          if(currentStatus.idleUpActive == true) { currentStatus.idleLoad += configPage2.idleUpAdder; } //Add Idle Up amount if active
+          TEMP_idle_pwm_target_value = idle_pid_target_value;
+          
+          // Add an offset to the duty cycle, outside of the closed loop. When tuned correctly, the extra load from
+          // the air conditioning should exactly cancel this out and the PID loop will be relatively unaffected.
+          if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)
+          {
+            // Add air conditioning idle-up
+            // We are adding percentage steps, but the loop doesn't operate in percentage steps - it works in PWM count
+            TEMP_idle_pwm_target_value += percentage(configPage15.airConIdleSteps, idle_pwm_max_count<<2);
+            if(TEMP_idle_pwm_target_value > (idle_pwm_max_count<<2)) { TEMP_idle_pwm_target_value = (idle_pwm_max_count<<2); }
+          }
 
+          // Fixed this by putting it here, however I have not tested it. It used to be after the calculation of idle_pwm_target_value, meaning the percentage would update in currentStatus, but the idle would not actually increase.
+          if(currentStatus.idleUpActive == true)
+          { 
+            // Add Idle Up amount if active
+            // Again, we use configPage15.airConIdleSteps * idle_pwm_max_count / 100 because we are adding percentage steps, but the loop doesn't operate in percentage steps - it works in PWM count
+            TEMP_idle_pwm_target_value += percentage(configPage2.idleUpAdder, idle_pwm_max_count<<2);
+            if(TEMP_idle_pwm_target_value > (idle_pwm_max_count<<2)) { TEMP_idle_pwm_target_value = (idle_pwm_max_count<<2); }
+          }
+
+          // Now assign the real PWM value
+          idle_pwm_target_value = TEMP_idle_pwm_target_value>>2; //increased resolution
+          currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count);
         }
         idleCounter++;
-      }  
+      }
       break;
 
 
@@ -552,19 +576,39 @@ void idleControl()
       {
         //Read the OL table as feedforward term
         FeedForwardTerm = percentage(table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) + table2D_getValue(&iacPWMIATTable, currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET), idle_pwm_max_count<<2); //All temps are offset by 40 degrees
+        
+        // Add an offset to the feed forward term. When tuned correctly, the extra load from the air conditioning
+        // should exactly cancel this out and the PID loop will be relatively unaffected.
+        if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)
+        {
+          // Add air conditioning idle-up
+          // We are adding percentage steps, but the loop doesn't operate in percentage steps - it works in PWM count <<2 (PWM count * 4)
+          FeedForwardTerm += percentage(configPage15.airConIdleSteps, (idle_pwm_max_count<<2));
+          if(FeedForwardTerm > (idle_pwm_max_count<<2)) { FeedForwardTerm = (idle_pwm_max_count<<2); }
+        }
+        
+        // Fixed this by putting it here, however I have not tested it. It used to be after the calculation of idle_pwm_target_value, meaning the percentage would update in currentStatus, but the idle would not actually increase.
+        if(currentStatus.idleUpActive == true)
+        { 
+          // Add Idle Up amount if active
+          // Again, we are adding percentage steps, but the loop doesn't operate in percentage steps - it works in PWM count <<2 (PWM count * 4)
+          FeedForwardTerm += percentage(configPage2.idleUpAdder, (idle_pwm_max_count<<2));
+          if(FeedForwardTerm > (idle_pwm_max_count<<2)) { FeedForwardTerm = (idle_pwm_max_count<<2); }
+        }
+        
     
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
         if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ) ) { idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); } //Re-read the PID settings once per second
         if((currentStatus.RPM - idle_cl_target_rpm > configPage2.iacRPMlimitHysteresis*10) || (currentStatus.TPS > configPage2.iacTPSlimit)){ //reset integral to zero when TPS is bigger than set value in TS (opening throttle so not idle anymore). OR when RPM higher than Idle Target + RPM Histeresis (coming back from high rpm with throttle closed)
           idlePID.ResetIntegeral();
         }
+        
         PID_computed = idlePID.Compute(true, FeedForwardTerm);
 
         if(PID_computed == true)
         {
           idle_pwm_target_value = idle_pid_target_value>>2; //increased resolution
           currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count);
-          if(currentStatus.idleUpActive == true) { currentStatus.idleLoad += configPage2.idleUpAdder; } //Add Idle Up amount if active
         }
         idleCounter++;
       }
@@ -611,6 +655,10 @@ void idleControl()
               idleStepper.targetIdleStep = table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
             }
             if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
+            
+            // Add air conditioning idle-up - we only do this if the engine is running (A/C should never engage with engine off).
+            if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true) { idleStepper.targetIdleStep += configPage15.airConIdleSteps; }
+            
             iacStepTime_uS = configPage6.iacStepTime * 1000;
             iacCoolTime_uS = configPage9.iacCoolTime * 1000;
 
@@ -648,6 +696,7 @@ void idleControl()
           }
           
           doStep();
+          idleTaper = 0;
           idle_pid_target_value = idleStepper.targetIdleStep << 2; //Resolution increased
           idlePID.ResetIntegeral();
           FeedForwardTerm = idle_pid_target_value;
@@ -666,6 +715,7 @@ void idleControl()
 
               //Tapering between cranking IAC value and running
               FeedForwardTerm = map(idleTaper, 0, configPage2.idleTaperTime, minValue, maxValue)<<2;
+              idleTaper++;
               idle_pid_target_value = FeedForwardTerm;
             }
             else if (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL)
@@ -691,8 +741,12 @@ void idleControl()
           }
           idleStepper.targetIdleStep = idle_pid_target_value>>2; //Increase resolution
 
+          // Add air conditioning idle-up - we only do this if the engine is running (A/C should never engage with engine off).
+          if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true) { idleStepper.targetIdleStep += configPage15.airConIdleSteps; }
         }
+        
         if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
+        
         //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
         if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) )
         {
@@ -755,7 +809,7 @@ void idleControl()
 
 
 //This function simply turns off the idle PWM and sets the pin low
-void disableIdle()
+void disableIdle(void)
 {
   if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) )
   {
@@ -798,9 +852,9 @@ void disableIdle()
 }
 
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER1_COMPC_vect)
+ISR(TIMER1_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-void idleInterrupt() //Most ARM chips can simply call a function
+void idleInterrupt(void) //Most ARM chips can simply call a function
 #endif
 {
   if (idle_pwm_state)
@@ -808,14 +862,24 @@ void idleInterrupt() //Most ARM chips can simply call a function
     if (configPage6.iacPWMdir == 0)
     {
       //Normal direction
+      #if defined (CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
+      IDLE_PIN_HIGH();
+      if(configPage6.iacChannels == 1) { IDLE2_PIN_LOW(); }
+      #else
       IDLE_PIN_LOW();  // Switch pin to low (1 pin mode)
       if(configPage6.iacChannels == 1) { IDLE2_PIN_HIGH(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      #endif
     }
     else
     {
       //Reversed direction
+      #if defined (CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
+      IDLE_PIN_LOW();
+      if(configPage6.iacChannels == 1) { IDLE2_PIN_HIGH(); }
+      #else
       IDLE_PIN_HIGH();  // Switch pin high
       if(configPage6.iacChannels == 1) { IDLE2_PIN_LOW(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      #endif
     }
     SET_COMPARE(IDLE_COMPARE, IDLE_COUNTER + (idle_pwm_max_count - idle_pwm_cur_value) );
     idle_pwm_state = false;
@@ -825,14 +889,24 @@ void idleInterrupt() //Most ARM chips can simply call a function
     if (configPage6.iacPWMdir == 0)
     {
       //Normal direction
+      #if defined (CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
+      IDLE_PIN_LOW();
+      if(configPage6.iacChannels == 1) { IDLE2_PIN_HIGH(); }
+      #else
       IDLE_PIN_HIGH();  // Switch pin high
       if(configPage6.iacChannels == 1) { IDLE2_PIN_LOW(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      #endif
     }
     else
     {
       //Reversed direction
+      #if defined (CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
+      IDLE_PIN_HIGH();
+      if(configPage6.iacChannels == 1) { IDLE2_PIN_LOW(); }
+      #else
       IDLE_PIN_LOW();  // Switch pin to low (1 pin mode)
       if(configPage6.iacChannels == 1) { IDLE2_PIN_HIGH(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      #endif
     }
     SET_COMPARE(IDLE_COMPARE, IDLE_COUNTER + idle_pwm_target_value);
     idle_pwm_cur_value = idle_pwm_target_value;

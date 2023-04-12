@@ -10,17 +10,17 @@ No text specified
 Rule 2.2
 No text specified
 Rule 2.3
-No text specified
+Advisory - All defined types must be used. IE No unused types should be defined. 
 Rule 2.4
 No text specified
 Rule 2.5
-No text specified
+Advisory - Macro declared but not used
 Rule 2.6
 No text specified
 Rule 2.7
-No text specified
+Advisory - All function parameters must be used
 Rule 3.1
-Mandatory - /* and // cannot used within a comment (ie No nested comments)
+Required - /* and // cannot used within a comment (ie No nested comments)
 Rule 3.2
 No text specified
 Rule 4.1
@@ -32,9 +32,9 @@ No text specified
 Rule 5.2
 No text specified
 Rule 5.3
-Mandatory - An identifier (variable) in an outer scope shall not be redfined within an inner scope
+Required - An identifier (variable) in an outer scope shall not be redfined within an inner scope
 Rule 5.4
-Mandatory - Macro names must be unique
+Required - Macro names must be unique
 Rule 5.5
 No text specified
 Rule 5.6
@@ -42,7 +42,7 @@ No text specified
 Rule 5.7
 No text specified
 Rule 5.8
-No text specified
+Required - All identifiers must be unique
 Rule 5.9
 No text specified
 Rule 6.1
@@ -52,7 +52,7 @@ No text specified
 Rule 7.1
 No text specified
 Rule 7.2
-No text specified
+Required - All unsigned integer constants must have a 'u' or 'U' suffix
 Rule 7.3
 No text specified
 Rule 7.4
@@ -60,23 +60,25 @@ No text specified
 Rule 8.1
 No text specified
 Rule 8.2
-No text specified
+Required - Function prototypes must have named parameters or void if none
 Rule 8.3
 No text specified
 Rule 8.4
-No text specified
+Required - Functions must have a prototype and prototype arguements/return types must match
+Rule 8.5
+Required - An object or function must only be declared once
 Rule 8.6
-No text specified
+Required - Externally identified object must be defined once and only once (Object has not been defined or was defined in multiple places)
 Rule 8.7
-No text specified
+Advisory - Objects and functions should only be made available externally if required
 Rule 8.8
 No text specified
 Rule 8.9
 No text specified
 Rule 8.10
-No text specified
+Required - All inline functions should be declared static
 Rule 8.11
-No text specified
+Advisory - Externally available arrays must have an explicitely declared size
 Rule 8.12
 No text specified
 Rule 8.13
@@ -94,27 +96,27 @@ No text specified
 Rule 9.5
 No text specified
 Rule 10.1
-Operations must be of an essentially correct type (Eg no shift on signed values, comparison is not boolean, incrementing/decrementing a bool etc) 
+Required - Operations must be of an essentially correct type (Eg no shift on signed values, comparison is not boolean, incrementing/decrementing a bool etc) 
 Rule 10.2
 No text specified
 Rule 10.3
-No text specified
+Required - The value from an expression must only be assigned to an object with the same or larger essential type
 Rule 10.4
-The target of an operation must be of an appropriate type
+Required - The target of an operation must be of an appropriate type. Eg No implicit conversion of signed/unsigned. 
 Rule 10.5
 No text specified
 Rule 10.6
-An expression should not assign a value to a variable of a narrower or essentially different type
+Required - An expression should not assign a value to a variable of a narrower or essentially different type
 Rule 10.7
-No text specified
+Required - Complex int expression requires cast when widening objects
 Rule 10.8
-No text specified
+Required - A composite expression value should not be cast to a wider type or a different essential type
 Rule 11.1
 No text specified
 Rule 11.2
 No text specified
 Rule 11.3
-A cast shall not be performed between a pointer to object type and a pointer to a different object type
+Required - A cast shall not be performed between a pointer to object type and a pointer to a different object type
 Rule 11.4
 Advisory - Object pointers should not be treated as or converted to integers
 Rule 11.5
@@ -126,11 +128,11 @@ No text specified
 Rule 11.8
 No text specified
 Rule 11.9
-An integer null pointer shall have no value assigned other than NULL macro
+Required - An integer null pointer shall have no value assigned other than NULL macro
 Rule 12.1
 Advisory - Order of operations within an expression must be explicit. Multiple conditions in a logical operation should have brackets around them.
 Rule 12.2
-No text specified
+Required - Right hand side of a shift operation must not exceed the width of the essential value. Potential shift too far or negative shift. 
 Rule 12.3
 Advisory - The comma operator is not permitted.
 Rule 12.4
@@ -154,7 +156,7 @@ No text specified
 Rule 14.3
 No text specified
 Rule 14.4
-Mandatory - Non-Boolean type expression used in an if statement or the conditional iteration statement of a loop
+Required - Non-Boolean type expression used in an if statement or the conditional iteration statement of a loop
 Rule 15.1
 No text specified
 Rule 15.2
@@ -166,17 +168,17 @@ No text specified
 Rule 15.5
 Advisory - A function should only have a single return point
 Rule 15.6
-Loops, switch and if/else statements must have brackets around their body
+Required - Loops, switch and if/else statements must have brackets around their body
 Rule 15.7
-'else if' statements must terminate with a final 'else'
+Required - 'else if' statements must terminate with a final 'else'
 Rule 16.1
 No text specified
 Rule 16.2
 No text specified
 Rule 16.3
-Mandatory - All cases within switchs must have an unconditional break statement
+Required - All cases within switches must have an unconditional break statement
 Rule 16.4
-Mandatory - All switch statements must have a default case
+Required - All switch statements must have a default case
 Rule 16.5
 No text specified
 Rule 16.6
@@ -186,9 +188,9 @@ No text specified
 Rule 17.1
 No text specified
 Rule 17.2
-Functions shall not call themselves, either directly or indirectly
+Required - Functions shall not call themselves, either directly or indirectly
 Rule 17.3
-No text specified
+Mandatory - No implicit function declarations
 Rule 17.4
 No text specified
 Rule 17.5
@@ -196,7 +198,7 @@ No text specified
 Rule 17.6
 No text specified
 Rule 17.7
-The value returned by a function having non-void return type shall be used
+Required - The value returned by a function having non-void return type shall be used
 Rule 17.8
 Advisory - An argument to a function should be treated as read-only
 Rule 18.1
@@ -220,11 +222,11 @@ No text specified
 Rule 19.2
 No text specified
 Rule 20.1
-Mandatory - Only comments and prepropccesor directives can come before #include statements
+Required - Only comments and prepropccesor directives can come before #include statements
 Rule 20.2
 No text specified
 Rule 20.3
-Mandatory - #include statements must be followed by a filename
+Required - #include statements must be followed by a filename
 Rule 20.4
 No text specified
 Rule 20.5
@@ -232,7 +234,7 @@ Advisory - Use of #undef is not permitted
 Rule 20.6
 No text specified
 Rule 20.7
-Macro expressions must be enclosed in parentheses
+Required - Macro expressions and parameters must be enclosed in parentheses
 Rule 20.8
 No text specified
 Rule 20.9
@@ -252,7 +254,7 @@ No text specified
 Rule 21.2
 No text specified
 Rule 21.3
-Memory allocation functions (Eg malloc(), talloc() etc) shall not be used
+Required - Memory allocation functions (Eg malloc(), talloc() etc) shall not be used
 Rule 21.4
 No text specified
 Rule 21.5
@@ -262,7 +264,7 @@ No text specified
 Rule 21.7
 No text specified
 Rule 21.8
-No text specified
+Required - Termination functions from stdlib (Eg exit, abort etc) shall not be used 
 Rule 21.9
 No text specified
 Rule 21.10

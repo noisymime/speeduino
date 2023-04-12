@@ -34,12 +34,15 @@ void DashMessage(uint16_t DashMessageID)
   switch (DashMessageID)
   {
     case CAN_BMW_DME1:
+      uint32_t temp_RPM;
+      temp_RPM = currentStatus.RPM * 64;  //RPM conversion is currentStatus.RPM * 6.4, but this does it without floats.
+      temp_RPM = temp_RPM / 10;
       outMsg.id = DashMessageID;
       outMsg.len = 8;
       outMsg.buf[0] = 0x05;  //bitfield, Bit0 = 1 = terminal 15 on detected, Bit2 = 1 = the ASC message ASC1 was received within the last 500 ms and contains no plausibility errors
       outMsg.buf[1] = 0x0C;  //Indexed Engine Torque in % of C_TQ_STND TBD do torque calculation.
-      outMsg.buf[2] = 0x00;  //lsb RPM
-      outMsg.buf[3] = currentStatus.RPM / 40; //msb RPM. RPM conversion is currentStatus.RPM * 6.4, but this does close enough without floats.
+      outMsg.buf[2] = lowByte(uint16_t(temp_RPM));  //lsb RPM
+      outMsg.buf[3] = highByte(uint16_t(temp_RPM)); //msb RPM
       outMsg.buf[4] = 0x0C;  //Indicated Engine Torque in % of C_TQ_STND TBD do torque calculation!! Use same as for byte 1
       outMsg.buf[5] = 0x15;  //Engine Torque Loss (due to engine friction, AC compressor and electrical power consumption)
       outMsg.buf[6] = 0x00;  //not used
@@ -49,7 +52,7 @@ void DashMessage(uint16_t DashMessageID)
     case CAN_BMW_DME2:
       uint8_t temp_TPS;
       uint8_t temp_BARO;
-      int16_t temp_CLT;
+      uint16_t temp_CLT;
       temp_TPS = map(currentStatus.TPS, 0, 100, 0, 254);//TPS value conversion (from 0x00 to 0xFE)
       temp_CLT = (((currentStatus.coolant - CALIBRATION_TEMPERATURE_OFFSET) + 48)*4/3); //CLT conversion (actual value to add is 48.373, but close enough)
       if (temp_CLT > 255) { temp_CLT = 255; } //CLT conversion can yield to higher values than what fits to byte, so limit the maximum value to 255.
@@ -80,14 +83,13 @@ void DashMessage(uint16_t DashMessageID)
     break;
 
     case 0x280:       //RPM for VW instrument cluster
-      int16_t temp_RPM;
       temp_RPM =  currentStatus.RPM * 4; //RPM conversion
       outMsg.id = DashMessageID;
       outMsg.len = 8;
       outMsg.buf[0] = 0x49;
       outMsg.buf[1] = 0x0E;
-      outMsg.buf[2] = lowByte(temp_RPM);
-      outMsg.buf[3] = highByte(temp_RPM);
+      outMsg.buf[2] = lowByte(uint16_t(temp_RPM));  //lsb RPM
+      outMsg.buf[3] = highByte(uint16_t(temp_RPM)); //msb RPM
       outMsg.buf[4] = 0x0E;
       outMsg.buf[5] = 0x00;
       outMsg.buf[6] = 0x1B;

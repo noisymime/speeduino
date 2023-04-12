@@ -46,9 +46,9 @@ struct packedError
   byte errorID  : 6;
 };
 
-byte getNextError();
-byte setError(byte);
-void clearError(byte);
+byte getNextError(void);
+byte setError(byte errorID);
+void clearError(byte errorID);
 
 extern byte errorCount;
 

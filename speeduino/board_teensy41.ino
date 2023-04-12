@@ -26,7 +26,7 @@ void initBoard()
       * 48 * 1000000uS / PER_clock = 2uS
     */
     CCM_CSCMR1 |= CCM_CSCMR1_PERCLK_CLK_SEL; // 24MHz
-    CCM_CSCMR1 |= CCM_CSCMR1_PERCLK_PODF(0b110000); //Prescale to 48
+    CCM_CSCMR1 |= CCM_CSCMR1_PERCLK_PODF(0b101111); //Prescale to 48
 
     attachInterruptVector(IRQ_PIT, PIT_isr);
     NVIC_ENABLE_IRQ(IRQ_PIT);
@@ -40,6 +40,7 @@ void initBoard()
       PIT_TCTRL0 = 0;
       PIT_TCTRL0 |= PIT_TCTRL_TIE; // enable Timer 1 interrupts
       PIT_TCTRL0 |= PIT_TCTRL_TEN; // start Timer 1
+      PIT_LDVAL0 = 1; //1 * 2uS = 2uS
     }
 
     /*
@@ -59,11 +60,27 @@ void initBoard()
     ***********************************************************************************************************
     * Auxiliaries
     */
+    if (configPage6.boostEnabled == 1)
+    {
+      PIT_TCTRL1 = 0;
+      PIT_TCTRL1 |= PIT_TCTRL_TIE; // enable Timer 2 interrupts
+      PIT_TCTRL1 |= PIT_TCTRL_TEN; // start Timer 2
+      PIT_LDVAL1 = 1; //1 * 2uS = 2uS
+    }
+    if (configPage6.vvtEnabled == 1)
+    {
+      PIT_TCTRL2 = 0;
+      PIT_TCTRL2 |= PIT_TCTRL_TIE; // enable Timer 3 interrupts
+      PIT_TCTRL2 |= PIT_TCTRL_TEN; // start Timer 3
+      PIT_LDVAL2 = 1; //1 * 2uS = 2uS
+    }
 
     //2uS resolution Min 8Hz, Max 5KHz
     boost_pwm_max_count = 1000000L / (2 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow frequencies up to 511Hz
     vvt_pwm_max_count = 1000000L / (2 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
-    fan_pwm_max_count = 1000000L / (2 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
+    #if defined(PWM_FAN_AVAILABLE)
+      fan_pwm_max_count = 1000000L / (2 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
+    #endif
 
     //TODO: Configure timers here
 
@@ -190,10 +207,10 @@ void PIT_isr()
   bool interrupt3 = (PIT_TFLG2 & PIT_TFLG_TIF);
   bool interrupt4 = (PIT_TFLG3 & PIT_TFLG_TIF);
 
-  if(interrupt1)      { PIT_TFLG0 = 1;}
-  else if(interrupt2) { PIT_TFLG1 = 1;}
-  else if(interrupt3) { PIT_TFLG2 = 1;}
-  else if(interrupt4) { oneMSInterval(); PIT_TFLG3 = 1;}
+  if(interrupt1)      { PIT_TFLG0 = 1; idleInterrupt();  }
+  else if(interrupt2) { PIT_TFLG1 = 1; boostInterrupt(); }
+  else if(interrupt3) { PIT_TFLG2 = 1; vvtInterrupt();   }
+  else if(interrupt4) { PIT_TFLG3 = 1; oneMSInterval();  }
 }
 
 void TMR1_isr(void)
@@ -274,5 +291,25 @@ time_t getTeensy3Time()
 
 void doSystemReset() { return; }
 void jumpToBootloader() { return; }
+
+void setTriggerHysteresis()
+{
+  //Refer to digital.c in the Teensyduino core for the following code
+  //Refer also to Pgs 382 and 950 of the iMXRT1060 Reference Manual
+  const struct digital_pin_bitband_and_config_table_struct *p;
+  const uint32_t padConfig = IOMUXC_PAD_DSE(1) | IOMUXC_PAD_PKE | IOMUXC_PAD_PUE | IOMUXC_PAD_SPEED(0) | IOMUXC_PAD_HYS;
+
+  //Primary trigger
+  p = digital_pin_to_info_PGM + pinTrigger;
+  *(p->reg + 1) &= ~(p->mask); // TODO: atomic
+  *(p->pad) = padConfig;
+  *(p->mux) = 5 | 0x10;
+
+  //Secondary trigger
+  p = digital_pin_to_info_PGM + pinTrigger2;
+  *(p->reg + 1) &= ~(p->mask); // TODO: atomic
+  *(p->pad) = padConfig;
+  *(p->mux) = 5 | 0x10;
+}
 
 #endif

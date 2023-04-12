@@ -329,44 +329,47 @@ void checkForSDStart()
   //Logging can only start if we're in the ready state
   //We must check the SD_status each time to prevent trying to init a new log file multiple times
 
-  //Check for enable at boot
-  if( (configPage13.onboard_log_trigger_boot) && (SD_status == SD_STATUS_READY) )
+  if(configPage13.onboard_log_file_style > 0)
   {
-    //Check that we're not already finished the logging
-    if((millis() / 1000) <= configPage13.onboard_log_tr1_duration)
+    //Check for enable at boot
+    if( (configPage13.onboard_log_trigger_boot) && (SD_status == SD_STATUS_READY) )
     {
-      beginSDLogging(); //Setup the log file, preallocation, header row
-    }    
-  }
-
-  //Check for RPM based Enable
-  if( (configPage13.onboard_log_trigger_RPM) && (SD_status == SD_STATUS_READY) )
-  {
-    if( (currentStatus.RPMdiv100 >= configPage13.onboard_log_tr2_thr_on) && (currentStatus.RPMdiv100 <= configPage13.onboard_log_tr2_thr_off) ) //Need to check both on and off conditions to prevent logging starting and stopping continually
-    {
-      beginSDLogging(); //Setup the log file, preallocation, header row
+      //Check that we're not already finished the logging
+      if((millis() / 1000) <= configPage13.onboard_log_tr1_duration)
+      {
+        beginSDLogging(); //Setup the log file, preallocation, header row
+      }    
     }
-  }
 
-  //Check for engine protection based enable
-  if((configPage13.onboard_log_trigger_prot) && (SD_status == SD_STATUS_READY) )
-  {
-    if(currentStatus.engineProtectStatus > 0)
+    //Check for RPM based Enable
+    if( (configPage13.onboard_log_trigger_RPM) && (SD_status == SD_STATUS_READY) )
     {
-      beginSDLogging(); //Setup the log file, preallocation, header row
+      if( (currentStatus.RPMdiv100 >= configPage13.onboard_log_tr2_thr_on) && (currentStatus.RPMdiv100 <= configPage13.onboard_log_tr2_thr_off) ) //Need to check both on and off conditions to prevent logging starting and stopping continually
+      {
+        beginSDLogging(); //Setup the log file, preallocation, header row
+      }
     }
-  }
 
-  if( (configPage13.onboard_log_trigger_Vbat) && (SD_status == SD_STATUS_READY) )
-  {
-
-  }
-
-  if((configPage13.onboard_log_trigger_Epin) && (SD_status == SD_STATUS_READY) )
-  {
-    if(digitalRead(pinSDEnable) == LOW)
+    //Check for engine protection based enable
+    if((configPage13.onboard_log_trigger_prot) && (SD_status == SD_STATUS_READY) )
     {
-       beginSDLogging(); //Setup the log file, preallocation, header row
+      if(currentStatus.engineProtectStatus > 0)
+      {
+        beginSDLogging(); //Setup the log file, preallocation, header row
+      }
+    }
+
+    if( (configPage13.onboard_log_trigger_Vbat) && (SD_status == SD_STATUS_READY) )
+    {
+
+    }
+
+    if((configPage13.onboard_log_trigger_Epin) && (SD_status == SD_STATUS_READY) )
+    {
+      if(digitalRead(pinSDEnable) == LOW)
+      {
+        beginSDLogging(); //Setup the log file, preallocation, header row
+      }
     }
   }
 }
@@ -426,8 +429,10 @@ void checkForSDStop()
     //Check all conditions to see if we should stop logging
     if( (log_boot == false) && (log_RPM == false) && (log_prot == false) && (log_Vbat == false) && (log_Epin == false) && (manualLogActive == false) )
     {
-      endSDLogging(); //Setup the log file, preallocation, header row
+      endSDLogging();
     }
+    //ALso check whether logging has been disabled entirely
+    if(configPage13.onboard_log_file_style == 0) { endSDLogging(); }
   }
 
   

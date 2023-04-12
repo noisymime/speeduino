@@ -1,0 +1,37 @@
+name: Upload INI
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'reference/speeduino.ini'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Validate INI
+        uses: hyper-tuner/ini-validate-action@v1
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+          filename: reference/speeduino.ini
+
+  upload:
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'noisymime'
+    needs: validate
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Upload INI
+        uses: hyper-tuner/ini-upload-action@v1
+        with:
+          api-url: "${{ secrets.HYPER_TUNER_INI_UPLOAD_URL }}"
+          username: "${{ secrets.HYPER_TUNER_INI_UPLOAD_USERNAME }}"
+          password: "${{ secrets.HYPER_TUNER_INI_UPLOAD_PASSWORD }}"
+          path: reference/speeduino.ini
+          ecosystem: speeduino

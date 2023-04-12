@@ -5,8 +5,12 @@
 
 #pragma once
 
+
 #include <stdint.h>
+
+#ifdef USE_LIBDIVIDE
 #include "src/libdivide/libdivide.h"
+#endif
 
 /** @brief Byte type. This is not defined in any C or C++ standard header. */
 typedef uint8_t byte;
@@ -30,20 +34,32 @@ public:
      * \c divider could be computed from \c factor, but including it as a parameter
      * allows callers to create \c factor instances at compile time.
      */
-    constexpr int16_byte(uint8_t factor, const libdivide::libdivide_s16_t &divider) 
-        : _factor(factor), _divider(divider)
+    constexpr int16_byte(uint8_t factor
+#ifdef USE_LIBDIVIDE
+    , const libdivide::libdivide_s16_t &divider
+#endif
+        )
+        : _factor(factor)
+#ifdef USE_LIBDIVIDE
+        , _divider(divider)
+#endif
     {
     }
 
     /** @brief Convert to a \c byte */
+#ifdef USE_LIBDIVIDE
     inline byte to_byte(int16_t value) const { return _factor==1 ? value : _factor==2 ? value>>1 : (byte)libdivide::libdivide_s16_do(value, &_divider); }
-
+#else
+    inline byte to_byte(int16_t value) const { return (byte)(value/_factor); }
+#endif
     /** @brief Convert from a \c byte */
     inline int16_t from_byte( byte in ) const { return (int16_t)in * _factor;  }
 
 private:
     uint8_t _factor;
+#ifdef USE_LIBDIVIDE
     libdivide::libdivide_s16_t _divider;
+#endif
 };
 
 /** @} */

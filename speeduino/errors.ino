@@ -49,7 +49,7 @@ void clearError(byte errorID)
   }
 }
 
-byte getNextError()
+byte getNextError(void)
 {
   packedError currentError;
   byte currentErrorNum = 0;

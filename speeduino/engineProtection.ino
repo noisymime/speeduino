@@ -2,7 +2,9 @@
 #include "globals.h"
 #include "engineProtection.h"
 
-byte checkEngineProtect()
+byte oilProtStartTime = 0;
+
+byte checkEngineProtect(void)
 {
   byte protectActive = 0;
   if(checkRevLimit() || checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit() )
@@ -13,7 +15,7 @@ byte checkEngineProtect()
   return protectActive;
 }
 
-byte checkRevLimit()
+byte checkRevLimit(void)
 {
   //Hardcut RPM limit
   byte revLimiterActive = 0;
@@ -49,7 +51,7 @@ byte checkRevLimit()
   return revLimiterActive;
 }
 
-byte checkBoostLimit()
+byte checkBoostLimit(void)
 {
   byte boostLimitActive = 0;
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
@@ -90,27 +92,38 @@ byte checkBoostLimit()
   return boostLimitActive;
 }
 
-byte checkOilPressureLimit()
+byte checkOilPressureLimit(void)
 {
   byte oilProtectActive = 0;
+  bool alreadyActive = BIT_CHECK(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL);
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL); //Will be set true below if required
 
-  if (configPage6.engineProtectType != PROTECT_CUT_OFF) {
+  if (configPage6.engineProtectType != PROTECT_CUT_OFF) 
+  {
     if( (configPage10.oilPressureProtEnbl == true) && (configPage10.oilPressureEnable == true) )
     {
       byte oilLimit = table2D_getValue(&oilPressureProtectTable, currentStatus.RPMdiv100);
       if(currentStatus.oilPressure < oilLimit)
       {
-        BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL);
-        oilProtectActive = 1;
+        //Check if this is the first time we've been below the limit
+        if(oilProtStartTime == 0) { oilProtStartTime = (millis() / 100); }
+
+        /* Check if countdown has reached its target, if so then instruct to cut */
+        if( (uint8_t(millis()/100) >= (uint16_t(oilProtStartTime + configPage10.oilPressureProtTime)) ) || (alreadyActive > 0) )
+        {
+          BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL);
+          oilProtectActive = 1;
+        }
+        
       }
+      else { oilProtStartTime = 0; } //Reset the timer
     }
   }
 
   return oilProtectActive;
 }
 
-byte checkAFRLimit()
+byte checkAFRLimit(void)
 {
   static bool checkAFRLimitActive = false;
   static bool afrProtectCountEnabled = false;

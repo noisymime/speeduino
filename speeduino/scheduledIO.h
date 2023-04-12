@@ -3,130 +3,130 @@
 
 #include <Arduino.h>
 
-inline void openInjector1();
-inline void closeInjector1();
+inline void openInjector1(void);
+inline void closeInjector1(void);
 
-inline void openInjector2();
-inline void closeInjector2();
+inline void openInjector2(void);
+inline void closeInjector2(void);
 
-inline void openInjector3();
-inline void closeInjector3();
+inline void openInjector3(void);
+inline void closeInjector3(void);
 
-inline void openInjector4();
-inline void closeInjector4();
+inline void openInjector4(void);
+inline void closeInjector4(void);
 
-inline void openInjector5();
-inline void closeInjector5();
+inline void openInjector5(void);
+inline void closeInjector5(void);
 
-inline void openInjector6();
-inline void closeInjector6();
+inline void openInjector6(void);
+inline void closeInjector6(void);
 
-inline void openInjector7();
-inline void closeInjector7();
+inline void openInjector7(void);
+inline void closeInjector7(void);
 
-inline void openInjector8();
-inline void closeInjector8();
+inline void openInjector8(void);
+inline void closeInjector8(void);
 
 // These are for Semi-Sequential and 5 Cylinder injection
-void openInjector1and3();
-void closeInjector1and3();
-void openInjector2and4();
-void closeInjector2and4();
-void openInjector1and4();
-void closeInjector1and4();
-void openInjector2and3();
-void closeInjector2and3();
+void openInjector1and3(void);
+void closeInjector1and3(void);
+void openInjector2and4(void);
+void closeInjector2and4(void);
+void openInjector1and4(void);
+void closeInjector1and4(void);
+void openInjector2and3(void);
+void closeInjector2and3(void);
 
-void openInjector3and5();
-void closeInjector3and5();
+void openInjector3and5(void);
+void closeInjector3and5(void);
 
-void openInjector2and5();
-void closeInjector2and5();
-void openInjector3and6();
-void closeInjector3and6();
+void openInjector2and5(void);
+void closeInjector2and5(void);
+void openInjector3and6(void);
+void closeInjector3and6(void);
 
-void openInjector1and5();
-void closeInjector1and5();
-void openInjector2and6();
-void closeInjector2and6();
-void openInjector3and7();
-void closeInjector3and7();
-void openInjector4and8();
-void closeInjector4and8();
+void openInjector1and5(void);
+void closeInjector1and5(void);
+void openInjector2and6(void);
+void closeInjector2and6(void);
+void openInjector3and7(void);
+void closeInjector3and7(void);
+void openInjector4and8(void);
+void closeInjector4and8(void);
 
-void injector1Toggle();
-void injector2Toggle();
-void injector3Toggle();
-void injector4Toggle();
-void injector5Toggle();
-void injector6Toggle();
-void injector7Toggle();
-void injector8Toggle();
+void injector1Toggle(void);
+void injector2Toggle(void);
+void injector3Toggle(void);
+void injector4Toggle(void);
+void injector5Toggle(void);
+void injector6Toggle(void);
+void injector7Toggle(void);
+void injector8Toggle(void);
 
-inline void beginCoil1Charge();
-inline void endCoil1Charge();
+inline void beginCoil1Charge(void);
+inline void endCoil1Charge(void);
 
-inline void beginCoil2Charge();
-inline void endCoil2Charge();
+inline void beginCoil2Charge(void);
+inline void endCoil2Charge(void);
 
-inline void beginCoil3Charge();
-inline void endCoil3Charge();
+inline void beginCoil3Charge(void);
+inline void endCoil3Charge(void);
 
-inline void beginCoil4Charge();
-inline void endCoil4Charge();
+inline void beginCoil4Charge(void);
+inline void endCoil4Charge(void);
 
-inline void beginCoil5Charge();
-inline void endCoil5Charge();
+inline void beginCoil5Charge(void);
+inline void endCoil5Charge(void);
 
-inline void beginCoil6Charge();
-inline void endCoil6Charge();
+inline void beginCoil6Charge(void);
+inline void endCoil6Charge(void);
 
-inline void beginCoil7Charge();
-inline void endCoil7Charge();
+inline void beginCoil7Charge(void);
+inline void endCoil7Charge(void);
 
-inline void beginCoil8Charge();
-inline void endCoil8Charge();
+inline void beginCoil8Charge(void);
+inline void endCoil8Charge(void);
 
 //The following functions are used specifically for the trailing coil on rotary engines. They are separate as they also control the switching of the trailing select pin
-inline void beginTrailingCoilCharge();
-inline void endTrailingCoilCharge1();
-inline void endTrailingCoilCharge2();
+inline void beginTrailingCoilCharge(void);
+inline void endTrailingCoilCharge1(void);
+inline void endTrailingCoilCharge2(void);
 
 //And the combined versions of the above for simplicity
-void beginCoil1and3Charge();
-void endCoil1and3Charge();
-void beginCoil2and4Charge();
-void endCoil2and4Charge();
+void beginCoil1and3Charge(void);
+void endCoil1and3Charge(void);
+void beginCoil2and4Charge(void);
+void endCoil2and4Charge(void);
 
 //For 6-cyl cop
-void beginCoil1and4Charge();
-void endCoil1and4Charge();
-void beginCoil2and5Charge();
-void endCoil2and5Charge();
-void beginCoil3and6Charge();
-void endCoil3and6Charge();
+void beginCoil1and4Charge(void);
+void endCoil1and4Charge(void);
+void beginCoil2and5Charge(void);
+void endCoil2and5Charge(void);
+void beginCoil3and6Charge(void);
+void endCoil3and6Charge(void);
 
 //For 8-cyl cop
-void beginCoil1and5Charge();
-void endCoil1and5Charge();
-void beginCoil2and6Charge();
-void endCoil2and6Charge();
-void beginCoil3and7Charge();
-void endCoil3and7Charge();
-void beginCoil4and8Charge();
-void endCoil4and8Charge();
+void beginCoil1and5Charge(void);
+void endCoil1and5Charge(void);
+void beginCoil2and6Charge(void);
+void endCoil2and6Charge(void);
+void beginCoil3and7Charge(void);
+void endCoil3and7Charge(void);
+void beginCoil4and8Charge(void);
+void endCoil4and8Charge(void);
 
-void coil1Toggle();
-void coil2Toggle();
-void coil3Toggle();
-void coil4Toggle();
-void coil5Toggle();
-void coil6Toggle();
-void coil7Toggle();
-void coil8Toggle();
+void coil1Toggle(void);
+void coil2Toggle(void);
+void coil3Toggle(void);
+void coil4Toggle(void);
+void coil5Toggle(void);
+void coil6Toggle(void);
+void coil7Toggle(void);
+void coil8Toggle(void);
 
-void tachoOutputOn();
-void tachoOutputOff();
+void tachoOutputOn(void);
+void tachoOutputOff(void);
 
 /*
 #ifndef USE_MC33810
@@ -232,22 +232,22 @@ void tachoOutputOff();
 #define coil8Charging_DIRECT()      (configPage4.IgInv == GOING_HIGH ? coil8Low_DIRECT() : coil8High_DIRECT())
 #define coil8StopCharging_DIRECT()  (configPage4.IgInv == GOING_HIGH ? coil8High_DIRECT() : coil8Low_DIRECT())
 
-#define coil1Charging_MC33810()      coil1High_MC33810()
-#define coil1StopCharging_MC33810()  coil1Low_MC33810()
-#define coil2Charging_MC33810()      coil2High_MC33810()
-#define coil2StopCharging_MC33810()  coil2Low_MC33810()
-#define coil3Charging_MC33810()      coil3High_MC33810()
-#define coil3StopCharging_MC33810()  coil3Low_MC33810()
-#define coil4Charging_MC33810()      coil4High_MC33810()
-#define coil4StopCharging_MC33810()  coil4Low_MC33810()
-#define coil5Charging_MC33810()      coil5High_MC33810()
-#define coil5StopCharging_MC33810()  coil5Low_MC33810()
-#define coil6Charging_MC33810()      coil6High_MC33810()
-#define coil6StopCharging_MC33810()  coil6Low_MC33810()
-#define coil7Charging_MC33810()      coil7High_MC33810()
-#define coil7StopCharging_MC33810()  coil7Low_MC33810()
-#define coil8Charging_MC33810()      coil8High_MC33810()
-#define coil8StopCharging_MC33810()  coil8Low_MC33810()
+#define coil1Charging_MC33810()      if(configPage4.IgInv == GOING_HIGH) { coil1Low_MC33810();  } else { coil1High_MC33810(); }
+#define coil1StopCharging_MC33810()  if(configPage4.IgInv == GOING_HIGH) { coil1High_MC33810(); } else { coil1Low_MC33810();  }
+#define coil2Charging_MC33810()      if(configPage4.IgInv == GOING_HIGH) { coil2Low_MC33810();  } else { coil2High_MC33810(); }
+#define coil2StopCharging_MC33810()  if(configPage4.IgInv == GOING_HIGH) { coil2High_MC33810(); } else { coil2Low_MC33810();  }
+#define coil3Charging_MC33810()      if(configPage4.IgInv == GOING_HIGH) { coil3Low_MC33810();  } else { coil3High_MC33810(); }
+#define coil3StopCharging_MC33810()  if(configPage4.IgInv == GOING_HIGH) { coil3High_MC33810(); } else { coil3Low_MC33810();  }
+#define coil4Charging_MC33810()      if(configPage4.IgInv == GOING_HIGH) { coil4Low_MC33810();  } else { coil4High_MC33810(); }
+#define coil4StopCharging_MC33810()  if(configPage4.IgInv == GOING_HIGH) { coil4High_MC33810(); } else { coil4Low_MC33810();  }
+#define coil5Charging_MC33810()      if(configPage4.IgInv == GOING_HIGH) { coil5Low_MC33810();  } else { coil5High_MC33810(); }
+#define coil5StopCharging_MC33810()  if(configPage4.IgInv == GOING_HIGH) { coil5High_MC33810(); } else { coil5Low_MC33810();  }
+#define coil6Charging_MC33810()      if(configPage4.IgInv == GOING_HIGH) { coil6Low_MC33810();  } else { coil6High_MC33810(); }
+#define coil6StopCharging_MC33810()  if(configPage4.IgInv == GOING_HIGH) { coil6High_MC33810(); } else { coil6Low_MC33810();  }
+#define coil7Charging_MC33810()      if(configPage4.IgInv == GOING_HIGH) { coil7Low_MC33810();  } else { coil7High_MC33810(); }
+#define coil7StopCharging_MC33810()  if(configPage4.IgInv == GOING_HIGH) { coil7High_MC33810(); } else { coil7Low_MC33810();  }
+#define coil8Charging_MC33810()      if(configPage4.IgInv == GOING_HIGH) { coil8Low_MC33810();  } else { coil8High_MC33810(); }
+#define coil8StopCharging_MC33810()  if(configPage4.IgInv == GOING_HIGH) { coil8High_MC33810(); } else { coil8Low_MC33810();  }
 
 #define coil1Toggle_DIRECT() (*ign1_pin_port ^= ign1_pin_mask )
 #define coil2Toggle_DIRECT() (*ign2_pin_port ^= ign2_pin_mask )
@@ -267,6 +267,6 @@ void tachoOutputOff();
 #define injector7Toggle_DIRECT() (*inj7_pin_port ^= inj7_pin_mask )
 #define injector8Toggle_DIRECT() (*inj8_pin_port ^= inj8_pin_mask )
 
-void nullCallback();
+void nullCallback(void);
 
 #endif

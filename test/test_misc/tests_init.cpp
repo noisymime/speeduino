@@ -1,6 +1,7 @@
 #include <globals.h>
 #include <init.h>
 #include <unity.h>
+#include <storage.h>
 #include "tests_init.h"
 
 
@@ -11,6 +12,9 @@ void testInitialisation()
   RUN_TEST(test_initialisation_outputs_V03);
   RUN_TEST(test_initialisation_outputs_V04);
   RUN_TEST(test_initialisation_outputs_MX5_8995);
+  RUN_TEST(test_initialisation_outputs_PWM_idle);
+  RUN_TEST(test_initialisation_outputs_boost);
+  RUN_TEST(test_initialisation_outputs_VVT);
 }
 
 void test_initialisation_complete(void)
@@ -48,17 +52,8 @@ void test_initialisation_outputs_V03(void)
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinInjector3), "Injector 3");
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinInjector4), "Injector 4");
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinTachOut), "Tacho Out");
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinIdle1), "Idle 1");
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinIdle2), "Idle 2");
-  //if(configPage2.idleUpOutputEnabled) { TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinIdleUpOutput), "Idle Up"); } //This needs to have a default pin set
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinFuelPump), "Fuel Pump");
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinFan), "Fan");
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinStepperDir), "Stepper Dir");
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinStepperStep), "Stepper Step");
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinStepperEnable), "Stepper Enable");
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinBoost), "Boost");
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinVVT_1), "VVT1");
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinVVT_2), "VVT2");
 
 }
 
@@ -66,6 +61,7 @@ void test_initialisation_outputs_V03(void)
 void test_initialisation_outputs_V04(void)
 {
   configPage2.pinMapping = 3; //Set the board number to test
+
   initialiseAll(); //Run the main initialise function
 
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinCoil1), "Coil1");
@@ -77,17 +73,25 @@ void test_initialisation_outputs_V04(void)
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinInjector3), "Injector 3");
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinInjector4), "Injector 4");
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinTachOut), "Tacho Out");
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinIdle1), "Idle 1");
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinIdle2), "Idle 2");
-  //if(configPage2.idleUpOutputEnabled) { TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinIdleUpOutput), "Idle Up"); } //This needs to have a default pin set
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinFuelPump), "Fuel Pump");
+  /*
+  if(isIdlePWM) 
+  {
+    TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinIdle1), "Idle 1");
+    TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinIdle2), "Idle 2");
+  }
+  else if (isIdleStepper)
+  {
+    TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinStepperDir), "Stepper Dir");
+    TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinStepperStep), "Stepper Step");
+    TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinStepperEnable), "Stepper Enable");
+  }
+  
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinFan), "Fan");
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinStepperDir), "Stepper Dir");
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinStepperStep), "Stepper Step");
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinStepperEnable), "Stepper Enable");
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinBoost), "Boost");
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinVVT_1), "VVT1");
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinVVT_2), "VVT2");
+  */
 
 }
 
@@ -106,18 +110,46 @@ void test_initialisation_outputs_MX5_8995(void)
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinInjector3), "Injector 3");
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinInjector4), "Injector 4");
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinTachOut), "Tacho Out");
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinIdle1), "Idle 1");
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinIdle2), "Idle 2");
-  //if(configPage2.idleUpOutputEnabled) { TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinIdleUpOutput), "Idle Up"); } //This needs to have a default pin set
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinFuelPump), "Fuel Pump");
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinFan), "Fan");
+}
+
+void test_initialisation_outputs_PWM_idle(void)
+{
+  configPage2.pinMapping = 3; //Set the board number to test (v0.4)
+  //Force 2 channel PWM idle
+  configPage6.iacChannels = 1;
+  configPage6.iacAlgorithm = 2;
+
+  writeAllConfig(); //Have to save config here to prevent initialiseAll() from overwriting it
+  initialiseAll(); //Run the main initialise function
+
+  bool isIdlePWM = (configPage6.iacAlgorithm > 0) && ((configPage6.iacAlgorithm <= 3) || (configPage6.iacAlgorithm == 6));
+
+  TEST_ASSERT_TRUE_MESSAGE(isIdlePWM, "Is PWM Idle");
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinIdle1), "Idle 1");
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinIdle2), "Idle 2");
+}
+
+void test_initialisation_outputs_stepper_idle(void)
+{
+  bool isIdleStepper = (configPage6.iacAlgorithm > 3) && (configPage6.iacAlgorithm != 6);
+
+  TEST_ASSERT_TRUE_MESSAGE(isIdleStepper, "Is Stepper Idle");
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinStepperDir), "Stepper Dir");
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinStepperStep), "Stepper Step");
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinStepperEnable), "Stepper Enable");
+}
+
+void test_initialisation_outputs_boost(void)
+{
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinBoost), "Boost");
+}
+
+void test_initialisation_outputs_VVT(void)
+{
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinVVT_1), "VVT1");
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinVVT_2), "VVT2");
-
 }
 
 uint8_t getPinMode(uint8_t pin)

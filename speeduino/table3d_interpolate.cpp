@@ -82,7 +82,7 @@ static inline table3d_dim_t find_bin_max(
 
 table3d_dim_t find_xbin(table3d_axis_t &value, const table3d_axis_t *pAxis, table3d_dim_t size, table3d_dim_t lastBin)
 {
-  return find_bin_max(value, pAxis, 0, size-1, lastBin);
+  return find_bin_max(value, pAxis, size-1, 0, lastBin);
 }
 
 table3d_dim_t find_ybin(table3d_axis_t &value, const table3d_axis_t *pAxis, table3d_dim_t size, table3d_dim_t lastBin)
@@ -185,11 +185,13 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache,
               C          D
     */
     table3d_dim_t rowMax = pValueCache->lastYBinMax * axisSize;
-    table3d_dim_t rowMin = (pValueCache->lastYBinMax+1) * axisSize;
-    table3d_value_t A = pValues[rowMax + pValueCache->lastXBinMax-1];
-    table3d_value_t B = pValues[rowMax + pValueCache->lastXBinMax];
-    table3d_value_t C = pValues[rowMin + pValueCache->lastXBinMax-1];
-    table3d_value_t D = pValues[rowMin + pValueCache->lastXBinMax];
+    table3d_dim_t rowMin = rowMax + axisSize;
+    table3d_dim_t colMax = axisSize - pValueCache->lastXBinMax - 1;
+    table3d_dim_t colMin = colMax - 1;
+    table3d_value_t A = pValues[rowMax + colMin];
+    table3d_value_t B = pValues[rowMax + colMax];
+    table3d_value_t C = pValues[rowMin + colMin];
+    table3d_value_t D = pValues[rowMin + colMax];
 
     //Check that all values aren't just the same (This regularly happens with things like the fuel trim maps)
     if( (A == B) && (A == C) && (A == D) ) { pValueCache->lastOutput = A; }
@@ -197,7 +199,7 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache,
     {
       //Create some normalised position values
       //These are essentially percentages (between 0 and 1) of where the desired value falls between the nearest bins on each axis
-      const QU1X8_t p = compute_bin_position(X_in, pValueCache->lastXBinMax, 1, pXAxis);
+      const QU1X8_t p = compute_bin_position(X_in, pValueCache->lastXBinMax, -1, pXAxis);
       const QU1X8_t q = compute_bin_position(Y_in, pValueCache->lastYBinMax, -1, pYAxis);
 
       const QU1X8_t m = mulQU1X8(QU1X8_ONE-p, q);

@@ -1,12 +1,9 @@
 #ifndef MATH_H
 #define MATH_H
 
-#define USE_LIBDIVIDE
-
-int fastMap1023toX(int, int);
-unsigned long percentage(uint8_t, unsigned long);
-unsigned long halfPercentage(uint8_t, unsigned long);
-inline long powint(int, unsigned int);
+unsigned long percentage(uint8_t x, unsigned long y);
+unsigned long halfPercentage(uint8_t x, unsigned long y);
+inline long powint(int factor, unsigned int exponent);
 
 #ifdef USE_LIBDIVIDE
 #include "src/libdivide/libdivide.h"

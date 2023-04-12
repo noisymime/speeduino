@@ -10,35 +10,76 @@
 #ifndef COMMS_H
 #define COMMS_H
 
+/** \enum SerialStatus
+ * @brief The current state of serial communication
+ * */
+enum SerialStatus {
+  /** No serial comms is in progress */
+  SERIAL_INACTIVE, 
+  /** A partial write is in progress. */
+  SERIAL_TRANSMIT_INPROGRESS, 
+  /** A partial write is in progress (legacy send). */
+  SERIAL_TRANSMIT_INPROGRESS_LEGACY, 
+  /** We are part way through transmitting the tooth log */
+  SERIAL_TRANSMIT_TOOTH_INPROGRESS, 
+  /** We are part way through transmitting the tooth log (legacy send) */
+  SERIAL_TRANSMIT_TOOTH_INPROGRESS_LEGACY, 
+  /** We are part way through transmitting the composite log */
+  SERIAL_TRANSMIT_COMPOSITE_INPROGRESS,
+  /** We are part way through transmitting the composite log (legacy send) */
+  SERIAL_TRANSMIT_COMPOSITE_INPROGRESS_LEGACY,
+  /** Whether or not a serial request has only been partially received.
+   * This occurs when a the length has been received in the serial buffer,
+   * but not all of the payload or CRC has yet been received. 
+   * 
+   * Expectation is that ::serialReceive is called  until the status reverts 
+   * to SERIAL_INACTIVE
+  */
+  SERIAL_RECEIVE_INPROGRESS,
+  /** We are part way through processing a legacy serial commang: call ::serialReceive */
+  SERIAL_COMMAND_INPROGRESS_LEGACY,
+};
+/** @brief Current status of serial comms. */
+extern SerialStatus serialStatusFlag;
 
-extern byte currentPage;//Not the same as the speeduino config page numbers
-extern bool isMap; /**< Whether or not the currentPage contains only a 3D map that would require translation */
-extern unsigned long requestCount; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
-extern byte currentCommand; /**< The serial command that is currently being processed. This is only useful when cmdPending=True */
-extern bool cmdPending; /**< Whether or not a serial request has only been partially received. This occurs when a command character has been received in the serial buffer, but not all of its arguments have yet been received. If true, the active command will be stored in the currentCommand variable */
-extern bool chunkPending; /**< Whether or not the current chunk write is complete or not */
-extern uint16_t chunkComplete; /**< The number of bytes in a chunk write that have been written so far */
-extern uint16_t chunkSize; /**< The complete size of the requested chunk write */
-extern int valueOffset; /**< THe memory offset within a given page for a value to be read from or written to. Note that we cannot use 'offset' as a variable name, it is a reserved word for several teensy libraries */
-extern byte tsCanId;     // current tscanid requested
-extern byte inProgressOffset;
+/**
+ * @brief Is a serial write in progress?
+ * 
+ * Expectation is that ::serialTransmit is called until this
+ * returns false
+ */
+inline bool serialTransmitInProgress(void) {
+    return serialStatusFlag==SERIAL_TRANSMIT_INPROGRESS
+    || serialStatusFlag==SERIAL_TRANSMIT_INPROGRESS_LEGACY
+    || serialStatusFlag==SERIAL_TRANSMIT_TOOTH_INPROGRESS
+    || serialStatusFlag==SERIAL_TRANSMIT_TOOTH_INPROGRESS_LEGACY
+    || serialStatusFlag==SERIAL_TRANSMIT_COMPOSITE_INPROGRESS
+    || serialStatusFlag==SERIAL_TRANSMIT_COMPOSITE_INPROGRESS_LEGACY;
+}
+
+/**
+ * @brief Is a non-blocking serial receive operation in progress?
+ * 
+ * Expectation is the ::serialReceive is called until this
+ * returns false.
+ */
+inline bool serialRecieveInProgress(void) {
+  return serialStatusFlag==SERIAL_RECEIVE_INPROGRESS
+  || serialStatusFlag==SERIAL_COMMAND_INPROGRESS_LEGACY;
+}
+
+extern bool firstCommsRequest; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
+extern byte logItemsTransmitted;
 extern byte inProgressLength;
-extern bool legacySerial;
-extern uint32_t inProgressCompositeTime;
-extern bool serialInProgress;
-extern bool toothLogSendInProgress;
-extern bool compositeLogSendInProgress;
 
-void legacySerialCommand();//This is the heart of the Command Line Interpreter.  All that needed to be done was to make it human readable.
-void sendValues(uint16_t, uint16_t,byte, byte);
-void sendValuesLegacy();
-void saveConfig();
-void sendPage();
-void sendPageASCII();
-void receiveCalibration(byte);
-void sendToothLog_legacy(uint8_t);
-void testComm();
-void commandButtons(int16_t);
-void sendCompositeLog_legacy(uint8_t);
+void legacySerialCommand(void);//This is the heart of the Command Line Interpreter.  All that needed to be done was to make it human readable.
+void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum);
+void sendValuesLegacy(void);
+void sendPage(void);
+void sendPageASCII(void);
+void receiveCalibration(byte tableID);
+void testComm(void);
+void sendToothLog_legacy(byte startOffset);
+void sendCompositeLog_legacy(byte startOffset);
 
 #endif // COMMS_H

@@ -414,7 +414,7 @@ page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
 
 // ====================================== External functions  ====================================
 
-uint8_t getPageCount()
+uint8_t getPageCount(void)
 {
   return _countof(ini_page_sizes);
 }
@@ -464,6 +464,14 @@ table_value_iterator rows_begin(const page_iterator_t &it)
 table_axis_iterator x_begin(const page_iterator_t &it)
 {
   return x_begin(it.pData, it.table_key);
+}
+
+/**
+ * Convert page iterator to table x axis iterator.
+ */
+table_axis_iterator x_rbegin(const page_iterator_t &it)
+{
+  return x_rbegin(it.pData, it.table_key);
 }
 
 /**

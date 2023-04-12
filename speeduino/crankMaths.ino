@@ -37,7 +37,7 @@ unsigned long angleToTime(int16_t angle, byte method)
     else if (method == CRANKMATH_METHOD_INTERVAL_TOOTH)
     {
         //Still uses a last interval method (ie retrospective), but bases the interval on the gap between the 2 most recent teeth rather than the last full revolution
-        if(triggerToothAngleIsCorrect == true)
+        if(BIT_CHECK(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT))
         {
           noInterrupts();
           unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime);
@@ -73,7 +73,7 @@ uint16_t timeToAngle(unsigned long time, byte method)
     else if (method == CRANKMATH_METHOD_INTERVAL_TOOTH)
     {
         //Still uses a last interval method (ie retrospective), but bases the interval on the gap between the 2 most recent teeth rather than the last full revolution
-        if(triggerToothAngleIsCorrect == true)
+        if(BIT_CHECK(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT))
         {
           noInterrupts();
           unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime);
@@ -99,14 +99,14 @@ uint16_t timeToAngle(unsigned long time, byte method)
     
 }
 
-void doCrankSpeedCalcs()
+void doCrankSpeedCalcs(void)
 {
      //********************************************************
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
       //We use a 1st Deriv acceleration prediction, but only when there is an even spacing between primary sensor teeth
       //Any decoder that has uneven spacing has its triggerToothAngle set to 0
       //THIS IS CURRENTLY DISABLED FOR ALL DECODERS! It needs more work. 
-      if( (secondDerivEnabled > 0) && (toothHistoryIndex >= 3) && (currentStatus.RPM < 2000) ) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
+      if( SECOND_DERIV_ENABLED && (BIT_CHECK(decoderState, BIT_DECODER_2ND_DERIV)) && (toothHistoryIndex >= 3) && (currentStatus.RPM < 2000) ) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
       {
         //Only recalculate deltaV if the tooth has changed since last time (DeltaV stays the same until the next tooth)
         //if (deltaToothCount != toothCurrentCount)
@@ -143,7 +143,7 @@ void doCrankSpeedCalcs()
       {
         //If we can, attempt to get the timePerDegree by comparing the times of the last two teeth seen. This is only possible for evenly spaced teeth
         noInterrupts();
-        if( (triggerToothAngleIsCorrect == true) && (toothLastToothTime > toothLastMinusOneToothTime) && (abs(currentStatus.rpmDOT) > 30) )
+        if( (BIT_CHECK(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT)) && (toothLastToothTime > toothLastMinusOneToothTime) && (abs(currentStatus.rpmDOT) > 30) )
         {
           //noInterrupts();
           unsigned long tempToothLastToothTime = toothLastToothTime;

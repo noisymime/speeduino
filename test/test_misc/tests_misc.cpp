@@ -4,7 +4,6 @@
 #include "tests_init.h"
 #include "tests_tables.h"
 #include "test_table2d.h"
-#include "tests_maths.h"
 
 #define UNITY_EXCLUDE_DETAILS
 
@@ -21,7 +20,6 @@ void setup()
     testInitialisation();
     testTables();
     testTable2d();
-    testMaths();
 
     UNITY_END(); // stop unit testing
 }

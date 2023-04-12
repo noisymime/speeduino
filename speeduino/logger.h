@@ -12,26 +12,32 @@
 #include <assert.h>
 
 #ifndef UNIT_TEST // Scope guard for unit testing
-  #define LOG_ENTRY_SIZE      122 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
-  #define SD_LOG_ENTRY_SIZE   122 /**< The size of the live data packet used by the SD card.*/
+  #define LOG_ENTRY_SIZE      125 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
+  #define SD_LOG_ENTRY_SIZE   125 /**< The size of the live data packet used by the SD card.*/
 #else
   #define LOG_ENTRY_SIZE      1 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
   #define SD_LOG_ENTRY_SIZE   1 /**< The size of the live data packet used by the SD card.*/
 #endif
 
-#define SD_LOG_NUM_FIELDS   89 /**< The number of fields that are in the log. This is always smaller than the entry size due to some fields being 2 bytes */
+#define SD_LOG_NUM_FIELDS   90 /**< The number of fields that are in the log. This is always smaller than the entry size due to some fields being 2 bytes */
 
-byte getTSLogEntry(uint16_t);
-int16_t getReadableLogEntry(uint16_t);
+byte getTSLogEntry(uint16_t byteNum);
+int16_t getReadableLogEntry(uint16_t logIndex);
 #if FPU_MAX_SIZE >= 32
-  float getReadableFloatLogEntry(uint16_t);
+  float getReadableFloatLogEntry(uint16_t logIndex);
 #endif
-bool is2ByteEntry(uint8_t);
+bool is2ByteEntry(uint8_t key);
+
+void startToothLogger(void);
+void stopToothLogger(void);
+
+void startCompositeLogger(void);
+void stopCompositeLogger(void);
 
 // This array indicates which index values from the log are 2 byte values
 // This array MUST remain in ascending order
 // !!!! WARNING: If any value above 255 is required in this array, changes MUST be made to is2ByteEntry() function !!!!
-const byte PROGMEM fsIntIndex[] = {4, 14, 17, 25, 27, 32, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 75, 77, 79, 81, 85, 87, 89, 93, 97, 102, 109, 119 };
+const byte PROGMEM fsIntIndex[] = {4, 14, 17, 22, 26, 28, 33, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64, 66, 68, 70, 72, 76, 78, 80, 82, 86, 88, 90, 93, 95, 99, 104, 111, 121 };
 
 //List of logger field names. This must be in the same order and length as logger_updateLogdataCSV()
 const char header_0[] PROGMEM = "secl";
@@ -123,8 +129,8 @@ const char header_85[] PROGMEM = "Advance 2";
 const char header_86[] PROGMEM = "SD Status";
 const char header_87[] PROGMEM = "EMAP";
 const char header_88[] PROGMEM = "Fan Duty";
+const char header_89[] PROGMEM = "AirConStatus";
 /*
-const char header_89[] PROGMEM = "";
 const char header_90[] PROGMEM = "";
 const char header_91[] PROGMEM = "";
 const char header_92[] PROGMEM = "";
@@ -248,8 +254,8 @@ const char* const header_table[] PROGMEM = {  header_0,\
                                               header_86,\
                                               header_87,\
                                               header_88,\
-                                              /*
                                               header_89,\
+                                              /*
                                               header_90,\
                                               header_91,\
                                               header_92,\

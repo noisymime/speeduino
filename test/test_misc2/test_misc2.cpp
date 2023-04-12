@@ -2,6 +2,7 @@
 #include <unity.h>
 
 #include "tests_crankmaths.h"
+#include "tests_maths.h"
 
 #define UNITY_EXCLUDE_DETAILS
 
@@ -16,6 +17,7 @@ void setup()
     UNITY_BEGIN();    // IMPORTANT LINE!
 
     testCrankMaths();
+    testMaths();
 
     UNITY_END(); // stop unit testing
 }

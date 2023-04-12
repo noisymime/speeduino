@@ -33,10 +33,9 @@ struct table2D {
   byte cacheTime; //Tracks when the last cache value was set so it can expire after x seconds. A timeout is required to pickup when a tuning value is changed, otherwise the old cached value will continue to be returned as the X value isn't changing. 
 };
 
-void table2D_setSize(struct table2D*, byte);
-int16_t table2D_getAxisValue(struct table2D*, byte);
-int16_t table2D_getRawValue(struct table2D*, byte);
+int16_t table2D_getAxisValue(struct table2D *fromTable, byte X_in);
+int16_t table2D_getRawValue(struct table2D *fromTable, byte X_index);
 
-int table2D_getValue(struct table2D *fromTable, int);
+int table2D_getValue(struct table2D *fromTable, int X_in);
 
 #endif // TABLE_H

@@ -26,49 +26,49 @@ public:
      * @param rowWidth The number of elements to in the row
     */
     table_row_iterator(const table3d_value_t *pRowStart, table3d_dim_t rowWidth)
-        : pValue(pRowStart), pEnd(pRowStart+rowWidth)
+        : pValue(pRowStart), pEnd(pRowStart+rowWidth)  //cppcheck-suppress misra-c2012-10.4
     {
     }
 
     /** @brief Pointer to the end of the row */
-    inline const table3d_value_t* end() const { return pEnd; }
+    const table3d_value_t* end(void) const { return pEnd; }
     /** @copydoc table_row_iterator::end() const */
-    inline table3d_value_t* end() { return const_cast<table3d_value_t *>(pEnd); }
+    table3d_value_t* end(void) { return const_cast<table3d_value_t *>(pEnd); }
 
     /** @brief Advance the iterator
      * @param steps The number of elements to move the iterator
     */
-    inline table_row_iterator& advance(table3d_dim_t steps)
+    table_row_iterator& advance(table3d_dim_t steps)
     { 
         pValue  = pValue + steps;
         return *this;
     }
 
     /** @brief Increment the iterator by one element*/
-    inline table_row_iterator& operator++()
+    table_row_iterator& operator++(void)
     {
         return advance(1);
     }
 
     /** @brief Test for end of iteration */
-    inline bool at_end() const
+    bool at_end(void) const
     {
         return pValue == pEnd;
     }
 
     /** @brief Dereference the iterator */
-    inline const table3d_value_t& operator*() const
+    const table3d_value_t& operator*(void) const
     {
         return *pValue;
     }
     /** @copydoc table_row_iterator::operator*() const */
-    inline table3d_value_t& operator*()
+    table3d_value_t& operator*(void)
     {
         return *const_cast<table3d_value_t *>(pValue);
     }
 
     /** @brief Number of elements available */
-    inline table3d_dim_t size() const { return pEnd-pValue; }
+    table3d_dim_t size(void) const { return pEnd-pValue; }
 
 private:
     const table3d_value_t *pValue;
@@ -88,7 +88,7 @@ public:
      * @param axisSize The number of columns & elements per row (square tables only)
     */
     table_value_iterator(const table3d_value_t *pValues, table3d_dim_t axisSize)
-        : pRowsStart(pValues + (axisSize*(axisSize-1))),
+        : pRowsStart(pValues + (axisSize*(axisSize-1U))),  //cppcheck-suppress misra-c2012-10.4
         pRowsEnd(pValues - axisSize),
         rowWidth(axisSize)
     {
@@ -108,31 +108,31 @@ public:
     /** @brief Advance the iterator
      * @param rows The number of \b rows to move
     */
-    inline table_value_iterator& advance(table3d_dim_t rows)
+    table_value_iterator& advance(table3d_dim_t rows)
     {
         pRowsStart = pRowsStart - (rowWidth * rows);
         return *this;
     }
 
     /** @brief Increment the iterator by one \b row */
-    inline table_value_iterator& operator++()
+    table_value_iterator& operator++(void)
     {
-        return advance(1);
+        return advance(1U);
     }
 
     /** @brief Dereference the iterator to access a row of data */
-    inline const table_row_iterator operator*() const
+    const table_row_iterator operator*(void) const
     {
         return table_row_iterator(pRowsStart, rowWidth);
     }
     /** @copydoc table_value_iterator::operator*() const */
-    inline table_row_iterator operator*()
+    table_row_iterator operator*(void)
     {
         return table_row_iterator(pRowsStart, rowWidth);
     }    
 
     /** @brief Test for end of iteration */
-    inline bool at_end() const
+    bool at_end(void) const
     {
         return pRowsStart == pRowsEnd;
     }
@@ -149,9 +149,9 @@ private:
     /** @brief The values for a 3D table with size x size dimensions, xDom x-axis and yDom y-axis */ \
     struct TABLE3D_TYPENAME_VALUE(size, xDom, yDom) { \
         /** @brief The number of items in a row. I.e. it's length  */ \
-        static constexpr table3d_dim_t row_size = size; \
+        static constexpr table3d_dim_t row_size = (size); \
         /** @brief The number of rows */ \
-        static constexpr table3d_dim_t num_rows = size; \
+        static constexpr table3d_dim_t num_rows = (size); \
         /** \
          @brief The row values \
          @details Table values are not linear in memory - rows are in reverse order<br> \
@@ -159,10 +159,10 @@ private:
          (normal cartesian coordinates) has this layout:<br> \
          6, 7, 8, 3, 4, 5, 0, 1, 2 \
         */ \
-        table3d_value_t values[row_size*num_rows]; \
+        table3d_value_t values[(uint16_t)row_size*num_rows]; \
         \
         /** @brief Iterate over the values */ \
-        inline table_value_iterator begin() \
+        table_value_iterator begin(void) \
         {  \
             return table_value_iterator(values, row_size); \
         } \
@@ -185,12 +185,15 @@ private:
          This limits us to 16x16 tables. If we need bigger and move to 16-bit \
          operations, consider using libdivide. <br> \
          */ \
-        inline table3d_value_t& value_at(table3d_dim_t linear_index) \
+        table3d_value_t& value_at(table3d_dim_t linear_index) \
         { \
-            static_assert(row_size<17, "Table is too big"); \
-            static_assert(num_rows<17, "Table is too big"); \
-            constexpr table3d_dim_t first_index = row_size*(num_rows-1); \
-            const table3d_dim_t index = first_index + (2*(linear_index % row_size)) - linear_index; \
+            static_assert(row_size<17U, "Table is too big"); \
+            static_assert(num_rows<17U, "Table is too big"); \
+            /* Zero length will mess up unsigned calcs */ \
+            static_assert(row_size>0U, "No zero length rows"); \
+            static_assert(num_rows>0U, "No empty tables"); \
+            constexpr table3d_dim_t first_index = row_size*(table3d_dim_t)(num_rows-1U); \
+            const table3d_dim_t index = (table3d_dim_t)(first_index + (table3d_dim_t)(2U*(linear_index % row_size)) - linear_index); \
             return values[index]; \
         } \
     };

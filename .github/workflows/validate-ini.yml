@@ -1,0 +1,16 @@
+name: Validate INI
+
+on: pull_request
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Validate INI
+        uses: hyper-tuner/ini-validate-action@v1
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+          filename: reference/speeduino.ini

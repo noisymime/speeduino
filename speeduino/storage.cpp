@@ -30,14 +30,14 @@ A full copy of the license may be found in the projects root directory
 
 uint32_t deferEEPROMWritesUntil = 0;
 
-bool isEepromWritePending()
+bool isEepromWritePending(void)
 {
   return BIT_CHECK(currentStatus.status4, BIT_STATUS4_BURNPENDING);
 }
 
 /** Write all config pages to EEPROM.
  */
-void writeAllConfig()
+void writeAllConfig(void)
 {
   uint8_t pageCount = getPageCount();
   uint8_t page = 1U;
@@ -121,7 +121,7 @@ static inline write_location write(table_value_iterator it, write_location locat
 
 static inline write_location write(table_axis_iterator it, write_location location)
 {
-  const int16_byte *pConverter = table3d_axis_io::get_converter(it.domain());
+  const int16_byte *pConverter = table3d_axis_io::get_converter(it.get_domain());
   while (location.can_write() && !it.at_end())
   {
     location.update(pConverter->to_byte(*it));
@@ -134,7 +134,7 @@ static inline write_location write(table_axis_iterator it, write_location locati
 
 static inline write_location writeTable(const void *pTable, table_type_t key, write_location location)
 {
-  return write(y_begin(pTable, key).reverse(), 
+  return write(y_rbegin(pTable, key), 
                 write(x_begin(pTable, key), 
                   write(rows_begin(pTable, key), location)));
 }
@@ -152,25 +152,29 @@ and writes them to EEPROM as per the layout defined in storage.h.
 void writeConfig(uint8_t pageNum)
 {
 //The maximum number of write operations that will be performed in one go.
-//If we try to write to the EEPROM too fast (Each write takes ~3ms) then 
+//If we try to write to the EEPROM too fast (Eg Each write takes ~3ms on the AVR) then 
 //the rest of the system can hang)
-#if defined(CORE_STM32) || defined(CORE_TEENSY) & !defined(USE_SPI_EEPROM)
+#if defined(USE_SPI_EEPROM)
+  //For use with common Winbond SPI EEPROMs Eg W25Q16JV
+  uint8_t EEPROM_MAX_WRITE_BLOCK = 20; //This needs tuning
+#elif defined(CORE_STM32) || defined(CORE_TEENSY)
   uint8_t EEPROM_MAX_WRITE_BLOCK = 64;
 #else
-  uint8_t EEPROM_MAX_WRITE_BLOCK = 24;
+  uint8_t EEPROM_MAX_WRITE_BLOCK = 18;
+  if(BIT_CHECK(currentStatus.status4, BIT_STATUS4_COMMS_COMPAT)) { EEPROM_MAX_WRITE_BLOCK = 8; } //If comms compatibility mode is on, slow the burn rate down even further
 
-#ifdef CORE_AVR
-  //In order to prevent missed pulses during EEPROM writes on AVR, scale the
-  //maximum write block size based on the RPM.
-  //This calculation is based on EEPROM writes taking approximately 4ms per byte
-  //(Actual value is 3.8ms, so 4ms has some safety margin) 
-  if(currentStatus.RPM > 65) //Min RPM of 65 prevents overflow of uint8_t
-  { 
-    EEPROM_MAX_WRITE_BLOCK = (uint8_t)(15000U / currentStatus.RPM);
-    EEPROM_MAX_WRITE_BLOCK = max(EEPROM_MAX_WRITE_BLOCK, 1);
-    EEPROM_MAX_WRITE_BLOCK = min(EEPROM_MAX_WRITE_BLOCK, 24); //Any higher than this will cause comms timeouts on AVR
-  }
-#endif
+  #ifdef CORE_AVR
+    //In order to prevent missed pulses during EEPROM writes on AVR, scale the
+    //maximum write block size based on the RPM.
+    //This calculation is based on EEPROM writes taking approximately 4ms per byte
+    //(Actual value is 3.8ms, so 4ms has some safety margin) 
+    if(currentStatus.RPM > 65) //Min RPM of 65 prevents overflow of uint8_t
+    { 
+      EEPROM_MAX_WRITE_BLOCK = (uint8_t)(15000U / currentStatus.RPM);
+      EEPROM_MAX_WRITE_BLOCK = max(EEPROM_MAX_WRITE_BLOCK, 1);
+      EEPROM_MAX_WRITE_BLOCK = min(EEPROM_MAX_WRITE_BLOCK, 20); //Any higher than this will cause comms timeouts on AVR
+    }
+  #endif
 
 #endif
 
@@ -287,7 +291,7 @@ void writeConfig(uint8_t pageNum)
       result = writeTable(&dwellTable, decltype(dwellTable)::type_key, result.changeWriteAddress(EEPROM_CONFIG12_MAP3));
       break;
       
-  case progOutsPage:
+    case progOutsPage:
       /*---------------------------------------------------
       | Config page 13 (See storage.h for data layout)
       -----------------------------------------------------*/
@@ -324,7 +328,7 @@ void writeConfig(uint8_t pageNum)
 
 /** Reset all configPage* structs (2,4,6,9,10,13) and write them full of null-bytes.
  */
-void resetConfigPages()
+void resetConfigPages(void)
 {
   for (uint8_t page=1; page<getPageCount(); ++page)
   {
@@ -380,7 +384,7 @@ static inline eeprom_address_t load(table_value_iterator it, eeprom_address_t ad
 
 static inline eeprom_address_t load(table_axis_iterator it, eeprom_address_t address)
 {
-  const int16_byte *pConverter = table3d_axis_io::get_converter(it.domain());
+  const int16_byte *pConverter = table3d_axis_io::get_converter(it.get_domain());
   while (!it.at_end())
   {
     *it = pConverter->from_byte(EEPROM.read(address));
@@ -393,7 +397,7 @@ static inline eeprom_address_t load(table_axis_iterator it, eeprom_address_t add
 
 static inline eeprom_address_t loadTable(const void *pTable, table_type_t key, eeprom_address_t address)
 {
-  return load(y_begin(pTable, key).reverse(),
+  return load(y_rbegin(pTable, key),
                 load(x_begin(pTable, key), 
                   load(rows_begin(pTable, key), address)));
 }
@@ -403,7 +407,7 @@ static inline eeprom_address_t loadTable(const void *pTable, table_type_t key, e
 
 /** Load all config tables from storage.
  */
-void loadConfig()
+void loadConfig(void)
 {
   loadTable(&fuelTable, decltype(fuelTable)::type_key, EEPROM_CONFIG1_MAP);
   load_range(EEPROM_CONFIG2_START, (byte *)&configPage2, (byte *)&configPage2+sizeof(configPage2));
@@ -476,7 +480,7 @@ void loadConfig()
 /** Read the calibration information from EEPROM.
 This is separate from the config load as the calibrations do not exist as pages within the ini file for Tuner Studio.
 */
-void loadCalibration()
+void loadCalibration(void)
 {
   // If you modify this function be sure to also modify writeCalibration();
   // it should be a mirror image of this function.
@@ -495,7 +499,7 @@ void loadCalibration()
 This takes the values in the 3 calibration tables (Coolant, Inlet temp and O2)
 and saves them to the EEPROM.
 */
-void writeCalibration()
+void writeCalibration(void)
 {
   // If you modify this function be sure to also modify loadCalibration();
   // it should be a mirror image of this function.
@@ -554,8 +558,8 @@ uint32_t readPageCRC32(uint8_t pageNum)
 }
 
 /** Same as above, but writes the CRC32 for the calibration page rather than tune data
-@param pageNum - Calibration page number
-@param crcValue - CRC32 checksum
+@param calibrationPageNum - Calibration page number
+@param calibrationCRC - CRC32 checksum
 */
 void storeCalibrationCRC32(uint8_t calibrationPageNum, uint32_t calibrationCRC)
 {
@@ -580,7 +584,7 @@ void storeCalibrationCRC32(uint8_t calibrationPageNum, uint32_t calibrationCRC)
 }
 
 /** Retrieves and returns the 4 byte CRC32 checksum for a given calibration page from EEPROM.
-@param pageNum - Config page number
+@param calibrationPageNum - Config page number
 */
 uint32_t readCalibrationCRC32(uint8_t calibrationPageNum)
 {
@@ -606,7 +610,7 @@ uint32_t readCalibrationCRC32(uint8_t calibrationPageNum)
   return crc32_val;
 }
 
-uint16_t getEEPROMSize()
+uint16_t getEEPROMSize(void)
 {
   return EEPROM.length();
 }
@@ -614,10 +618,10 @@ uint16_t getEEPROMSize()
 // Utility functions.
 // By having these in this file, it prevents other files from calling EEPROM functions directly. This is useful due to differences in the EEPROM libraries on different devces
 /// Read last stored barometer reading from EEPROM.
-byte readLastBaro() { return EEPROM.read(EEPROM_LAST_BARO); }
+byte readLastBaro(void) { return EEPROM.read(EEPROM_LAST_BARO); }
 /// Write last acquired arometer reading to EEPROM.
 void storeLastBaro(byte newValue) { EEPROM.update(EEPROM_LAST_BARO, newValue); }
 /// Read EEPROM current data format version (from offset EEPROM_DATA_VERSION).
-byte readEEPROMVersion() { return EEPROM.read(EEPROM_DATA_VERSION); }
+byte readEEPROMVersion(void) { return EEPROM.read(EEPROM_DATA_VERSION); }
 /// Store EEPROM current data format version (to offset EEPROM_DATA_VERSION).
 void storeEEPROMVersion(byte newVersion) { EEPROM.update(EEPROM_DATA_VERSION, newVersion); }

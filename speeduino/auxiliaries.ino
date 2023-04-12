@@ -16,10 +16,238 @@ integerPID_ideal boostPID(&currentStatus.MAP, &currentStatus.boostDuty , &curren
 integerPID vvtPID(&vvt_pid_current_angle, &currentStatus.vvt1Duty, &vvt_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, configPage6.vvtPWMdir); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 integerPID vvt2PID(&vvt2_pid_current_angle, &currentStatus.vvt2Duty, &vvt2_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, configPage4.vvt2PWMdir); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
+
+/*
+Air Conditioning Control
+*/
+void initialiseAirCon(void)
+{
+  if( (configPage15.airConEnable&1) == 1 &&
+      pinAirConRequest != 0 &&
+      pinAirConComp != 0 )
+  {
+    // Hold the A/C off until a few seconds after cranking
+    acAfterEngineStartDelay = 0;
+    waitedAfterCranking = false;
+
+    acStartDelay = 0;
+    acTPSLockoutDelay = 0;
+    acRPMLockoutDelay = 0;
+
+    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_REQUEST);     // Bit 0
+    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR);  // Bit 1
+    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_RPM_LOCKOUT); // Bit 2
+    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT); // Bit 3
+    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON);  // Bit 4
+    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_CLT_LOCKOUT); // Bit 5
+    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_FAN);         // Bit 6
+    aircon_req_pin_port = portInputRegister(digitalPinToPort(pinAirConRequest));
+    aircon_req_pin_mask = digitalPinToBitMask(pinAirConRequest);
+    aircon_comp_pin_port = portOutputRegister(digitalPinToPort(pinAirConComp));
+    aircon_comp_pin_mask = digitalPinToBitMask(pinAirConComp);
+
+    AIRCON_OFF();
+
+    if((configPage15.airConFanEnabled > 0) && (pinAirConFan != 0))
+    {
+      aircon_fan_pin_port = portOutputRegister(digitalPinToPort(pinAirConFan));
+      aircon_fan_pin_mask = digitalPinToBitMask(pinAirConFan);
+      AIRCON_FAN_OFF();
+      acStandAloneFanIsEnabled = true;
+    }
+    else
+    {
+      acStandAloneFanIsEnabled = false;
+    }
+
+    acIsEnabled = true;
+
+  }
+  else
+  {
+    acIsEnabled = false;
+  }
+}
+
+void airConControl(void)
+{
+  if(acIsEnabled == true)
+  {
+    // ------------------------------------------------------------------------------------------------------
+    // Check that the engine has been running past the post-start delay period before enabling the compressor
+    // ------------------------------------------------------------------------------------------------------
+    if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
+    {
+      if(acAfterEngineStartDelay >= configPage15.airConAfterStartDelay)
+      {
+        waitedAfterCranking = true;
+      }
+      else
+      {
+        acAfterEngineStartDelay++;
+      }
+    }
+    else
+    {
+      acAfterEngineStartDelay = 0;
+      waitedAfterCranking = false;
+    }
+    
+    // --------------------------------------------------------------------
+    // Determine the A/C lockouts based on the noted parameters
+    // These functions set/clear the globl currentStatus.airConStatus bits.
+    // --------------------------------------------------------------------
+    checkAirConCoolantLockout();
+    checkAirConTPSLockout();
+    checkAirConRPMLockout();
+    
+    // -----------------------------------------
+    // Check the A/C Request Signal (A/C Button)
+    // -----------------------------------------
+    if( READ_AIRCON_REQUEST() == true &&
+        waitedAfterCranking == true &&
+        BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT) == false &&
+        BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_RPM_LOCKOUT) == false &&
+        BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_CLT_LOCKOUT) == false )
+    {
+      // Set the BIT_AIRCON_TURNING_ON bit to notify the idle system to idle up & the cooling fan to start (if enabled)
+      BIT_SET(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON);
+
+      // Stand-alone fan operation
+      if(acStandAloneFanIsEnabled == true)
+      {
+        AIRCON_FAN_ON();
+      }
+
+      // Start the A/C compressor after the "Compressor On" delay period
+      if(acStartDelay >= configPage15.airConCompOnDelay)
+      {
+        AIRCON_ON();
+      }
+      else
+      {
+        acStartDelay++;
+      }
+    }
+    else
+    {
+      BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON);
+
+      // Stand-alone fan operation
+      if(acStandAloneFanIsEnabled == true)
+      {
+        AIRCON_FAN_OFF();
+      }
+
+      AIRCON_OFF();
+      acStartDelay = 0;
+    }
+  }
+}
+
+bool READ_AIRCON_REQUEST(void)
+{
+  if(acIsEnabled == false)
+  {
+    return false;
+  }
+  // Read the status of the A/C request pin (A/C button), taking into account the pin's polarity
+  bool acReqPinStatus = ( ((configPage15.airConReqPol&1)==1) ? 
+                             !!(*aircon_req_pin_port & aircon_req_pin_mask) :
+                             !(*aircon_req_pin_port & aircon_req_pin_mask));
+  BIT_WRITE(currentStatus.airConStatus, BIT_AIRCON_REQUEST, acReqPinStatus);
+  return acReqPinStatus;
+}
+
+static inline void checkAirConCoolantLockout(void)
+{
+  // ---------------------------
+  // Coolant Temperature Lockout
+  // ---------------------------
+  int offTemp = (int)configPage15.airConClTempCut - CALIBRATION_TEMPERATURE_OFFSET;
+  if (currentStatus.coolant > offTemp)
+  {
+    // A/C is cut off due to high coolant
+    BIT_SET(currentStatus.airConStatus, BIT_AIRCON_CLT_LOCKOUT);
+  }
+  else if (currentStatus.coolant < (offTemp - 1))
+  {
+    // Adds a bit of hysteresis (2 degrees) to removing the lockout
+    // Yes, it is 2 degrees (not 1 degree or 3 degrees) because we go "> offTemp" to enable and "< (offtemp-1)" to disable,
+    // e.g. if offTemp is 100, it needs to go GREATER than 100 to enable, i.e. 101, and then 98 to disable,
+    // because the coolant temp is an integer. So 98.5 degrees to 100.5 degrees is the analog null zone where nothing happens,
+    // depending on sensor calibration and table interpolation.
+    // Hopefully offTemp wasn't -40... otherwise underflow... but that would be ridiculous
+    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_CLT_LOCKOUT);
+  }
+}
+
+static inline void checkAirConTPSLockout(void)
+{
+  // ------------------------------
+  // High Throttle Position Lockout
+  // ------------------------------
+  if (currentStatus.TPS > configPage15.airConTPSCut)
+  {
+    // A/C is cut off due to high TPS
+    BIT_SET(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT);
+    acTPSLockoutDelay = 0;
+  }
+  else if ( (BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT) == true) &&
+            (currentStatus.TPS <= configPage15.airConTPSCut) )
+  {
+    // No need for hysteresis as we have the stand-down delay period after the high TPS condition goes away.
+    if (acTPSLockoutDelay >= configPage15.airConTPSCutTime)
+    {
+      BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT);
+    }
+    else
+    {
+      acTPSLockoutDelay++;
+    }
+  }
+  else
+  {
+    acTPSLockoutDelay = 0;
+  }
+}
+
+static inline void checkAirConRPMLockout(void)
+{
+  // --------------------
+  // High/Low RPM Lockout
+  // --------------------
+  if ( (currentStatus.RPM < (configPage15.airConMinRPMdiv10 * 10)) ||
+       (currentStatus.RPMdiv100 > configPage15.airConMaxRPMdiv100) )
+  {
+    // A/C is cut off due to high/low RPM
+    BIT_SET(currentStatus.airConStatus, BIT_AIRCON_RPM_LOCKOUT);
+    acRPMLockoutDelay = 0;
+  }
+  else if ( (currentStatus.RPM >= (configPage15.airConMinRPMdiv10 * 10)) &&
+            (currentStatus.RPMdiv100 <= configPage15.airConMaxRPMdiv100) )
+  {
+    // No need to add hysteresis as we have the stand-down delay period after the high/low RPM condition goes away.
+    if (acRPMLockoutDelay >= configPage15.airConRPMCutTime)
+    {
+      BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_RPM_LOCKOUT);
+    }
+    else
+    {
+      acRPMLockoutDelay++;
+    }
+  }
+  else
+  {
+    acRPMLockoutDelay = 0;
+  }
+}
+
+
 /*
 Fan control
 */
-void initialiseFan()
+void initialiseFan(void)
 {
   fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
   fan_pin_mask = digitalPinToBitMask(pinFan);
@@ -39,7 +267,7 @@ void initialiseFan()
   #endif
 }
 
-void fanControl()
+void fanControl(void)
 {
   if( configPage2.fanEnable == 1 ) // regular on/off fan control
   {
@@ -47,12 +275,16 @@ void fanControl()
     int offTemp = onTemp - configPage6.fanHyster;
     bool fanPermit = false;
 
+    
     if ( configPage2.fanWhenOff == true) { fanPermit = true; }
     else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
 
-    if ( (currentStatus.coolant >= onTemp) && (fanPermit == true) )
+    if ( (fanPermit == true) &&
+         ((currentStatus.coolant >= onTemp) || 
+           ((configPage15.airConTurnsFanOn&1) == 1 &&
+           BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)) )
     {
-      //Fan needs to be turned on.
+      //Fan needs to be turned on - either by high coolant temp, or from an A/C request (to ensure there is airflow over the A/C radiator).
       if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
       {
         //If the user has elected to disable the fan during cranking, make sure it's off 
@@ -89,7 +321,17 @@ void fanControl()
       }
       else
       {
-        currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
+        byte tempFanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
+        if((configPage15.airConTurnsFanOn&1) == 1 &&
+           BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)
+        {
+          // Clamp the fan duty to airConPwmFanMinDuty or above, to ensure there is airflow over the A/C radiator
+          if(tempFanDuty < configPage15.airConPwmFanMinDuty)
+          {
+            tempFanDuty = configPage15.airConPwmFanMinDuty;
+          }
+        }
+        currentStatus.fanDuty = tempFanDuty;
         #if defined(PWM_FAN_AVAILABLE)
           fan_pwm_value = halfPercentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
           if (currentStatus.fanDuty > 0)
@@ -138,7 +380,7 @@ void fanControl()
   }
 }
 
-void initialiseAuxPWM()
+void initialiseAuxPWM(void)
 {
   boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost));
   boost_pin_mask = digitalPinToBitMask(pinBoost);
@@ -175,8 +417,10 @@ void initialiseAuxPWM()
 
     #if defined(CORE_AVR)
       vvt_pwm_max_count = 1000000L / (16 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-    #elif defined(CORE_TEENSY)
+    #elif defined(CORE_TEENSY35)
       vvt_pwm_max_count = 1000000L / (32 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+    #elif defined(CORE_TEENSY41)
+      vvt_pwm_max_count = 1000000L / (2 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming fro TS to allow for up to 512hz
     #endif
 
     if(configPage6.vvtMode == VVT_MODE_CLOSED_LOOP)
@@ -207,8 +451,10 @@ void initialiseAuxPWM()
     // config wmi pwm output to use vvt output
     #if defined(CORE_AVR)
       vvt_pwm_max_count = 1000000L / (16 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-    #elif defined(CORE_TEENSY)
+    #elif defined(CORE_TEENSY35)
       vvt_pwm_max_count = 1000000L / (32 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+    #elif defined(CORE_TEENSY41)
+      vvt_pwm_max_count = 1000000L / (2 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
     #endif
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_WMI_EMPTY);
     currentStatus.wmiPW = 0;
@@ -227,7 +473,7 @@ void initialiseAuxPWM()
 
 }
 
-void boostByGear()
+void boostByGear(void)
 {
   if(configPage4.boostType == OPEN_LOOP_BOOST)
   {
@@ -367,7 +613,7 @@ void boostByGear()
   }
 }
 
-void boostControl()
+void boostControl(void)
 {
   if( configPage6.boostEnabled==1 )
   {
@@ -461,7 +707,7 @@ void boostControl()
   boostCounter++;
 }
 
-void vvtControl()
+void vvtControl(void)
 {
   if( (configPage6.vvtEnabled == 1) && (currentStatus.coolant >= (int)(configPage4.vvtMinClt - CALIBRATION_TEMPERATURE_OFFSET)) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN)))
   {
@@ -629,7 +875,7 @@ void vvtControl()
   } 
 }
 
-void nitrousControl()
+void nitrousControl(void)
 {
   bool nitrousOn = false; //This tracks whether the control gets turned on at any point. 
   if(configPage10.n2o_enable > 0)
@@ -686,7 +932,7 @@ void nitrousControl()
 }
 
 // Water methanol injection control
-void wmiControl()
+void wmiControl(void)
 {
   int wmiPW = 0;
   
@@ -753,7 +999,7 @@ void wmiControl()
   }
 }
 
-void boostDisable()
+void boostDisable(void)
 {
   boostPID.Initialize(); //This resets the ITerm value to prevent rubber banding
   currentStatus.boostDuty = 0;
@@ -763,20 +1009,28 @@ void boostDisable()
 
 //The interrupt to control the Boost PWM
 #if defined(CORE_AVR)
-  ISR(TIMER1_COMPA_vect)
+  ISR(TIMER1_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-  void boostInterrupt() //Most ARM chips can simply call a function
+  void boostInterrupt(void) //Most ARM chips can simply call a function
 #endif
 {
   if (boost_pwm_state == true)
   {
+    #if defined(CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
+    BOOST_PIN_HIGH();
+    #else
     BOOST_PIN_LOW();  // Switch pin to low
+    #endif
     SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + (boost_pwm_max_count - boost_pwm_cur_value) );
     boost_pwm_state = false;
   }
   else
   {
+    #if defined(CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
+    BOOST_PIN_LOW();
+    #else
     BOOST_PIN_HIGH();  // Switch pin high
+    #endif
     SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + boost_pwm_target_value);
     boost_pwm_cur_value = boost_pwm_target_value;
     boost_pwm_state = true;
@@ -785,21 +1039,29 @@ void boostDisable()
 
 //The interrupt to control the VVT PWM
 #if defined(CORE_AVR)
-  ISR(TIMER1_COMPB_vect)
+  ISR(TIMER1_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-  void vvtInterrupt() //Most ARM chips can simply call a function
+  void vvtInterrupt(void) //Most ARM chips can simply call a function
 #endif
 {
   if ( ((vvt1_pwm_state == false) || (vvt1_max_pwm == true)) && ((vvt2_pwm_state == false) || (vvt2_max_pwm == true)) )
   {
     if( (vvt1_pwm_value > 0) && (vvt1_max_pwm == false) ) //Don't toggle if at 0%
     {
+      #if defined(CORE_TEENSY41)
+      VVT1_PIN_OFF();
+      #else
       VVT1_PIN_ON();
+      #endif
       vvt1_pwm_state = true;
     }
     if( (vvt2_pwm_value > 0) && (vvt2_max_pwm == false) ) //Don't toggle if at 0%
     {
+      #if defined(CORE_TEENSY41)
+      VVT2_PIN_OFF();
+      #else
       VVT2_PIN_ON();
+      #endif
       vvt2_pwm_state = true;
     }
 
@@ -826,7 +1088,11 @@ void boostDisable()
     {
       if(vvt1_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
+        #if defined(CORE_TEENSY41)
+        VVT1_PIN_ON();
+        #else
         VVT1_PIN_OFF();
+        #endif
         vvt1_pwm_state = false;
         vvt1_max_pwm = false;
       }
@@ -843,7 +1109,11 @@ void boostDisable()
     {
       if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
+        #if defined(CORE_TEENSY41)
+        VVT2_PIN_ON();
+        #else
         VVT2_PIN_OFF();
+        #endif
         vvt2_pwm_state = false;
         vvt2_max_pwm = false;
       }
@@ -860,7 +1130,11 @@ void boostDisable()
     {
       if(vvt1_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
+       #if defined(CORE_TEENSY41)
+        VVT1_PIN_ON();
+        #else
         VVT1_PIN_OFF();
+        #endif
         vvt1_pwm_state = false;
         vvt1_max_pwm = false;
         SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value) );
@@ -868,7 +1142,11 @@ void boostDisable()
       else { vvt1_max_pwm = true; }
       if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
+        #if defined(CORE_TEENSY41)
+        VVT2_PIN_ON();
+        #else
         VVT2_PIN_OFF();
+        #endif
         vvt2_pwm_state = false;
         vvt2_max_pwm = false;
         SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt2_pwm_cur_value) );
@@ -880,7 +1158,7 @@ void boostDisable()
 
 #if defined(PWM_FAN_AVAILABLE)
 //The interrupt to control the FAN PWM. Mega2560 doesn't have enough timers, so this is only for the ARM chip ones
-  void fanInterrupt()
+  void fanInterrupt(void)
 {
   if (fan_pwm_state == true)
   {

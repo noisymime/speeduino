@@ -15,7 +15,7 @@ volatile uint8_t mc33810_2_requestedState; //Current binary state of the 2nd ICs
 volatile uint8_t mc33810_1_returnState; //Current binary state of the 1st ICs IGN and INJ values
 volatile uint8_t mc33810_2_returnState; //Current binary state of the 2nd ICs IGN and INJ values
 
-void initMC33810();
+void initMC33810(void);
 
 #define MC33810_1_ACTIVE() (*mc33810_1_pin_port &= ~(mc33810_1_pin_mask))
 #define MC33810_1_INACTIVE() (*mc33810_1_pin_port |= (mc33810_1_pin_mask))

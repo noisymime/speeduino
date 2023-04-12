@@ -1,2 +1,1 @@
-5.4 - cppcheck currently doesn't appear to handle the scope of #defines within header files and so is counting all instances as duplicates. 
-10.4 - Currently suppressing this as the work required to go through and add I, U, UL, L etc to all the contstants is not worth it.  
+

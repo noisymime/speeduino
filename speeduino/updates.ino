@@ -14,9 +14,9 @@
 #include "updates.h"
 #include EEPROM_LIB_H //This is defined in the board .h files
 
-void doUpdates()
+void doUpdates(void)
 {
-  #define CURRENT_DATA_VERSION    20
+  #define CURRENT_DATA_VERSION    21
   //Only the latest update for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
@@ -608,7 +608,7 @@ void doUpdates()
   
   if(readEEPROMVersion() == 19)
   {
-    //202204
+    //202207
 
     //Option added to select injector pairing on 4 cylinder engines
     if( configPage4.inj4cylPairing > INJ_PAIR_14_23 ) { configPage4.inj4cylPairing = 0; } //Check valid value
@@ -625,7 +625,6 @@ void doUpdates()
     configPage2.canBMWCluster = 0;
     configPage2.canVAGCluster = 0;
     
-
     configPage15.boostDCWhenDisabled = 0;
     configPage15.boostControlEnable = EN_BOOST_CONTROL_BARO;
     
@@ -668,10 +667,37 @@ void doUpdates()
     configPage9.afrProtectMinMAP = 90; //Is divided by 2, vlue represents 180kPa
     configPage9.afrProtectMinRPM = 40; //4000 RPM min
     configPage9.afrProtectMinTPS = 160; //80% TPS min
-    configPage9.afrProtectDeviation = 14; //1.4 AFR deviation
-
+    configPage9.afrProtectDeviation = 14; //1.4 AFR deviation    
+    
     writeAllConfig();
     storeEEPROMVersion(20);
+  }
+
+  if(readEEPROMVersion() == 20)
+  {
+    //202210
+    configPage2.taeMinChange = 4; //Default is 2% minimum change to match prior behaviour. (4 = 2% account for 0.5 resolution)
+    configPage2.maeMinChange = 2; //Default is 2% minimum change to match prior behaviour.
+
+    configPage2.decelAmount = 100; //Default decel fuel amount is 100%, so no change in fueling in decel as before.
+    //full status structure has been changed. Update programmable outputs settings to match.
+    for (uint8_t y = 0; y < sizeof(configPage13.outputPin); y++)
+    {
+      if ((configPage13.firstDataIn[y] > 22) && (configPage13.firstDataIn[y] < 240)) {configPage13.firstDataIn[y]++;}
+      if ((configPage13.firstDataIn[y] > 92) && (configPage13.firstDataIn[y] < 240)) {configPage13.firstDataIn[y]++;}
+      if ((configPage13.secondDataIn[y] > 22) && (configPage13.secondDataIn[y] < 240)) {configPage13.secondDataIn[y]++;}
+      if ((configPage13.secondDataIn[y] > 92) && (configPage13.secondDataIn[y] < 240)) {configPage13.secondDataIn[y]++;}
+    }
+    
+    //AC Control (configPage15)
+    //Set A/C default values - these line up with the ini file defaults
+    configPage15.airConEnable = 0;
+
+    //Oil Pressure protection delay added. Set to 0 to match existing behaviour
+    configPage10.oilPressureProtTime = 0;
+
+    writeAllConfig();
+    storeEEPROMVersion(21);
   }
   
   //Final check is always for 255 and 0 (Brand new arduino)

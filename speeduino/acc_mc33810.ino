@@ -2,7 +2,7 @@
 #include "globals.h"
 #include <SPI.h>
 
-void initMC33810()
+void initMC33810(void)
 {
     //Set the output states of both ICs to be off to fuel and ignition
     mc33810_1_requestedState = 0;

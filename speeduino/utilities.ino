@@ -91,7 +91,7 @@ byte pinTranslateAnalog(byte rawPin)
 }
 
 
-void setResetControlPinState()
+void setResetControlPinState(void)
 {
   BIT_CLEAR(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
 
@@ -118,7 +118,7 @@ void setResetControlPinState()
 }
 
 //*********************************************************************************************************************************************************************************
-void initialiseProgrammableIO()
+void initialiseProgrammableIO(void)
 {
   uint8_t outputPin;
   for (uint8_t y = 0; y < sizeof(configPage13.outputPin); y++)
@@ -149,7 +149,7 @@ void initialiseProgrammableIO()
  * Use ProgrammableIOGetData() to get 2 vars to compare.
  * Skip all programmable I/O:s where output pin is set 0 (meaning: not programmed).
  */
-void checkProgrammableIO()
+void checkProgrammableIO(void)
 {
   int16_t data, data2;
   uint8_t dataRequested;

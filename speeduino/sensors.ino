@@ -20,7 +20,7 @@ A full copy of the license may be found in the projects root directory
 
 /** Init all ADC conversions by setting resolutions, etc.
  */
-void initialiseADC()
+void initialiseADC(void)
 {
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 
@@ -131,7 +131,7 @@ void initialiseADC()
   vssIndex = 0;
 }
 
-static inline void validateMAP()
+static inline void validateMAP(void)
 {
   //Error checks
   if(currentStatus.MAP < VALID_MAP_MIN)
@@ -157,7 +157,7 @@ static inline void validateMAP()
   }
 }
 
-static inline void instanteneousMAPReading()
+static inline void instanteneousMAPReading(void)
 {
   //Update the calculation times and last value. These are used by the MAP based Accel enrich
   MAPlast = currentStatus.MAP;
@@ -201,7 +201,7 @@ static inline void instanteneousMAPReading()
 
 }
 
-static inline void readMAP()
+static inline void readMAP(void)
 {
   unsigned int tempReading;
   //MAP Sampling system
@@ -457,7 +457,7 @@ void readCLT(bool useFilter)
   currentStatus.coolant = table2D_getValue(&cltCalibrationTable, currentStatus.cltADC) - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
 }
 
-void readIAT()
+void readIAT(void)
 {
   unsigned int tempReading;
   #if defined(ANALOG_ISR)
@@ -471,7 +471,7 @@ void readIAT()
   currentStatus.IAT = table2D_getValue(&iatCalibrationTable, currentStatus.iatADC) - CALIBRATION_TEMPERATURE_OFFSET;
 }
 
-void readBaro()
+void readBaro(void)
 {
   if ( configPage6.useExtBaro != 0 )
   {
@@ -522,7 +522,7 @@ void readBaro()
   }
 }
 
-void readO2()
+void readO2(void)
 {
   //An O2 read is only performed if an O2 sensor type is selected. This is to prevent potentially dangerous use of the O2 readings prior to proper setup/calibration
   if(configPage6.egoType > 0)
@@ -547,7 +547,7 @@ void readO2()
   
 }
 
-void readO2_2()
+void readO2_2(void)
 {
   //Second O2 currently disabled as its not being used
   //Get the current O2 value.
@@ -563,7 +563,7 @@ void readO2_2()
   currentStatus.O2_2 = table2D_getValue(&o2CalibrationTable, currentStatus.O2_2ADC);
 }
 
-void readBat()
+void readBat(void)
 {
   int tempReading;
   #if defined(ANALOG_ISR)
@@ -593,7 +593,7 @@ void readBat()
     //Redo the stepper homing
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
     {
-      initialiseIdle();
+      initialiseIdle(true);
     }
   }
 
@@ -622,7 +622,7 @@ uint32_t vssGetPulseGap(byte historyIndex)
   return tempGap;
 }
 
-uint16_t getSpeed()
+uint16_t getSpeed(void)
 {
   uint16_t tempSpeed = 0;
 
@@ -655,7 +655,7 @@ uint16_t getSpeed()
   return tempSpeed;
 }
 
-byte getGear()
+byte getGear(void)
 {
   byte tempGear = 0; //Unknown gear
   if(currentStatus.vss > 0)
@@ -676,7 +676,7 @@ byte getGear()
   return tempGear;
 }
 
-byte getFuelPressure()
+byte getFuelPressure(void)
 {
   int16_t tempFuelPressure = 0;
   uint16_t tempReading;
@@ -697,7 +697,7 @@ byte getFuelPressure()
   return (byte)tempFuelPressure;
 }
 
-byte getOilPressure()
+byte getOilPressure(void)
 {
   int16_t tempOilPressure = 0;
   uint16_t tempReading;
@@ -724,7 +724,7 @@ byte getOilPressure()
  * The interrupt function for reading the flex sensor frequency and pulse width
  * flexCounter value is incremented with every pulse and reset back to 0 once per second
  */
-void flexPulse()
+void flexPulse(void)
 {
   if(READ_FLEX() == true)
   {
@@ -742,7 +742,7 @@ void flexPulse()
  * The interrupt function for pulses from a knock conditioner / controller
  * 
  */
-void knockPulse()
+void knockPulse(void)
 {
   //Check if this the start of a knock. 
   if(knockCounter == 0)
@@ -759,7 +759,7 @@ void knockPulse()
  * @brief The ISR function for VSS pulses
  * 
  */
-void vssPulse()
+void vssPulse(void)
 {
   //TODO: Add basic filtering here
   vssIndex++;

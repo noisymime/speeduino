@@ -15,13 +15,24 @@
   #include "acc_mc33810.h"
 #endif
 
+static bool commandRequiresStoppedEngine(uint16_t buttonCommand)
+{
+  return ((buttonCommand >= TS_CMD_INJ1_ON) && (buttonCommand <= TS_CMD_IGN8_50PC)) 
+      || ((buttonCommand == TS_CMD_TEST_ENBL) || (buttonCommand == TS_CMD_TEST_DSBL));
+}
+
 /**
  * @brief 
  * 
  * @param buttonCommand The command number of the button that was clicked. See TS_CommendButtonHandler.h for a list of button IDs
  */
-void TS_CommandButtonsHandler(uint16_t buttonCommand)
+bool TS_CommandButtonsHandler(uint16_t buttonCommand)
 {
+  if (commandRequiresStoppedEngine(buttonCommand) && currentStatus.RPM != 0)
+  {
+    return false;
+  }
+  
   switch (buttonCommand)
   {
     case TS_CMD_TEST_DSBL: // cmd is stop
@@ -363,6 +374,9 @@ void TS_CommandButtonsHandler(uint16_t buttonCommand)
 #endif
 
     default:
+      return false;
       break;
   }
+
+  return true;
 }

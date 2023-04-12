@@ -19,13 +19,13 @@
 #include <stdint.h>
 
 /** @brief Encodes the \b length of the axes */
-typedef uint8_t table3d_dim_t;
+using table3d_dim_t = uint8_t;
 
 /** @brief The type of each table value */
-typedef uint8_t table3d_value_t;
+using table3d_value_t = uint8_t;
 
 /** @brief The type of each axis value */
-typedef int16_t table3d_axis_t;
+using table3d_axis_t = int16_t;
 
 /** @brief Core 3d table generation macro
  * 
