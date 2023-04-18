@@ -829,7 +829,7 @@ void loop()
       //Check for any of the engine protections or rev limiters being turned on
       if(checkEngineProtect() || currentStatus.launchingHard || currentStatus.flatShiftingHard)
       {
-        if( (currentStatus.RPMdiv100 > configPage4.engineProtectMaxRPM) || currentStatus.launchingHard || currentStatus.flatShiftingHard) //Ugly, but the launch/flat shift check needs to be here as well to prevent these limiters not happening when under the the Engine Protection min rpm
+        if( (currentStatus.RPMdiv100 > configPage4.engineProtectMinRPM) || currentStatus.launchingHard || currentStatus.flatShiftingHard) //Ugly, but the launch/flat shift check needs to be here as well to prevent these limiters not happening when under the the Engine Protection min rpm
         {
           if( (configPage2.hardCutType == HARD_CUT_FULL) || (configPage6.engineProtectType == PROTECT_CUT_FUEL) ) 
           { 

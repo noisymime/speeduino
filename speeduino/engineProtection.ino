@@ -7,7 +7,7 @@ byte checkEngineProtect()
   byte protectActive = 0;
   if(checkRevLimit() || checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit() )
   {
-    if( currentStatus.RPMdiv100 > configPage4.engineProtectMaxRPM ) { protectActive = 1; }
+    if( currentStatus.RPMdiv100 > configPage4.engineProtectMinRPM ) { protectActive = 1; }
   }
 
   return protectActive;
@@ -207,4 +207,3 @@ byte checkAFRLimit()
 
   return checkAFRLimitActive;
 }
-
