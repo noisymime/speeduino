@@ -2818,16 +2818,33 @@ void setPinMapping(byte boardID)
   pinMode(pinTachOut, OUTPUT);
   pinMode(pinIdle1, OUTPUT);
   pinMode(pinIdle2, OUTPUT);
-  pinMode(pinIdleUpOutput, OUTPUT);
   pinMode(pinFuelPump, OUTPUT);
   pinMode(pinIgnBypass, OUTPUT);
-  pinMode(pinFan, OUTPUT);
   pinMode(pinStepperDir, OUTPUT);
   pinMode(pinStepperStep, OUTPUT);
   pinMode(pinStepperEnable, OUTPUT);
-  pinMode(pinBoost, OUTPUT);
-  pinMode(pinVVT_1, OUTPUT);
-  pinMode(pinVVT_2, OUTPUT);
+
+  //These outputs have selectable pin and user can accidentally select pin that is reserved (ie. USB, SD-Card slot etc). So only set as output if feature enabled and check if reserved.
+  if( (configPage2.idleUpOutputEnabled > 0) && (!pinIsReserved(pinIdleUpOutput)) )
+  {
+    pinMode(pinIdleUpOutput, OUTPUT);
+  }
+  if( (configPage2.fanEnable > 0) && (!pinIsReserved(pinFan)) )
+  {
+    pinMode(pinFan, OUTPUT);
+  }
+  if( (configPage6.boostEnabled > 0) && (!pinIsReserved(pinBoost)) )
+  {
+    pinMode(pinBoost, OUTPUT);
+  }
+  if( (configPage6.vvtEnabled > 0) && (!pinIsReserved(pinVVT_1)) )
+  {
+    pinMode(pinVVT_1, OUTPUT);
+  }
+  if( (configPage10.vvt2Enabled > 0) && (!pinIsReserved(pinVVT_2)) )
+  {
+    pinMode(pinVVT_2, OUTPUT);
+  }
 
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinMAP, HIGH); }
@@ -2951,44 +2968,44 @@ void setPinMapping(byte boardID)
   #endif
 
   //Each of the below are only set when their relevant function is enabled. This can help prevent pin conflicts that users aren't aware of with unused functions
-  if( (configPage2.flexEnabled > 0) && (!pinIsOutput(pinFlex)) )
+  if( (configPage2.flexEnabled > 0) && (!pinIsUsed(pinFlex)) )
   {
     pinMode(pinFlex, INPUT); //Standard GM / Continental flex sensor requires pullup, but this should be onboard. The internal pullup will not work (Requires ~3.3k)!
   }
-  if( (configPage2.vssMode > 1) && (!pinIsOutput(pinVSS)) ) //Pin mode 1 for VSS is CAN
+  if( (configPage2.vssMode > 1) && (!pinIsUsed(pinVSS)) ) //Pin mode 1 for VSS is CAN
   {
     pinMode(pinVSS, INPUT);
   }
-  if( (configPage6.launchEnabled > 0) && (!pinIsOutput(pinLaunch)) )
+  if( (configPage6.launchEnabled > 0) && (!pinIsUsed(pinLaunch)) )
   {
     if (configPage6.lnchPullRes == true) { pinMode(pinLaunch, INPUT_PULLUP); }
     else { pinMode(pinLaunch, INPUT); } //If Launch Pull Resistor is not set make input float.
   }
-  if( (configPage2.idleUpEnabled > 0) && (!pinIsOutput(pinIdleUp)) )
+  if( (configPage2.idleUpEnabled > 0) && (!pinIsUsed(pinIdleUp)) )
   {
     if (configPage2.idleUpPolarity == 0) { pinMode(pinIdleUp, INPUT_PULLUP); } //Normal setting
     else { pinMode(pinIdleUp, INPUT); } //inverted setting
   }
-  if( (configPage2.CTPSEnabled > 0) && (!pinIsOutput(pinCTPS)) )
+  if( (configPage2.CTPSEnabled > 0) && (!pinIsUsed(pinCTPS)) )
   {
     if (configPage2.CTPSPolarity == 0) { pinMode(pinCTPS, INPUT_PULLUP); } //Normal setting
     else { pinMode(pinCTPS, INPUT); } //inverted setting
   }
-  if( (configPage10.fuel2Mode == FUEL2_MODE_INPUT_SWITCH) && (!pinIsOutput(pinFuel2Input)) )
+  if( (configPage10.fuel2Mode == FUEL2_MODE_INPUT_SWITCH) && (!pinIsUsed(pinFuel2Input)) )
   {
     if (configPage10.fuel2InputPullup == true) { pinMode(pinFuel2Input, INPUT_PULLUP); } //With pullup
     else { pinMode(pinFuel2Input, INPUT); } //Normal input
   }
-  if( (configPage10.spark2Mode == SPARK2_MODE_INPUT_SWITCH) && (!pinIsOutput(pinSpark2Input)) )
+  if( (configPage10.spark2Mode == SPARK2_MODE_INPUT_SWITCH) && (!pinIsUsed(pinSpark2Input)) )
   {
     if (configPage10.spark2InputPullup == true) { pinMode(pinSpark2Input, INPUT_PULLUP); } //With pullup
     else { pinMode(pinSpark2Input, INPUT); } //Normal input
   }
-  if( (configPage10.fuelPressureEnable > 0)  && (!pinIsOutput(pinFuelPressure)) )
+  if( (configPage10.fuelPressureEnable > 0)  && (!pinIsUsed(pinFuelPressure)) )
   {
     pinMode(pinFuelPressure, INPUT);
   }
-  if( (configPage10.oilPressureEnable > 0) && (!pinIsOutput(pinOilPressure)) )
+  if( (configPage10.oilPressureEnable > 0) && (!pinIsUsed(pinOilPressure)) )
   {
     pinMode(pinOilPressure, INPUT);
   }
@@ -3004,7 +3021,7 @@ void setPinMapping(byte boardID)
       pinMode(pinWMIIndicator, OUTPUT);
       if (configPage10.wmiIndicatorPolarity > 0) { digitalWrite(pinWMIIndicator, HIGH); }
     }
-    if( (configPage10.wmiEmptyEnabled > 0) && (!pinIsOutput(pinWMIEmpty)) )
+    if( (configPage10.wmiEmptyEnabled > 0) && (!pinIsUsed(pinWMIEmpty)) )
     {
       if (configPage10.wmiEmptyPolarity == 0) { pinMode(pinWMIEmpty, INPUT_PULLUP); } //Normal setting
       else { pinMode(pinWMIEmpty, INPUT); } //inverted setting
