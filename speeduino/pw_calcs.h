@@ -1,33 +1,29 @@
 #pragma once
 
 #include <stdint.h>
-#include "globals.h"
 #include "maths.h"
+#include "globals.h"
 
-#ifdef USE_LIBDIVIDE
-#include "src/libdivide/libdivide.h"
-extern struct libdivide::libdivide_u32_t libdiv_u32_nsquirts;
-#endif
+extern uint16_t req_fuel_uS; /**< The required fuel variable (As calculated by TunerStudio) in uS */
+extern uint16_t inj_opentime_uS; /**< The injector opening time. This is set within Tuner Studio, but stored here in uS rather than mS */
+
+/** @name Staging
+ * These values are a percentage of the total (Combined) req_fuel value that would be required for each injector channel to deliver that much fuel.   
+ * 
+ * Eg:
+ *  - Pri injectors are 250cc
+ *  - Sec injectors are 500cc
+ *  - Total injector capacity = 750cc
+ * 
+ *  - staged_req_fuel_mult_pri = 300% (The primary injectors would have to run 3x the overall PW in order to be the equivalent of the full 750cc capacity
+ *  - staged_req_fuel_mult_sec = 150% (The secondary injectors would have to run 1.5x the overall PW in order to be the equivalent of the full 750cc capacity
+*/
+///@{
+extern uint16_t staged_req_fuel_mult_pri;
+extern uint16_t staged_req_fuel_mult_sec;
 
 // Runs any initialization required by this module
 void initialisePWCalcs(void);
-
-static inline uint16_t calculatePWLimit()
-{
-  uint32_t tempLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
-  //Handle multiple squirts per rev
-  if (configPage2.strokes == FOUR_STROKE) { tempLimit = tempLimit * 2U; }
-
-  if (currentStatus.nSquirts>1U) {
-#ifdef USE_LIBDIVIDE
-    return libdivide::libdivide_u32_do(tempLimit, &libdiv_u32_nsquirts);
-#else
-    return tempLimit / currentStatus.nSquirts; 
-#endif
-  }
-
-  return min(tempLimit, (uint32_t)UINT16_MAX);
-}
 
 static inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int16_t RPM, uint16_t currentPW)
 {
@@ -35,14 +31,9 @@ static inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLo
   return percentage(pw1percent, currentPW);
 }
 
-/**
- * @brief This function calculates the required pulsewidth time (in us) given the current system state
- * 
- * @param REQ_FUEL The required fuel value in uS, as calculated by TunerStudio
- * @param VE Lookup from the main fuel table. This can either have been MAP or TPS based, depending on the algorithm used
- * @param MAP In KPa, read from the sensor (This is used when performing a multiply of the map only. It is applicable in both Speed density and Alpha-N)
- * @param corrections Sum of Enrichment factors (Cold start, acceleration). This is a multiplication factor (Eg to add 10%, this should be 110)
- * @param injOpen Injector opening time. The time the injector take to open minus the time it takes to close (Both in uS)
- * @return uint16_t The injector pulse width in uS
- */
-uint16_t PW(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections, uint16_t injOpen);
+struct pulseWidths {
+  uint16_t primary;
+  uint16_t secondary;
+};
+
+pulseWidths computePulseWidths(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections, uint16_t injOpen);
