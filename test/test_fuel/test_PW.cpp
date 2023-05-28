@@ -23,13 +23,13 @@ void testPW(void)
   }
 }
 
-int16_t REQ_FUEL;
-byte VE;
-long MAP;
-uint16_t corrections;
-int injOpen;
+static int16_t REQ_FUEL;
+static byte VE;
+static long MAP;
+static uint16_t corrections;
+static int injOpen;
 
-void test_PW_setCommon()
+static void test_PW_setCommon_NoStage(void)
 {
   // initialiseAll();
   REQ_FUEL = 1060;
@@ -37,24 +37,34 @@ void test_PW_setCommon()
   MAP = 94;
   corrections = 113;
   injOpen = 1000;
+  // Turns off pwLimit
+  configPage2.dutyLim = 100;
+  revolutionTime = UINT16_MAX;
+  currentStatus.nSquirts = 1;
+  // No staging
+  configPage10.stagingEnabled = false;
+  // Nitrous off
+  currentStatus.nitrous_status = NITROUS_OFF;
+  initialisePWCalcs();
 }
 
 void test_PW_No_Multiply()
 {
-  test_PW_setCommon();
+  test_PW_setCommon_NoStage();
 
   configPage2.multiplyMAP = 0;
   configPage2.includeAFR = 0;
   configPage2.incorporateAFR = 0;
   configPage2.aeApplyMode = 0;
 
-  uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen);
-  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2557, result);
+  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections, injOpen);
+  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2557, result.primary);
+  TEST_ASSERT_EQUAL(0, result.secondary);
 }
 
 void test_PW_MAP_Multiply()
 {
-  test_PW_setCommon();
+  test_PW_setCommon_NoStage();
 
   configPage2.multiplyMAP = 1;
   currentStatus.baro = 103;
@@ -62,13 +72,14 @@ void test_PW_MAP_Multiply()
   configPage2.incorporateAFR = 0;
   configPage2.aeApplyMode = 0;
 
-  uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen);
-  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2400, result);
+  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections, injOpen);
+  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2400, result.primary);
+  TEST_ASSERT_EQUAL(0, result.secondary);
 }
 
 void test_PW_MAP_Multiply_Compatibility()
 {
-  test_PW_setCommon();
+  test_PW_setCommon_NoStage();
 
   configPage2.multiplyMAP = 2; //Divide MAP reading by 100 rather than by Baro reading
   currentStatus.baro = 103;
@@ -76,13 +87,14 @@ void test_PW_MAP_Multiply_Compatibility()
   configPage2.incorporateAFR = 0;
   configPage2.aeApplyMode = 0;
 
-  uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen);
-  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2449, result);
+  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections, injOpen);
+  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2449, result.primary);
+  TEST_ASSERT_EQUAL(0, result.secondary);
 }
 
 void test_PW_AFR_Multiply()
 {
-  test_PW_setCommon();
+  test_PW_setCommon_NoStage();
 
   configPage2.multiplyMAP = 0;
   currentStatus.baro = 100;
@@ -94,9 +106,9 @@ void test_PW_AFR_Multiply()
   currentStatus.O2 = 150;
   currentStatus.afrTarget = 147;
 
-
-  uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen);
-  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2588, result);
+  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections, injOpen);
+  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2588, result.primary);
+  TEST_ASSERT_EQUAL(0, result.secondary);
 }
 
 /*
@@ -109,7 +121,7 @@ void test_PW_AFR_Multiply()
 void test_PW_Large_Correction()
 {
   //This is the same as the test_PW_No_Multiply, but with correction changed to 600
-  test_PW_setCommon();
+  test_PW_setCommon_NoStage();
   corrections = 600;
 
   configPage2.multiplyMAP = 0;
@@ -117,14 +129,15 @@ void test_PW_Large_Correction()
   configPage2.incorporateAFR = 0;
   configPage2.aeApplyMode = 0;
 
-  uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen);
-  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 9268, result);
+  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections, injOpen);
+  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 9268, result.primary);
+  TEST_ASSERT_EQUAL(0, result.secondary);
 }
 
 void test_PW_Very_Large_Correction()
 {
   //This is the same as the test_PW_No_Multiply, but with correction changed to 1500
-  test_PW_setCommon();
+  test_PW_setCommon_NoStage();
   corrections = 1500;
 
   configPage2.multiplyMAP = 0;
@@ -132,29 +145,33 @@ void test_PW_Very_Large_Correction()
   configPage2.incorporateAFR = 0;
   configPage2.aeApplyMode = 0;
 
-  uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen);
-  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR+30, 21670, result); //Additional allowed error here 
+  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections, injOpen);
+  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR+30, 21670, result.primary); //Additional allowed error here 
+  TEST_ASSERT_EQUAL(0, result.secondary);
 }
+
 
 //Test that unused pulse width values are set to 0
 //This test is for a 4 cylinder using paired injection where only INJ 1 and 2 should have PW > 0
 void test_PW_4Cyl_PW0(void)
 {
-  test_PW_setCommon();
+  test_PW_setCommon_NoStage();
 
   configPage2.nCylinders = 4;
   configPage2.injLayout = INJ_PAIRED;
   configPage10.stagingEnabled = false; //Staging must be off or channels 3 and 4 will be used
 
-  loop();
+  applyPulseWidths(computePulseWidths(REQ_FUEL, VE, MAP, corrections, injOpen));
   TEST_ASSERT_EQUAL(0, currentStatus.PW3);
   TEST_ASSERT_EQUAL(0, currentStatus.PW4);
 }
 
+extern uint16_t calculatePWLimit(void);
+
 //Tests the PW Limit calculation for a normal scenario
 void test_PW_Limit_90pct(void)
 {
-  test_PW_setCommon();
+  test_PW_setCommon_NoStage();
 
   revolutionTime = 10000UL; //6000 rpm
   configPage2.dutyLim = 90;
@@ -167,7 +184,7 @@ void test_PW_Limit_90pct(void)
 //Occurs at approx. 915rpm
 void test_PW_Limit_Long_Revolution(void)
 {
-  test_PW_setCommon();
+  test_PW_setCommon_NoStage();
 
   revolutionTime = 100000UL; //600 rpm, below 915rpm cutover point
   configPage2.dutyLim = 90;
