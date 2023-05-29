@@ -50,20 +50,17 @@ void test_Staging_setCommon()
   */
   configPage10.stagedInjSizePri = 250;
   configPage10.stagedInjSizeSec = 500;
-  uint32_t totalInjector = configPage10.stagedInjSizePri + configPage10.stagedInjSizeSec;
-
-  staged_req_fuel_mult_pri = (100 * totalInjector) / configPage10.stagedInjSizePri;
-  staged_req_fuel_mult_sec = (100 * totalInjector) / configPage10.stagedInjSizeSec;
 
   initialisePWCalcs();
 }
 
 void test_Staging_Off(void)
 {
-  test_Staging_setCommon();
-
   BIT_SET(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE);
   configPage10.stagingEnabled = false;
+
+  test_Staging_setCommon();
+
   //90% duty cycle at 6000rpm
   configPage2.dutyLim = 90;
   revolutionTime = 5000;
@@ -75,12 +72,12 @@ void test_Staging_Off(void)
 
 void test_Staging_4cyl_Auto_Inactive(void)
 {
-  test_Staging_setCommon();
-
   BIT_SET(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE);
   configPage2.injLayout = INJ_PAIRED;
   configPage10.stagingEnabled = true;
   configPage10.stagingMode = STAGING_MODE_AUTO;
+
+  test_Staging_setCommon();
 
   //90% duty cycle at 6000rpm
   //90% duty cycle at 6000rpm
@@ -97,12 +94,12 @@ void test_Staging_4cyl_Auto_Inactive(void)
 
 void test_Staging_4cyl_Table_Inactive(void)
 {
-  test_Staging_setCommon();
-
   BIT_SET(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE);
   configPage2.injLayout = INJ_PAIRED;
   configPage10.stagingEnabled = true;
   configPage10.stagingMode = STAGING_MODE_TABLE;
+
+  test_Staging_setCommon();
 
   //Load the staging table with all 0
   //For this test it doesn't matter what the X and Y axis are, as the table is all 0 values
@@ -121,12 +118,11 @@ void test_Staging_4cyl_Table_Inactive(void)
 
 void test_Staging_4cyl_Auto_50pct(void)
 {
-  test_Staging_setCommon();
-
   BIT_CLEAR(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE);
   configPage2.injLayout = INJ_PAIRED;
   configPage10.stagingEnabled = true;
   configPage10.stagingMode = STAGING_MODE_AUTO;
+  test_Staging_setCommon();
 
   configPage2.dutyLim = 90;
   revolutionTime = 5000;
@@ -138,12 +134,11 @@ void test_Staging_4cyl_Auto_50pct(void)
 
 void test_Staging_4cyl_Auto_33pct(void)
 {
-  test_Staging_setCommon();
-
   BIT_CLEAR(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE);
   configPage2.injLayout = INJ_PAIRED;
   configPage10.stagingEnabled = true;
   configPage10.stagingMode = STAGING_MODE_AUTO;
+  test_Staging_setCommon();
 
   configPage2.dutyLim = 90;
   revolutionTime = 5000;
@@ -156,12 +151,12 @@ void test_Staging_4cyl_Auto_33pct(void)
 
 void test_Staging_4cyl_Table_50pct(void)
 {
-  test_Staging_setCommon();
-
   BIT_CLEAR(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE);
   configPage2.injLayout = INJ_PAIRED;
   configPage10.stagingEnabled = true;
   configPage10.stagingMode = STAGING_MODE_TABLE;
+
+  test_Staging_setCommon();
 
   //Load the staging table with all 0
   //For this test it doesn't matter what the X and Y axis are, as the table is all 50 values

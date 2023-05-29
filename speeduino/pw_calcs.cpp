@@ -2,8 +2,20 @@
 
 uint16_t req_fuel_uS = 0; /**< The required fuel variable (As calculated by TunerStudio) in uS */
 uint16_t inj_opentime_uS = 0;
-uint16_t staged_req_fuel_mult_pri = 0;
-uint16_t staged_req_fuel_mult_sec = 0; 
+
+/** @name Staging
+ * These values are a percentage of the total (Combined) req_fuel value that would be required for each injector channel to deliver that much fuel.   
+ * 
+ * Eg:
+ *  - Pri injectors are 250cc
+ *  - Sec injectors are 500cc
+ *  - Total injector capacity = 750cc
+ * 
+ *  - staged_req_fuel_mult_pri = 300% (The primary injectors would have to run 3x the overall PW in order to be the equivalent of the full 750cc capacity
+ *  - staged_req_fuel_mult_sec = 150% (The secondary injectors would have to run 1.5x the overall PW in order to be the equivalent of the full 750cc capacity
+*/
+static uint16_t staged_req_fuel_mult_pri = 0;
+static uint16_t staged_req_fuel_mult_sec = 0; 
 
 #ifdef USE_LIBDIVIDE
 #include "src/libdivide/libdivide.h"
@@ -12,6 +24,28 @@ static struct libdivide::libdivide_u32_t libdiv_u32_nsquirts;
 
 void initialisePWCalcs(void)
 {
+  if(configPage10.stagingEnabled == true)
+  {
+    uint32_t totalInjector = configPage10.stagedInjSizePri + configPage10.stagedInjSizeSec;
+    /*
+        These values are a percentage of the req_fuel value that would be required for each injector channel to deliver that much fuel.
+        Eg:
+        Pri injectors are 250cc
+        Sec injectors are 500cc
+        Total injector capacity = 750cc
+
+        staged_req_fuel_mult_pri = 300% (The primary injectors would have to run 3x the overall PW in order to be the equivalent of the full 750cc capacity
+        staged_req_fuel_mult_sec = 150% (The secondary injectors would have to run 1.5x the overall PW in order to be the equivalent of the full 750cc capacity
+    */
+    staged_req_fuel_mult_pri = (100 * totalInjector) / configPage10.stagedInjSizePri;
+    staged_req_fuel_mult_sec = (100 * totalInjector) / configPage10.stagedInjSizeSec;
+  }
+  else
+  {
+    staged_req_fuel_mult_pri = 0;
+    staged_req_fuel_mult_sec = 0;
+  }
+
 #ifdef USE_LIBDIVIDE
   libdiv_u32_nsquirts = libdivide::libdivide_u32_gen(currentStatus.nSquirts);
 #endif    
