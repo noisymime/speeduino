@@ -27,7 +27,7 @@ void test_Staging_setCommon()
   configPage2.multiplyMAP = 0;
   configPage2.includeAFR = false;
   configPage2.incorporateAFR = false;
-  inj_opentime_uS = 1000; //1ms inj open time
+  configPage2.injOpen = 10;  //1ms inj open time
   // Turns off pwLimit
   configPage2.dutyLim = 100;
   revolutionTime = 10000;

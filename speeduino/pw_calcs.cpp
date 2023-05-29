@@ -46,6 +46,15 @@ void initialisePWCalcs(void)
     staged_req_fuel_mult_sec = 0;
   }
 
+  req_fuel_uS = configPage2.reqFuel * 100; //Convert to uS and an int. This is the only variable to be used in calculations
+  if ((configPage2.strokes == FOUR_STROKE) && ((configPage2.injLayout != INJ_SEQUENTIAL) || (configPage2.nCylinders > INJ_CHANNELS)))
+  {
+    //Default is 1 squirt per revolution, so we halve the given req-fuel figure (Which would be over 2 revolutions)
+    req_fuel_uS = req_fuel_uS / 2; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
+  }
+
+  inj_opentime_uS = configPage2.injOpen * 100; //Injector open time. Comes through as ms*10 (Eg 15.5ms = 155).
+
 #ifdef USE_LIBDIVIDE
   libdiv_u32_nsquirts = libdivide::libdivide_u32_gen(currentStatus.nSquirts);
 #endif    
