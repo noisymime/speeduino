@@ -16,6 +16,8 @@ void testStaging(void)
   }
 }
 
+pulseWidths computePulseWidths(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections);
+
 void test_Staging_setCommon()
 {
   // initialiseAll();
@@ -64,7 +66,7 @@ void test_Staging_Off(void)
   //90% duty cycle at 6000rpm
   configPage2.dutyLim = 90;
   revolutionTime = 5000;
-  pulseWidths pw = computePulseWidths(1000, 100, 100, 200, 1000);
+  pulseWidths pw = computePulseWidths(1000, 100, 100, 200);
   TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE));
   TEST_ASSERT_NOT_EQUAL(0, pw.primary);
   TEST_ASSERT_EQUAL(0, pw.secondary);  
@@ -83,7 +85,7 @@ void test_Staging_4cyl_Auto_Inactive(void)
   //90% duty cycle at 6000rpm
   configPage2.dutyLim = 90;
   revolutionTime = 5000;
-  pulseWidths pw = computePulseWidths(1000, 100, 100, 200, 1000);
+  pulseWidths pw = computePulseWidths(1000, 100, 100, 200);
 
   //PW 1 and 2 should be normal, 3 and 4 should be 0 as that testPW is below the pwLimit
   //PW1/2 should be ((PW - openTime) * staged_req_fuel_mult_pri) + openTime = ((3000 - 1000) * 3.0) + 1000 = 7000
@@ -108,7 +110,7 @@ void test_Staging_4cyl_Table_Inactive(void)
   //90% duty cycle at 6000rpm
   configPage2.dutyLim = 90;
   revolutionTime = 5000;
-  pulseWidths pw = computePulseWidths(1000, 100, 100, 200, 1000);
+  pulseWidths pw = computePulseWidths(1000, 100, 100, 200);
   //PW 1 and 2 should be normal, 3 and 4 should be 0 as that testPW is below the pwLimit
   //PW1/2 should be (PW - openTime) * staged_req_fuel_mult_pri = (3000 - 1000) * 3.0 = 6000
   TEST_ASSERT_EQUAL(7000, pw.primary);
@@ -126,7 +128,7 @@ void test_Staging_4cyl_Auto_50pct(void)
 
   configPage2.dutyLim = 90;
   revolutionTime = 5000;
-  pulseWidths pw = computePulseWidths(4000, 100, 100, 200, 1000);
+  pulseWidths pw = computePulseWidths(4000, 100, 100, 200);
   TEST_ASSERT_EQUAL(9000, pw.primary);
   TEST_ASSERT_EQUAL(9000, pw.secondary);
   TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE));
@@ -142,7 +144,7 @@ void test_Staging_4cyl_Auto_33pct(void)
 
   configPage2.dutyLim = 90;
   revolutionTime = 5000;
-  pulseWidths pw = computePulseWidths(3000, 100, 100, 200, 1000);
+  pulseWidths pw = computePulseWidths(3000, 100, 100, 200);
   //PW 1 and 2 should be maxed out at the pwLimit, 3 and 4 should be based on their relative size
   TEST_ASSERT_EQUAL(9000, pw.primary);
   TEST_ASSERT_EQUAL(6000, pw.secondary);
@@ -168,7 +170,7 @@ void test_Staging_4cyl_Table_50pct(void)
 
   configPage2.dutyLim = 90;
   revolutionTime = 5000;
-  pulseWidths pw = computePulseWidths(1000, 100, 100, 200, 1000);
+  pulseWidths pw = computePulseWidths(1000, 100, 100, 200);
   TEST_ASSERT_EQUAL(4000, pw.primary);
   TEST_ASSERT_EQUAL(2500, pw.secondary);
   TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE));  

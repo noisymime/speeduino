@@ -27,7 +27,6 @@ static int16_t REQ_FUEL;
 static byte VE;
 static long MAP;
 static uint16_t corrections;
-static int injOpen;
 
 static void test_PW_setCommon_NoStage(void)
 {
@@ -36,7 +35,6 @@ static void test_PW_setCommon_NoStage(void)
   VE = 130;
   MAP = 94;
   corrections = 113;
-  injOpen = 1000;
   // Turns off pwLimit
   configPage2.dutyLim = 100;
   revolutionTime = UINT16_MAX;
@@ -45,8 +43,14 @@ static void test_PW_setCommon_NoStage(void)
   configPage10.stagingEnabled = false;
   // Nitrous off
   currentStatus.nitrous_status = NITROUS_OFF;
+
+  configPage2.injOpen = 10;
+  currentStatus.batCorrection = 100;
+  
   initialisePWCalcs();
 }
+
+extern pulseWidths computePulseWidths(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections);
 
 void test_PW_No_Multiply()
 {
@@ -57,7 +61,7 @@ void test_PW_No_Multiply()
   configPage2.incorporateAFR = 0;
   configPage2.aeApplyMode = 0;
 
-  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections, injOpen);
+  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2557, result.primary);
   TEST_ASSERT_EQUAL(0, result.secondary);
 }
@@ -72,7 +76,7 @@ void test_PW_MAP_Multiply()
   configPage2.incorporateAFR = 0;
   configPage2.aeApplyMode = 0;
 
-  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections, injOpen);
+  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2400, result.primary);
   TEST_ASSERT_EQUAL(0, result.secondary);
 }
@@ -87,7 +91,7 @@ void test_PW_MAP_Multiply_Compatibility()
   configPage2.incorporateAFR = 0;
   configPage2.aeApplyMode = 0;
 
-  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections, injOpen);
+  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2449, result.primary);
   TEST_ASSERT_EQUAL(0, result.secondary);
 }
@@ -106,7 +110,7 @@ void test_PW_AFR_Multiply()
   currentStatus.O2 = 150;
   currentStatus.afrTarget = 147;
 
-  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections, injOpen);
+  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2588, result.primary);
   TEST_ASSERT_EQUAL(0, result.secondary);
 }
@@ -129,7 +133,7 @@ void test_PW_Large_Correction()
   configPage2.incorporateAFR = 0;
   configPage2.aeApplyMode = 0;
 
-  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections, injOpen);
+  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 9268, result.primary);
   TEST_ASSERT_EQUAL(0, result.secondary);
 }
@@ -145,7 +149,7 @@ void test_PW_Very_Large_Correction()
   configPage2.incorporateAFR = 0;
   configPage2.aeApplyMode = 0;
 
-  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections, injOpen);
+  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR+30, 21670, result.primary); //Additional allowed error here 
   TEST_ASSERT_EQUAL(0, result.secondary);
 }
@@ -161,7 +165,7 @@ void test_PW_4Cyl_PW0(void)
   configPage2.injLayout = INJ_PAIRED;
   configPage10.stagingEnabled = false; //Staging must be off or channels 3 and 4 will be used
 
-  applyPulseWidths(computePulseWidths(REQ_FUEL, VE, MAP, corrections, injOpen));
+  applyPulseWidths(computePulseWidths(REQ_FUEL, VE, MAP, corrections));
   TEST_ASSERT_EQUAL(0, currentStatus.PW3);
   TEST_ASSERT_EQUAL(0, currentStatus.PW4);
 }

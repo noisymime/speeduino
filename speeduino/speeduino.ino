@@ -484,7 +484,7 @@ void loop(void)
       currentStatus.afrTarget = calculateAfrTarget(afrTable, currentStatus, configPage2, configPage6);
       currentStatus.corrections = correctionsFuel();
 
-      pulseWidths pw = computePulseWidths(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
+      pulseWidths pw = computePulseWidths(currentStatus.VE, currentStatus.MAP, currentStatus.corrections);
       applyPulseWidths(pw);
 
       int injector1StartAngle = 0;
@@ -519,7 +519,7 @@ void loop(void)
         //Single cylinder
         case 1:
           //The only thing that needs to be done for single cylinder is to check for staging. 
-          if (pw.secondary>inj_opentime_uS)
+          if (pw.secondary!=0U)
           {
             PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW2); //Need to redo this for PW2 as it will be dramatically different to PW1 when staging
             //injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
@@ -536,7 +536,7 @@ void loop(void)
             currentStatus.PW1 = applyFuelTrimToPW(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW1);
             currentStatus.PW2 = applyFuelTrimToPW(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW2);
           }
-          else if (pw.secondary>inj_opentime_uS)
+          else if (pw.secondary!=0U)
           {
             PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW3); //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
             injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
@@ -560,7 +560,7 @@ void loop(void)
             currentStatus.PW3 = applyFuelTrimToPW(&trim3Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW3);
 
             #if INJ_CHANNELS >= 6
-              if (pw.secondary>inj_opentime_uS)
+              if (pw.secondary!=0U)
               {
                 PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW4); //Need to redo this for PW4 as it will be dramatically different to PW1 when staging
                 injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
@@ -569,7 +569,7 @@ void loop(void)
               }
             #endif
           }
-          else if (pw.secondary>inj_opentime_uS)
+          else if (pw.secondary!=0U)
           {
             PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW4); //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
             injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
@@ -591,7 +591,7 @@ void loop(void)
             injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees, currentStatus.injAngle);
             injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel4InjDegrees, currentStatus.injAngle);
             #if INJ_CHANNELS >= 8
-              if (pw.secondary>inj_opentime_uS)
+              if (pw.secondary!=0U)
               {
                 PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW5); //Need to redo this for PW5 as it will be dramatically different to PW1 when staging
                 injector5StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
@@ -609,7 +609,7 @@ void loop(void)
               currentStatus.PW4 = applyFuelTrimToPW(&trim4Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW4);
             }
           }
-          else if (pw.secondary>inj_opentime_uS)
+          else if (pw.secondary!=0U)
           {
             PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW3); //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
             injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
@@ -631,7 +631,7 @@ void loop(void)
 
           //Staging is possible by using the 6th channel if available
           #if INJ_CHANNELS >= 6
-            if (pw.secondary>inj_opentime_uS)
+            if (pw.secondary!=0U)
             {
               PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW6);
               injector6StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel6InjDegrees, currentStatus.injAngle);
@@ -665,7 +665,7 @@ void loop(void)
 
               //Staging is possible with sequential on 8 channel boards by using outputs 7 + 8 for the staged injectors
               #if INJ_CHANNELS >= 8
-                if (pw.secondary>inj_opentime_uS)
+                if (pw.secondary!=0U)
                 {
                   PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW4); //Need to redo this for staging PW as it will be dramatically different to PW1 when staging
                   injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
@@ -678,7 +678,7 @@ void loop(void)
             {
               if( BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(); }
 
-              if (pw.secondary>inj_opentime_uS)
+              if (pw.secondary!=0U)
               {
                 PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW4); //Need to redo this for staging PW as it will be dramatically different to PW1 when staging
                 injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
@@ -720,7 +720,7 @@ void loop(void)
             {
               if( BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(); }
 
-              if (pw.secondary>inj_opentime_uS)
+              if (pw.secondary!=0U)
               {
                 PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW5); //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
                 injector5StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
@@ -915,7 +915,7 @@ void loop(void)
 
 
 #if INJ_CHANNELS >= 1
-      if( (maxInjOutputs >= 1) && (currentStatus.PW1 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ1_CMD_BIT)) )
+      if( (maxInjOutputs >= 1) && (currentStatus.PW1 != 0U) && (BIT_CHECK(fuelChannelsOn, INJ1_CMD_BIT)) )
       {
         uint32_t timeOut = calculateInjectorTimeout(fuelSchedule1, channel1InjDegrees, injector1StartAngle, crankAngle);
         if (timeOut>0U)
@@ -939,7 +939,7 @@ void loop(void)
         |------------------------------------------------------------------------------------------
         */
 #if INJ_CHANNELS >= 2
-        if( (maxInjOutputs >= 2) && (currentStatus.PW2 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ2_CMD_BIT)) )
+        if( (maxInjOutputs >= 2) && (currentStatus.PW2 != 0U) && (BIT_CHECK(fuelChannelsOn, INJ2_CMD_BIT)) )
         {
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule2, channel2InjDegrees, injector2StartAngle, crankAngle);
           if ( timeOut>0U )
@@ -953,7 +953,7 @@ void loop(void)
 #endif
 
 #if INJ_CHANNELS >= 3
-        if( (maxInjOutputs >= 3) && (currentStatus.PW3 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ3_CMD_BIT)) )
+        if( (maxInjOutputs >= 3) && (currentStatus.PW3 != 0U) && (BIT_CHECK(fuelChannelsOn, INJ3_CMD_BIT)) )
         {
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule3, channel3InjDegrees, injector3StartAngle, crankAngle);
           if ( timeOut>0U )
@@ -967,7 +967,7 @@ void loop(void)
 #endif
 
 #if INJ_CHANNELS >= 4
-        if( (maxInjOutputs >= 4) && (currentStatus.PW4 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ4_CMD_BIT)) )
+        if( (maxInjOutputs >= 4) && (currentStatus.PW4 != 0U) && (BIT_CHECK(fuelChannelsOn, INJ4_CMD_BIT)) )
         {
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule4, channel4InjDegrees, injector4StartAngle, crankAngle);
           if ( timeOut>0U )
@@ -981,7 +981,7 @@ void loop(void)
 #endif
 
 #if INJ_CHANNELS >= 5
-        if( (maxInjOutputs >= 5) && (currentStatus.PW5 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ5_CMD_BIT)) )
+        if( (maxInjOutputs >= 5) && (currentStatus.PW5 != 0U) && (BIT_CHECK(fuelChannelsOn, INJ5_CMD_BIT)) )
         {
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule5, channel5InjDegrees, injector5StartAngle, crankAngle);
           if ( timeOut>0U )
@@ -995,7 +995,7 @@ void loop(void)
 #endif
 
 #if INJ_CHANNELS >= 6
-        if( (maxInjOutputs >= 6) && (currentStatus.PW6 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ6_CMD_BIT)) )
+        if( (maxInjOutputs >= 6) && (currentStatus.PW6 != 0U) && (BIT_CHECK(fuelChannelsOn, INJ6_CMD_BIT)) )
         {
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule6, channel6InjDegrees, injector6StartAngle, crankAngle);
           if ( timeOut>0U )
@@ -1009,7 +1009,7 @@ void loop(void)
 #endif
 
 #if INJ_CHANNELS >= 7
-        if( (maxInjOutputs >= 7) && (currentStatus.PW7 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ7_CMD_BIT)) )
+        if( (maxInjOutputs >= 7) && (currentStatus.PW7 != 0U) && (BIT_CHECK(fuelChannelsOn, INJ7_CMD_BIT)) )
         {
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule7, channel7InjDegrees, injector7StartAngle, crankAngle);
           if ( timeOut>0U )
@@ -1023,7 +1023,7 @@ void loop(void)
 #endif
 
 #if INJ_CHANNELS >= 8
-        if( (maxInjOutputs >= 8) && (currentStatus.PW8 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ8_CMD_BIT)) )
+        if( (maxInjOutputs >= 8) && (currentStatus.PW8 != 0U) && (BIT_CHECK(fuelChannelsOn, INJ8_CMD_BIT)) )
         {
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule8, channel8InjDegrees, injector8StartAngle, crankAngle);
           if ( timeOut>0U )
@@ -1326,7 +1326,7 @@ void applyPulseWidths(const pulseWidths &pulseWidths)
 {
   currentStatus.PW1 = pulseWidths.primary;
   
-  if (pulseWidths.secondary>0) {
+  if (pulseWidths.secondary!=0) {
     //Allocate the primary and secondary pulse widths based on the fuel configuration
     switch (configPage2.nCylinders) 
     {
