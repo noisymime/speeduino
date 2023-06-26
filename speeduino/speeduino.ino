@@ -75,6 +75,17 @@ inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int
     return currentPW;
 }
 
+inline uint16_t getCrankAngleIgn(void) {
+  return ignitionLimits(getCrankAngle());
+}
+
+inline uint16_t getCrankAngleInj(void) {
+  int16_t crankAngle = getCrankAngle();
+  if (crankAngle < 0 ) { crankAngle = crankAngle + CRANK_ANGLE_MAX_INJ; }
+  while (crankAngle > CRANK_ANGLE_MAX_INJ ) { crankAngle = crankAngle - CRANK_ANGLE_MAX_INJ; } //Continue reducing the crank angle by the max injection amount until it's below the required limit. This will usually only run (at most) once, but in cases where there is sequential ignition and more than 2 squirts per cycle, it may run up to 4 times. 
+  return crankAngle;
+}
+
 /** Speeduino main loop.
  * 
  * Main loop chores (roughly in the order that they are performed):
@@ -780,10 +791,6 @@ void loop(void)
       //We only need to set the shcedule if we're BEFORE the open angle
       //This may potentially be called a number of times as we get closer and closer to the opening time
 
-      //Determine the current crank angle
-      int crankAngle = getCrankAngle();
-      while(crankAngle > CRANK_ANGLE_MAX_INJ ) { crankAngle = crankAngle - CRANK_ANGLE_MAX_INJ; } //Continue reducing the crank angle by the max injection amount until it's below the required limit. This will usually only run (at most) once, but in cases where there is sequential ignition and more than 2 squirts per cycle, it may run up to 4 times. 
-
       // if(Serial && false)
       // {
       //   if(ignition1StartAngle > crankAngle)
@@ -899,6 +906,9 @@ void loop(void)
 #if INJ_CHANNELS >= 1
       if( (BIT_CHECK(fuelChannelsOn, INJ1_CMD_BIT)) && !BIT_CHECK(currentStatus.status1, BIT_STATUS1_BOOSTCUT))
       {
+        //Determine the current crank angle
+        uint16_t crankAngle = getCrankAngleInj();
+
         if(currentStatus.PW1 >= inj_opentime_uS)
         {
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule1, channel1InjDegrees, injector1StartAngle, crankAngle);
@@ -1054,9 +1064,7 @@ void loop(void)
       if(ignitionChannelsOn > 0)
       {
         //Refresh the current crank angle info
-        //ignition1StartAngle = 335;
-        crankAngle = getCrankAngle(); //Refresh with the latest crank angle
-        while (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= CRANK_ANGLE_MAX_IGN; }
+        uint16_t crankAngle = getCrankAngleIgn(); //Refresh with the latest crank angle
 
 #if IGN_CHANNELS >= 1
         uint32_t timeOut = calculateIgnitionTimeout(ignitionSchedule1, ignition1StartAngle, channel1IgnDegrees, crankAngle);
@@ -1075,18 +1083,9 @@ void loop(void)
 #if defined(USE_IGN_REFRESH)
         if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > crankAngle) && (configPage4.StgCycles == 0) && (configPage2.perToothIgn != true) )
         {
-          unsigned long uSToEnd = 0;
-
-          crankAngle = getCrankAngle(); //Refresh with the latest crank angle
-          if (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= 360; }
+          crankAngle = getCrankAngleIgn(); //Refresh with the latest crank angle
           
-          //ONLY ONE OF THE BELOW SHOULD BE USED (PROBABLY THE FIRST):
-          //*********
-          if(ignition1EndAngle > crankAngle) { uSToEnd = fastDegreesToUS( (ignition1EndAngle - crankAngle) ); }
-          else { uSToEnd = fastDegreesToUS( (360 + ignition1EndAngle - crankAngle) ); }
-          //*********
-          //uSToEnd = ((ignition1EndAngle - crankAngle) * (toothLastToothTime - toothLastMinusOneToothTime)) / triggerToothAngle;
-          //*********
+          unsigned long uSToEnd = fastDegreesToUS( (ignition1EndAngle - crankAngle) );
 
           refreshIgnitionSchedule1( uSToEnd + fixedCrankingOverride );
         }
