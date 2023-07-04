@@ -1,0 +1,23 @@
+Reference, Value, Footprint, Datasheet, Critical, Description, MFG Name, MFG Part Num, Package JEDEC ID
+FID1,Fiducial,Fiducial:Fiducial_0.5mm_Mask1mm,~,,,,,
+FID2,Fiducial,Fiducial:Fiducial_0.5mm_Mask1mm,~,,,,,
+U1,MAX9926UAEE+,MAX9926UAEE+:MAX9926UAEE&plus_,https://datasheet.octopart.com/MAX9926UAEE%2B-Maxim-Integrated-datasheet-11046290.pdf,Yes,MAX9926 Series 10 mA Differential Input Logic Output Sensor Interface -SSOP-16,Maxim Integrated,MAX9926UAEE+,SSOP-16
+C1,10n,Capacitor_SMD:C_0603_1608Metric,~,,"10 V ±5% Tolerance U2J Multilayer Ceramic Capacitor","MurataMurata","GRM1857U1A103JA44D",0603_1608Metric
+C2,100n,Capacitor_SMD:C_0603_1608Metric,~,,"Ceramic 0.1uF 16V X7R 10% Pad SMD 0603 Soft Termination 125C Automotive T/R","Murata","GCJ188R71C104KA01D",0603_1608Metric
+C3,1u,Capacitor_SMD:C_0603_1608Metric,~,,"16V ±10% Tolerance X7R Surface Mount Multilayer Ceramic Capacitor","Murata","GCM188R71C105KA64D",0603_1608Metric
+C20,1n,Capacitor_SMD:C_0603_1608Metric,~,,"1000 pF 50 V ±5 % Tolerance C0G SMT Multilayer Ceramic Capacitor","Murata","GRM1885C1H102JA01D",0603_1608Metric
+C10,1n,Capacitor_SMD:C_0603_1608Metric,~,,"1000 pF 50 V ±5 % Tolerance C0G SMT Multilayer Ceramic Capacitor","Murata","GRM1885C1H102JA01D",0603_1608Metric
+R22,10k,Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder,~,,,Yageo,RC1206FR-7W10KL,Resistor_SMD:R_1206_3216Metric
+R21,10k,Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder,~,,,Yageo,RC1206FR-7W10KL,Resistor_SMD:R_1206_3216Metric
+R11,10k,Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder,~,,,Yageo,RC1206FR-7W10KL,Resistor_SMD:R_1206_3216Metric
+R12,10k,Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder,~,,,Yageo,RC1206FR-7W10KL,Resistor_SMD:R_1206_3216Metric
+R13,4.7k,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal,~,DoNoPlace. User option,"3W, 5%",,,
+J1,8-pin header,Package_DIP:DIP-8_W7.62mm,~,,,,,
+R20,1k,Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder,~,,Thick Film; +/-1% 0.2W,Vishay,CRCW06031K00FKEAHP,0603_1608Metric
+R10,1k,Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder,~,,Thick Film; +/-1% 0.2W,Vishay,CRCW06031K00FKEAHP,0603_1608Metric
+H1,MountingHole,MountingHole:MountingHole_2.2mm_M2,~,,,,,
+H2,MountingHole,MountingHole:MountingHole_2.2mm_M2,~,,,,,
+C4,10u,Capacitor_SMD:C_0805_2012Metric,~,,"25 V 10 uF ±20% Tolerance X5R Multilayer Ceramic Capacitor","Murata","GRM21BR61E106MA73L",0805_2012Metric
+R23,4.7k,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal,~,DoNoPlace. User option,"3W, 5%",,,
+U2,AMS1117CD-5.0,Package_TO_SOT_THT:TO-92_Inline_Wide,http://www.advanced-monolithic.com/pdf/ds1117.pdf,DoNoPlace. User option,1A Low Dropout Voltage Regulator,Advanced Monolithic Systems,AMS1117-5.0,TO92 inline wide
+J2,Edge,Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Horizontal,~,DoNoPlace. User option,,,,

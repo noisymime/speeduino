@@ -1,0 +1,4 @@
+(fp_lib_table
+  (lib (name Socket_Arduino_Mega)(type KiCad)(uri "$(KIPRJMOD)/Socket_Arduino_Mega.pretty")(options "")(descr ""))
+  (lib (name MAX9926UAEE+)(type KiCad)(uri /Users/phillrogers/Documents/kicad/Speeduino-VR-conditioner/Speeduino-VR-MAX9926-nested)(options "")(descr ""))
+)
