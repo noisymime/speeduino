@@ -45,26 +45,15 @@ jobs:
         platformio run -e megaatmega2560
         platformio remote test --force-remote --environment megaatmega2560
 
-    - name: Slack Notification (Passed)
-      uses: rtCamp/action-slack-notify@v2
-      if: success()
-      env:
-        SLACK_CHANNEL: git
-        SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
-        SLACK_ICON: https://avatars.githubusercontent.com/u/9919?v=4&size=48
-        SLACK_TITLE: 'Unit tests successful :white_check_mark:'
-        SLACK_USERNAME: Github
-        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-        MSG_MINIMAL: actions url,commit
-    
-    - name: Slack Notification (Failed)
-      uses: rtCamp/action-slack-notify@v2
+    - name: Discord Notification (Unit Tests Failed)
+      uses: rjstone/discord-webhook-notify@v1
       if: failure()
-      env:
-        SLACK_CHANNEL: git
-        SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
-        SLACK_ICON: https://avatars.githubusercontent.com/u/9919?v=4&size=48
-        SLACK_TITLE: 'Unit tests FAILED :warning:'
-        SLACK_USERNAME: Github
-        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-        MSG_MINIMAL: actions url,commit
+      with:
+          severity: error
+          avatarUrl: https://avatars.githubusercontent.com/u/9919?v=4&size=48
+          username: GitHub
+          description: 'Unit Tests FAILED :warning:'
+          details: "**Author:** ${{ github.event.pusher.name }} \n
+            **Commit URL:** ${{ github.event.head_commit.url }} \n
+            **Commit Message:** ${{ github.event.head_commit.message }}"
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}

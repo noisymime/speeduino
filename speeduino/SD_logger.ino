@@ -1,3 +1,6 @@
+#include "globals.h"
+#include BOARD_H
+
 #ifdef SD_LOGGING
 #include <SPI.h>
 #ifdef __SD_H__
@@ -8,6 +11,7 @@
 #include "SD_logger.h"
 #include "logger.h"
 #include "rtc_common.h"
+#include "maths.h"
 
 SdExFat sd;
 ExFile logFile;
@@ -73,7 +77,7 @@ bool createLogFile()
   //Create the filename
   sprintf(filenameBuffer, "%s%04d.%s", LOG_FILE_PREFIX, currentLogFileNumber, LOG_FILE_EXTENSION);
 
-  //if (!logFile.open(LOG_FILENAME, O_RDWR | O_CREAT | O_TRUNC)) 
+  logFile.close();
   if (logFile.open(filenameBuffer, O_RDWR | O_CREAT | O_TRUNC)) 
   {
     returnValue = true;
@@ -173,6 +177,9 @@ void readSDSectors(uint8_t* buffer, uint32_t sectorNumber, uint16_t sectorCount)
   sd.card()->readSectors(sectorNumber, buffer, sectorCount);
 }
 
+// Forward declare
+void writeSDLogHeader();
+
 void beginSDLogging()
 {
   if(SD_status == SD_STATUS_READY)
@@ -183,12 +190,16 @@ void beginSDLogging()
     if (!createLogFile()) 
     {
       SD_status = SD_STATUS_ERROR_NO_WRITE;
+      setTS_SD_status();
+      return;
     }
 
     //Perform pre-allocation on card. This dramatically improves write speed
     if (!logFile.preAllocate(SD_LOG_FILE_SIZE)) 
     {
       SD_status = SD_STATUS_ERROR_NO_SPACE;
+      setTS_SD_status();
+      return;
     }
 
     //initialise the RingBuf.
@@ -204,7 +215,7 @@ void beginSDLogging()
 
 void endSDLogging()
 {
-  if(SD_status > 0)
+  if(SD_status == SD_STATUS_ACTIVE)
   {
     // Write any RingBuf data to file.
     rb.sync();
@@ -214,8 +225,13 @@ void endSDLogging()
     logFile.sync(); //This is required to update the sd object. Without this any subsequent logfiles will overwrite this one
 
     SD_status = SD_STATUS_READY;
+    setTS_SD_status();
   }
 }
+
+// Forward declare
+void checkForSDStart();
+void checkForSDStop();
 
 void writeSDLogEntry()
 {
@@ -318,7 +334,6 @@ void setTS_SD_status()
 
   BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_FS); // CARD has a FAT32 filesystem (Though this will be exFAT)
   BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_UNUSED); //Unused bit is always 0
-
 }
 
 /** 
@@ -436,6 +451,14 @@ void checkForSDStop()
   }
 
   
+}
+
+void syncSDLog()
+{     
+  if( (SD_status == SD_STATUS_ACTIVE) && (!logFile.isBusy()) && (!sd.isBusy()) )
+  {
+    logFile.sync();
+  }
 }
 
 /** 

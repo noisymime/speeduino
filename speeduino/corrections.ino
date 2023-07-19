@@ -723,7 +723,11 @@ int8_t correctionFixedTiming(int8_t advance)
 int8_t correctionCrankingFixedTiming(int8_t advance)
 {
   int8_t ignCrankFixValue = advance;
-  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { ignCrankFixValue = configPage4.CrankAng; } //Use the fixed cranking ignition angle
+  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+  { 
+    if ( configPage2.crkngAddCLTAdv == 0 ) { ignCrankFixValue = configPage4.CrankAng; } //Use the fixed cranking ignition angle
+    else { ignCrankFixValue = correctionCLTadvance(configPage4.CrankAng); } //Use the CLT compensated cranking ignition angle
+  }
   return ignCrankFixValue;
 }
 
@@ -800,8 +804,17 @@ int8_t correctionIdleAdvance(int8_t advance)
     else { idleAdvTaper = 0; }
   }
 
-  if ( !idleAdvActive && BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) && (currentStatus.RPM > (((uint16_t)currentStatus.CLIdleTarget * 10) - (uint16_t)IGN_IDLE_THRESHOLD)) ) { idleAdvActive = true; } //Active only after the engine is 200 RPM below target on first time
-  else if (idleAdvActive && !BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN)) { idleAdvActive = false; } //Clear flag if engine isn't running anymore
+/* When Idle advance is the only idle speed control mechanism, activate as soon as not cranking. 
+When some other mechanism is also present, wait until the engine is no more than 200 RPM below idle target speed on first time
+*/
+
+  if ((!idleAdvActive && BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN)) &&
+   ((configPage6.iacAlgorithm == 0) || (currentStatus.RPM > (((uint16_t)currentStatus.CLIdleTarget * 10) - (uint16_t)IGN_IDLE_THRESHOLD))))
+  { 
+    idleAdvActive = true; 
+  } 
+  else 
+    if (idleAdvActive && !BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN)) { idleAdvActive = false; } //Clear flag if engine isn't running anymore
 
   return ignIdleValue;
 }
@@ -929,26 +942,45 @@ uint16_t correctionsDwell(uint16_t dwell)
 {
   uint16_t tempDwell = dwell;
   uint16_t sparkDur_uS = (configPage4.sparkDur * 100); //Spark duration is in mS*10. Multiple it by 100 to get spark duration in uS
+  if(currentStatus.actualDwell == 0) { currentStatus.actualDwell = tempDwell; } //Initialise the actualDwell value if this is the first time being called
+
+  //**************************************************************************************************************************
   //Pull battery voltage based dwell correction and apply if needed
   currentStatus.dwellCorrection = table2D_getValue(&dwellVCorrectionTable, currentStatus.battery10);
   if (currentStatus.dwellCorrection != 100) { tempDwell = div100(dwell) * currentStatus.dwellCorrection; }
 
-  //Dwell limiter
+
+  //**************************************************************************************************************************
+  //Dwell error correction is a basic closed loop to keep the dwell time consistent even when adjusting its end time for the per tooth timing.
+  //This is mostly of benefit to low resolution triggers at low rpm (<1500)
+  if( (configPage2.perToothIgn  == true) && (configPage4.dwellErrCorrect == 1) )
+  {
+    int16_t error = tempDwell - currentStatus.actualDwell;
+    if(tempDwell > INT16_MAX) { tempDwell = INT16_MAX; } //Prevent overflow when casting to signed int
+    if(error > ((int16_t)tempDwell / 2)) { error += error; } //Double correction amount if actual dwell is less than 50% of the requested dwell
+    if(error > 0) { tempDwell += error; }
+  }
+
+  //**************************************************************************************************************************
+  /*
+  Dwell limiter - If the total required dwell time per revolution is longer than the maximum time available at the current RPM, reduce dwell. This can occur if there are multiple sparks per revolution
+  This only times this can occur are:
+  1. Single channel spark mode where there will be nCylinders/2 sparks per revolution
+  2. Rotary ignition in wasted spark configuration (FC/FD), results in 2 pulses per rev. RX-8 is fully sequential resulting in 1 pulse, so not required
+  */
   uint16_t dwellPerRevolution = tempDwell + sparkDur_uS;
   int8_t pulsesPerRevolution = 1;
-  //Single channel spark mode is the only time there will be more than 1 pulse per revolution on any given output
-  //For rotary ignition this also holds true in wasted spark configuration (FC/FD) resulting in 2 pulses. RX-8 however is fully sequential resulting in 1 pulse
   if( ( (configPage4.sparkMode == IGN_MODE_SINGLE) || ((configPage4.sparkMode == IGN_MODE_ROTARY) && (configPage10.rotaryType != ROTARY_IGN_RX8)) ) && (configPage2.nCylinders > 1) ) //No point in running this for 1 cylinder engines
   {
     pulsesPerRevolution = (configPage2.nCylinders >> 1);
     dwellPerRevolution = dwellPerRevolution * pulsesPerRevolution;
   }
-
   if(dwellPerRevolution > revolutionTime)
   {
     //Possibly need some method of reducing spark duration here as well, but this is a start
     uint16_t adjustedSparkDur = (sparkDur_uS * revolutionTime) / dwellPerRevolution;
     tempDwell = (revolutionTime / pulsesPerRevolution) - adjustedSparkDur;
   }
+
   return tempDwell;
 }

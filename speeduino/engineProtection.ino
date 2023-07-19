@@ -7,7 +7,7 @@ byte oilProtStartTime = 0;
 byte checkEngineProtect(void)
 {
   byte protectActive = 0;
-  if(checkRevLimit() || checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit() )
+  if(checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit() )
   {
     if( currentStatus.RPMdiv100 > configPage4.engineProtectMaxRPM ) { protectActive = 1; }
   }
@@ -18,7 +18,7 @@ byte checkEngineProtect(void)
 byte checkRevLimit(void)
 {
   //Hardcut RPM limit
-  byte revLimiterActive = 0;
+  byte currentLimitRPM = 255; //Default to no limit (In case PROTECT_CUT_OFF is selected)
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM);
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT);
@@ -27,28 +27,27 @@ byte checkRevLimit(void)
   {
     if(configPage9.hardRevMode == HARD_REV_FIXED)
     {
+      currentLimitRPM = configPage4.HardRevLim;
       if ( (currentStatus.RPMdiv100 >= configPage4.HardRevLim) || ((softLimitTime > configPage4.SoftLimMax) && (currentStatus.RPMdiv100 >= configPage4.SoftRevLim)) )
       { 
         BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); //Legacy and likely to be removed at some point
         BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
-        revLimiterActive = 1; 
       } 
       else { BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM); }
     }
     else if(configPage9.hardRevMode == HARD_REV_COOLANT )
     {
-      int8_t coolantLimit = (int16_t)(table2D_getValue(&coolantProtectTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET));
-      if(currentStatus.RPMdiv100 > coolantLimit)
+      currentLimitRPM = (int16_t)(table2D_getValue(&coolantProtectTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET));
+      if(currentStatus.RPMdiv100 > currentLimitRPM)
       {
         BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT);
         BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); //Legacy and likely to be removed at some point
         BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
-        revLimiterActive = 1; 
       } 
     }
   }
 
-  return revLimiterActive;
+  return currentLimitRPM;
 }
 
 byte checkBoostLimit(void)

@@ -10,6 +10,9 @@ This is for handling the data broadcasted to various CAN dashes and instrument c
 #if defined(NATIVE_CAN_AVAILABLE)
 #include "globals.h"
 
+// Forward declare
+void DashMessage(uint16_t DashMessageID);
+
 void sendBMWCluster()
 {
   DashMessage(CAN_BMW_DME1);

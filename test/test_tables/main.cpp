@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "tests_init.h"
 #include "tests_tables.h"
 #include "test_table2d.h"
 
@@ -17,7 +16,6 @@ void setup()
 
     UNITY_BEGIN();    // IMPORTANT LINE!
 
-    testInitialisation();
     testTables();
     testTable2d();
 

@@ -337,7 +337,11 @@ static inline byte checkForStepping(void)
       {
         //Means we're in COOLING status but have been in this state long enough. Go into off state
         idleStepper.stepperStatus = SOFF;
-        digitalWrite(pinStepperEnable, HIGH); //Disable the DRV8825
+        if(configPage9.iacStepperPower == STEPPER_POWER_WHEN_ACTIVE) 
+        { 
+          //Disable the DRV8825, but only if we're at the final step in this cycle. 
+          if(idleStepper.targetIdleStep == idleStepper.curIdleStep) { digitalWrite(pinStepperEnable, HIGH); } 
+        }
       }
     }
     else

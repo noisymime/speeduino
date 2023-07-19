@@ -131,6 +131,15 @@ void test_maths_div100_S16(void)
 void test_maths_div100_S32(void)
 {
   //Check both the signed and unsigned results
+#if defined(__arm__)
+  TEST_ASSERT_EQUAL_INT32(1000000L, div100((int)100000000L));
+  TEST_ASSERT_EQUAL_INT32(0, div100((int)0));
+  TEST_ASSERT_EQUAL_INT32(0, div100((int)50));
+
+  TEST_ASSERT_EQUAL_INT32(-1000000L, div100((int)-100000000L));
+  TEST_ASSERT_EQUAL_INT32(0, div100((int)-50));
+  TEST_ASSERT_EQUAL_INT32(-1, div100((int)-120));
+#else
   TEST_ASSERT_EQUAL_INT32(1000000L, div100((int32_t)100000000L));
   TEST_ASSERT_EQUAL_INT32(0, div100((int32_t)0));
   TEST_ASSERT_EQUAL_INT32(0, div100((int32_t)50));
@@ -138,4 +147,5 @@ void test_maths_div100_S32(void)
   TEST_ASSERT_EQUAL_INT32(-1000000L, div100((int32_t)-100000000L));
   TEST_ASSERT_EQUAL_INT32(0, div100((int32_t)-50));
   TEST_ASSERT_EQUAL_INT32(-1, div100((int32_t)-120));
+#endif
 }

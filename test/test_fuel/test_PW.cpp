@@ -13,6 +13,7 @@ void testPW(void)
   RUN_TEST(test_PW_AFR_Multiply);
   RUN_TEST(test_PW_Large_Correction);
   RUN_TEST(test_PW_Very_Large_Correction);
+  RUN_TEST(test_PW_4Cyl_PW0);
 }
 
 int16_t REQ_FUEL;
@@ -125,4 +126,19 @@ void test_PW_Very_Large_Correction()
 
   uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR+30, 21670, result); //Additional allowed error here 
+}
+
+//Test that unused pulse width values are set to 0
+//This test is for a 4 cylinder using paired injection where only INJ 1 and 2 should have PW > 0
+void test_PW_4Cyl_PW0(void)
+{
+  test_PW_setCommon();
+
+  configPage2.nCylinders = 4;
+  configPage2.injLayout = INJ_PAIRED;
+  configPage10.stagingEnabled = false; //Staging must be off or channels 3 and 4 will be used
+
+  loop();
+  TEST_ASSERT_EQUAL(0, currentStatus.PW3);
+  TEST_ASSERT_EQUAL(0, currentStatus.PW4);
 }

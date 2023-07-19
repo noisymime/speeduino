@@ -19,6 +19,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "scheduler.h"
 #include "auxiliaries.h"
 #include "comms.h"
+#include "maths.h"
 
 #if defined(CORE_AVR)
   #include <avr/wdt.h>
@@ -45,6 +46,7 @@ ISR(TIMER2_OVF_vect, ISR_NOBLOCK) //cppcheck-suppress misra-c2012-8.2
 void oneMSInterval(void) //Most ARM chips can simply call a function
 #endif
 {
+  BIT_SET(TIMER_mask, BIT_TIMER_1KHZ);
   ms_counter++;
 
   //Increment Loop Counters
@@ -253,7 +255,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
       //Continental flex sensor fuel temperature can be read with following formula: (Temperature = (41.25 * pulse width(ms)) - 81.25). 1000μs = -40C and 5000μs = 125C
       if(flexPulseWidth > 5000) { flexPulseWidth = 5000; }
       else if(flexPulseWidth < 1000) { flexPulseWidth = 1000; }
-      currentStatus.fuelTemp = (((4224 * (long)flexPulseWidth) >> 10) - 8125) / 100;
+      currentStatus.fuelTemp = div100( (int16_t)(((4224 * (long)flexPulseWidth) >> 10) - 8125) );
     }
 
     //**************************************************************************************************************************************************

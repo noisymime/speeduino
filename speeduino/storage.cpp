@@ -172,7 +172,7 @@ void writeConfig(uint8_t pageNum)
     { 
       EEPROM_MAX_WRITE_BLOCK = (uint8_t)(15000U / currentStatus.RPM);
       EEPROM_MAX_WRITE_BLOCK = max(EEPROM_MAX_WRITE_BLOCK, 1);
-      EEPROM_MAX_WRITE_BLOCK = min(EEPROM_MAX_WRITE_BLOCK, 20); //Any higher than this will cause comms timeouts on AVR
+      EEPROM_MAX_WRITE_BLOCK = min(EEPROM_MAX_WRITE_BLOCK, 15); //Any higher than this will cause comms timeouts on AVR
     }
   #endif
 

@@ -16,7 +16,7 @@
 
 void doUpdates(void)
 {
-  #define CURRENT_DATA_VERSION    21
+  #define CURRENT_DATA_VERSION    22
   //Only the latest update for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
@@ -427,7 +427,7 @@ void doUpdates(void)
     configPage13.outputPin[7] = 0;
 
     //New multiply MAP option added. Set new option to be the same as old
-    configPage2.multiplyMAP = configPage2.multiplyMAP_old;
+    configPage2.multiplyMAP = configPage2.crkngAddCLTAdv;
     //New AE option added to allow for PW added in addition to existing PW multiply
     configPage2.aeApplyMode = 0; //Set the AE mode to Multiply
 
@@ -675,7 +675,7 @@ void doUpdates(void)
 
   if(readEEPROMVersion() == 20)
   {
-    //202210
+    //202305
     configPage2.taeMinChange = 4; //Default is 2% minimum change to match prior behaviour. (4 = 2% account for 0.5 resolution)
     configPage2.maeMinChange = 2; //Default is 2% minimum change to match prior behaviour.
 
@@ -696,8 +696,29 @@ void doUpdates(void)
     //Oil Pressure protection delay added. Set to 0 to match existing behaviour
     configPage10.oilPressureProtTime = 0;
 
+    //Option to power stepper motor constantly was added. Default to previous behaviour
+    configPage9.iacStepperPower = 0;
+
     writeAllConfig();
     storeEEPROMVersion(21);
+  }
+
+  if(readEEPROMVersion() == 21)
+  {
+    //202306
+
+    //Rolling cut curve added. Default values
+    configPage15.rollingProtRPMDelta[0]   = -30;
+    configPage15.rollingProtRPMDelta[1]   = -20;
+    configPage15.rollingProtRPMDelta[2]   = -10;
+    configPage15.rollingProtRPMDelta[3]   = -5;
+    configPage15.rollingProtCutPercent[0] = 50;
+    configPage15.rollingProtCutPercent[1] = 65;
+    configPage15.rollingProtCutPercent[2] = 80;
+    configPage15.rollingProtCutPercent[3] = 95;
+
+    writeAllConfig();
+    storeEEPROMVersion(22);
   }
   
   //Final check is always for 255 and 0 (Brand new arduino)

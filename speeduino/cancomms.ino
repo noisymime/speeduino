@@ -807,4 +807,35 @@ if (PIDmode == 0x01)
       }
     }
 }
+
+void readAuxCanBus()
+{
+  for (int i = 0; i < 16; i++)
+  {
+    if (inMsg.id == (configPage9.caninput_source_can_address[i] + 0x100)) //Filters frame ID
+    {
+
+      if (!BIT_CHECK(configPage9.caninput_source_num_bytes, i))
+      {
+        // Gets the one-byte value from the Data Field.
+        currentStatus.canin[i] = inMsg.buf[configPage9.caninput_source_start_byte[i]];
+      }
+
+      else
+      {
+
+        if (configPage9.caninputEndianess == 1)
+        {
+          //Gets the two-byte value from the Data Field in Litlle Endian.
+          currentStatus.canin[i] = ((inMsg.buf[configPage9.caninput_source_start_byte[i]]) | (inMsg.buf[configPage9.caninput_source_start_byte[i] + 1] << 8));
+        }
+        else
+        {
+          //Gets the two-byte value from the Data Field in Big Endian.
+          currentStatus.canin[i] = ((inMsg.buf[configPage9.caninput_source_start_byte[i]] << 8) | (inMsg.buf[configPage9.caninput_source_start_byte[i] + 1]));
+        }
+      }
+    }
+  }
+}
 #endif

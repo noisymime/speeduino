@@ -5,6 +5,7 @@
 
 #include "test_corrections.h"
 #include "test_PW.h"
+#include "test_staging.h"
 
 #define UNITY_EXCLUDE_DETAILS
 
@@ -21,6 +22,7 @@ void setup()
     initialiseAll(); //Run the main initialise function
     testCorrections();
     testPW();
+    testStaging();
 
     UNITY_END(); // stop unit testing
 }

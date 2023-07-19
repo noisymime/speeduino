@@ -54,27 +54,16 @@ jobs:
         curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/teensy36/firmware.hex" "https://speeduino.com:2078/teensy36/master-teensy36.hex"
         curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/teensy41/firmware.hex" "https://speeduino.com:2078/teensy41/master-teensy41.hex"
         curl --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
-          
-    - name: Slack Notification (Passed)
-      uses: rtCamp/action-slack-notify@v2
-      if: success() && github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
-      env:
-        SLACK_CHANNEL: git
-        SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
-        SLACK_ICON: https://avatars.githubusercontent.com/u/9919?v=4&size=48
-        SLACK_TITLE: 'Firmware build was successful :white_check_mark:'
-        SLACK_USERNAME: Github
-        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-        MSG_MINIMAL: actions url,commit
-    
-    - name: Slack Notification (Failed)
-      uses: rtCamp/action-slack-notify@v2
+
+    - name: Discord Notification (Build Failed)
+      uses: rjstone/discord-webhook-notify@v1
       if: failure() && github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
-      env:
-        SLACK_CHANNEL: git
-        SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
-        SLACK_ICON: https://avatars.githubusercontent.com/u/9919?v=4&size=48
-        SLACK_TITLE: 'Firmware build FAILED :warning:'
-        SLACK_USERNAME: Github
-        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-        MSG_MINIMAL: actions url,commit
+      with:
+          severity: error
+          avatarUrl: https://avatars.githubusercontent.com/u/9919?v=4&size=48
+          username: GitHub
+          description: 'Firmware build FAILED :warning:'
+          details: "**Author:** ${{ github.event.pusher.name }} \n
+            **Commit URL:** ${{ github.event.head_commit.url }} \n
+            **Commit Message:** ${{ github.event.head_commit.message }}"
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}

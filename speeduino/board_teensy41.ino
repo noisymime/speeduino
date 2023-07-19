@@ -88,7 +88,8 @@ void initBoard()
     ***********************************************************************************************************
     * Schedules
     */
-    //Use the Quad timer, 60Mhz IP_bus_clk divided by 128 for a 2.133333uS period
+    //Use the Quad timer
+    //Uses the BUS clock speed, which is 1/4 of the CPU clock. Maximum prescaler of 128 is used to give a 0.853333uS tick time @ 600Mhz
     //TMR1 - Fuel 1-4
     //0
     TMR1_CTRL0 = 0;

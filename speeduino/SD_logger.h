@@ -8,12 +8,13 @@
 #else
   #include "SdFat.h"
 #endif
+#include "logger.h"
 //#include <SdSpiCard.h>
 #include "RingBuf.h"
 
 
 #define SD_STATUS_OFF               0 /**< SD system is inactive. FS and file remain closed */
-#define SD_STATUS_READY             1 /**< File has been opened and preallocated, but a log session has not commenced */
+#define SD_STATUS_READY             1 /**< Card is present and ready, but a log session has not commenced */
 #define SD_STATUS_ACTIVE            2 /**< Log session commenced */
 #define SD_STATUS_ERROR_NO_CARD     3 /**< No SD card found when attempting to open file */
 #define SD_STATUS_ERROR_NO_FS       4 /**< No filesystem found when attempting to open file */
@@ -47,13 +48,13 @@
 #define MAX_LOG_FILES     10000
 #define LOG_FILE_PREFIX "SPD_"
 #define LOG_FILE_EXTENSION "csv"
-#define RING_BUF_CAPACITY SD_LOG_ENTRY_SIZE * 10 //Allow for 10 entries in the ringbuffer. Will need tuning
+#define RING_BUF_CAPACITY (SD_LOG_ENTRY_SIZE * 10) //Allow for 10 entries in the ringbuffer. Will need tuning
 
 /*
 Standard FAT16/32
 SdFs sd; 
 FsFile logFile;
-RingBuf<FsFile, RING_BUF_CAPACITY> rb;
+RingBuf<ExFile, RING_BUF_CAPACITY> rb;
 */
 //ExFat
 extern SdExFat sd;
@@ -69,6 +70,7 @@ void writeSDLogEntry();
 void writetSDLogHeader();
 void beginSDLogging();
 void endSDLogging();
+void syncSDLog();
 void setTS_SD_status();
 void formatExFat();
 void deleteLogFile(char, char, char, char);

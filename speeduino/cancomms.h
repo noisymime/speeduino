@@ -27,5 +27,6 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNu
 void can_Command(void);
 void sendCancommand(uint8_t cmdtype , uint16_t canadddress, uint8_t candata1, uint8_t candata2, uint16_t sourcecanAddress);
 void obd_response(uint8_t therequestedPID , uint8_t therequestedPIDlow, uint8_t therequestedPIDhigh);
+void readAuxCanBus();
 
 #endif // CANCOMMS_H

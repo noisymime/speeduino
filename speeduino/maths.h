@@ -4,6 +4,7 @@
 unsigned long percentage(uint8_t x, unsigned long y);
 unsigned long halfPercentage(uint8_t x, unsigned long y);
 inline long powint(int factor, unsigned int exponent);
+uint8_t random1to100();
 
 #ifdef USE_LIBDIVIDE
 #include "src/libdivide/libdivide.h"

@@ -33,67 +33,27 @@ struct ign_test_parameters
     int16_t expectedEndAngle;      // Expected end angle
 };
 
-void test_calc_ign1_timeout(const ign_test_parameters &test_params)
-{
-    memset(&ignitionSchedule1, 0, sizeof(ignitionSchedule1));
 
-    ignitionSchedule1.Status = PENDING;
-    calculateIgnitionAngle1(dwellAngle);
-    TEST_ASSERT_EQUAL(test_params.expectedStartAngle, ignition1StartAngle);
-    TEST_ASSERT_EQUAL(test_params.expectedEndAngle, ignition1EndAngle);
-    TEST_ASSERT_EQUAL(test_params.pending, calculateIgnition1Timeout(test_params.crankAngle));
-    
-    ignitionSchedule1.Status = RUNNING;
-    calculateIgnitionAngle1(dwellAngle);
-    TEST_ASSERT_EQUAL(test_params.running, calculateIgnition1Timeout(test_params.crankAngle));    
-}
-
-
-void test_calc_ignN_timeout(Schedule &schedule, const ign_test_parameters &test_params, const int &startAngle, void (*pEndAngleCalc)(int), const int16_t &endAngle)
+void test_calc_ign_timeout(const ign_test_parameters &test_params)
 {
     char msg[150];
+    Schedule schedule;
     memset(&schedule, 0, sizeof(schedule));
 
-    schedule.Status = PENDING;
-    pEndAngleCalc(dwellAngle);
+    int startAngle;
+    int endAngle;
+
+    calculateIgnitionAngle(dwellAngle, test_params.channelAngle, test_params.advanceAngle, &endAngle, &startAngle);
     TEST_ASSERT_EQUAL_MESSAGE(test_params.expectedStartAngle, startAngle, "startAngle");
     TEST_ASSERT_EQUAL_MESSAGE(test_params.expectedEndAngle, endAngle, "endAngle");
     
     sprintf_P(msg, PSTR("PENDING advanceAngle: %" PRIi8 ", channelAngle: % " PRIu16 ", crankAngle: %" PRIu16 ", endAngle: %" PRIi16), test_params.advanceAngle, test_params.channelAngle, test_params.crankAngle, endAngle);
-    TEST_ASSERT_EQUAL_MESSAGE(test_params.pending, calculateIgnitionNTimeout(schedule, startAngle, test_params.channelAngle,  test_params.crankAngle), msg);
+    schedule.Status = PENDING;
+    TEST_ASSERT_EQUAL_MESSAGE(test_params.pending, calculateIgnitionTimeout(schedule, startAngle, test_params.channelAngle,  test_params.crankAngle), msg);
     
-    schedule.Status = RUNNING;
-    pEndAngleCalc(dwellAngle);
     sprintf_P(msg, PSTR("RUNNING advanceAngle: %" PRIi8 ", channelAngle: % " PRIu16 ", crankAngle: %" PRIu16 ", endAngle: %" PRIi16), test_params.advanceAngle, test_params.channelAngle, test_params.crankAngle, endAngle);
-    TEST_ASSERT_EQUAL_MESSAGE(test_params.running, calculateIgnitionNTimeout(schedule, startAngle, test_params.channelAngle,  test_params.crankAngle), msg);
-}
-
-//test_params.channelAngle, local.crankAngle, local.pending, local.running, local.endAngle
-
-void test_calc_ign_timeout(const ign_test_parameters &test_params)
-{
-    channel2IgnDegrees = test_params.channelAngle;
-    test_calc_ignN_timeout(ignitionSchedule2, test_params, ignition2StartAngle, &calculateIgnitionAngle2, ignition2EndAngle);
-    channel3IgnDegrees = test_params.channelAngle;
-    test_calc_ignN_timeout(ignitionSchedule3, test_params, ignition3StartAngle, &calculateIgnitionAngle3, ignition3EndAngle);
-    channel4IgnDegrees = test_params.channelAngle;
-    test_calc_ignN_timeout(ignitionSchedule4, test_params, ignition4StartAngle, &calculateIgnitionAngle4, ignition4EndAngle);
-#if (IGN_CHANNELS >= 5)
-    channel5IgnDegrees = test_params.channelAngle;
-    test_calc_ignN_timeout(ignitionSchedule5, test_params, ignition5StartAngle, &calculateIgnitionAngle5, ignition5EndAngle);
-#endif
-#if (IGN_CHANNELS >= 6)
-    channel6IgnDegrees = test_params.channelAngle;
-    test_calc_ignN_timeout(ignitionSchedule6, test_params, ignition6StartAngle, &calculateIgnitionAngle6, ignition6EndAngle);
-#endif
-#if (IGN_CHANNELS >= 7)
-    channel7IgnDegrees = test_params.channelAngle;
-    test_calc_ignN_timeout(ignitionSchedule7, test_params, ignition7StartAngle, &calculateIgnitionAngle7, ignition7EndAngle);
-#endif
-#if (IGN_CHANNELS >= 8)
-    channel8IgnDegrees = test_params.channelAngle;
-    test_calc_ignN_timeout(ignitionSchedule8, test_params, ignition8StartAngle, &calculateIgnitionAngle8, ignition8EndAngle);
-#endif
+    schedule.Status = RUNNING;
+    TEST_ASSERT_EQUAL_MESSAGE(test_params.running, calculateIgnitionTimeout(schedule, startAngle, test_params.channelAngle,  test_params.crankAngle), msg);
 }
 
 void test_calc_ign_timeout(const ign_test_parameters *pStart, const ign_test_parameters *pEnd)
@@ -102,14 +62,12 @@ void test_calc_ign_timeout(const ign_test_parameters *pStart, const ign_test_par
     while (pStart!=pEnd)
     {
         memcpy_P(&local, pStart, sizeof(local));
-        currentStatus.advance = local.advanceAngle;
         test_calc_ign_timeout(local);
         ++pStart;
     }
 }
 
-// Separate test for ign 1 - different code path, same results!
-void test_calc_ign1_timeout()
+void test_calc_ign_timeout_360()
 {
     setEngineSpeed(4000, 360);
 
@@ -142,54 +100,6 @@ void test_calc_ign1_timeout()
         { 0, 40, 270, 0, 13083, 224, 320 },
         { 0, 40, 315, 0, 11208, 224, 320 },
         { 0, 40, 360, 0, 9333, 224, 320 },
-    };
-
-    const ign_test_parameters *pStart = &test_data[0];
-    const ign_test_parameters *pEnd = pStart + +_countof(test_data);
-
-    ign_test_parameters local;
-    while (pStart!=pEnd)
-    {
-        memcpy_P(&local, pStart, sizeof(local));
-        currentStatus.advance = local.advanceAngle;
-        test_calc_ign1_timeout(local);
-        ++pStart;
-    }    
-}
-
-void test_calc_ign_timeout_360()
-{
-    setEngineSpeed(4000, 360);
-
-    static const ign_test_parameters test_data[] PROGMEM = {
-         // ChannelAngle (deg), Advance, Crank, Expected Pending, Expected Running
-        { 0, -40, 0, 12666, 12666, 304, 40 },
-        { 0, -40, 45, 10791, 10791, 304, 40 },
-        { 0, -40, 90, 8916, 8916, 304, 40 },
-        { 0, -40, 135, 7041, 7041, 304, 40 },
-        { 0, -40, 180, 5166, 5166, 304, 40 },
-        { 0, -40, 215, 3708, 3708, 304, 40 },
-        { 0, -40, 270, 1416, 1416, 304, 40 },
-        { 0, -40, 315, 0, 14541, 304, 40 },
-        { 0, -40, 360, 0, 12666, 304, 40 },
-        { 0, 0, 0, 11000, 11000, 264, 0 },
-        { 0, 0, 45, 9125, 9125, 264, 0 },
-        { 0, 0, 90, 7250, 7250, 264, 0 },
-        { 0, 0, 135, 5375, 5375, 264, 0 },
-        { 0, 0, 180, 3500, 3500, 264, 0 },
-        { 0, 0, 215, 2041, 2041, 264, 0 },
-        { 0, 0, 270, 0, 14750, 264, 0 },
-        { 0, 0, 315, 0, 12875, 264, 0 },
-        { 0, 0, 360, 0, 11000, 264, 0 },
-        { 0, 40, 0, 9333, 9333, 224, -40 },
-        { 0, 40, 45, 7458, 7458, 224, -40 },
-        { 0, 40, 90, 5583, 5583, 224, -40 },
-        { 0, 40, 135, 3708, 3708, 224, -40 },
-        { 0, 40, 180, 1833, 1833, 224, -40 },
-        { 0, 40, 215, 375, 375, 224, -40 },
-        { 0, 40, 270, 0, 13083, 224, -40 },
-        { 0, 40, 315, 0, 11208, 224, -40 },
-        { 0, 40, 360, 0, 9333, 224, -40 },
         { 72, -40, 0, 666, 666, 16, 112 },
         { 72, -40, 45, 0, 13791, 16, 112 },
         { 72, -40, 90, 11916, 11916, 16, 112 },
@@ -374,24 +284,24 @@ void test_calc_ign_timeout_720()
         { 0, -40, 270, 16416, 16416, 664, 40 },
         { 0, -40, 315, 14541, 14541, 664, 40 },
         { 0, -40, 360, 12666, 12666, 664, 40 },
-        { 0, 0, 0, 26000, 26000, 624, 0 },
-        { 0, 0, 45, 24125, 24125, 624, 0 },
-        { 0, 0, 90, 22250, 22250, 624, 0 },
-        { 0, 0, 135, 20375, 20375, 624, 0 },
-        { 0, 0, 180, 18500, 18500, 624, 0 },
-        { 0, 0, 215, 17041, 17041, 624, 0 },
-        { 0, 0, 270, 14750, 14750, 624, 0 },
-        { 0, 0, 315, 12875, 12875, 624, 0 },
-        { 0, 0, 360, 11000, 11000, 624, 0 },
-        { 0, 40, 0, 24333, 24333, 584, -40 },
-        { 0, 40, 45, 22458, 22458, 584, -40 },
-        { 0, 40, 90, 20583, 20583, 584, -40 },
-        { 0, 40, 135, 18708, 18708, 584, -40 },
-        { 0, 40, 180, 16833, 16833, 584, -40 },
-        { 0, 40, 215, 15375, 15375, 584, -40 },
-        { 0, 40, 270, 13083, 13083, 584, -40 },
-        { 0, 40, 315, 11208, 11208, 584, -40 },
-        { 0, 40, 360, 9333, 9333, 584, -40 },
+        { 0, 0, 0, 26000, 26000, 624, 720 },
+        { 0, 0, 45, 24125, 24125, 624, 720 },
+        { 0, 0, 90, 22250, 22250, 624, 720 },
+        { 0, 0, 135, 20375, 20375, 624, 720 },
+        { 0, 0, 180, 18500, 18500, 624, 720 },
+        { 0, 0, 215, 17041, 17041, 624, 720 },
+        { 0, 0, 270, 14750, 14750, 624, 720 },
+        { 0, 0, 315, 12875, 12875, 624, 720 },
+        { 0, 0, 360, 11000, 11000, 624, 720 },
+        { 0, 40, 0, 24333, 24333, 584, 680 },
+        { 0, 40, 45, 22458, 22458, 584, 680 },
+        { 0, 40, 90, 20583, 20583, 584, 680 },
+        { 0, 40, 135, 18708, 18708, 584, 680 },
+        { 0, 40, 180, 16833, 16833, 584, 680 },
+        { 0, 40, 215, 15375, 15375, 584, 680 },
+        { 0, 40, 270, 13083, 13083, 584, 680 },
+        { 0, 40, 315, 11208, 11208, 584, 680 },
+        { 0, 40, 360, 9333, 9333, 584, 680 },
         { 72, -40, 0, 666, 666, 16, 112 },
         { 72, -40, 45, 0, 28791, 16, 112 },
         { 72, -40, 90, 26916, 26916, 16, 112 },
@@ -640,11 +550,12 @@ void test_calc_ign_timeout_720()
     test_calc_ign_timeout(&test_data[0], &test_data[0]+_countof(test_data));
 }
 
-void test_rotary_channel3_calcs(void)
+void test_rotary_channel_calcs(void)
 {
     setEngineSpeed(4000, 360);
 
     static const int16_t test_data[][5] PROGMEM = {
+        // End Angle (deg), Dwell Angle, rotary split degrees, expected start angle, expected end angle
         { -40, 5, 0, -40, 315 },
         { -40, 95, 0, -40, 225 },
         { -40, 185, 0, -40, 135 },
@@ -680,68 +591,15 @@ void test_rotary_channel3_calcs(void)
     const int16_t (*pStart)[5] = &test_data[0];
     const int16_t (*pEnd)[5] = &test_data[0]+_countof(test_data);
 
-    channel1IgnDegrees = 0;
-    int16_t local[5];
-    while (pStart!=pEnd)
-    {
-        memcpy_P(local, pStart, sizeof(local));
-        ignition1EndAngle = local[0];
-        calculateIgnitionAngle3(local[1], local[2]);
-        TEST_ASSERT_EQUAL(local[3], ignition3EndAngle);
-        TEST_ASSERT_EQUAL(local[4], ignition3StartAngle);
-        ++pStart;
-    } 
-}
-
-void test_rotary_channel4_calcs(void)
-{
-    setEngineSpeed(4000, 360);
-
-    static const int16_t test_data[][5] PROGMEM = {
-        { -40, 5, 0, -40, 315 },
-        { -40, 95, 0, -40, 225 },
-        { -40, 185, 0, -40, 135 },
-        { -40, 275, 0, -40, 45 },
-        { -40, 355, 0, -40, -35 },
-        { -40, 5, 40, 0, 355 },
-        { -40, 95, 40, 0, 265 },
-        { -40, 185, 40, 0, 175 },
-        { -40, 275, 40, 0, 85 },
-        { -40, 355, 40, 0, 5 },
-        { 0, 5, 0, 0, 355 },
-        { 0, 95, 0, 0, 265 },
-        { 0, 185, 0, 0, 175 },
-        { 0, 275, 0, 0, 85 },
-        { 0, 355, 0, 0, 5 },
-        { 0, 5, 40, 40, 35 },
-        { 0, 95, 40, 40, 305 },
-        { 0, 185, 40, 40, 215 },
-        { 0, 275, 40, 40, 125 },
-        { 0, 355, 40, 40, 45 },
-        { 40, 5, 0, 40, 35 },
-        { 40, 95, 0, 40, 305 },
-        { 40, 185, 0, 40, 215 },
-        { 40, 275, 0, 40, 125 },
-        { 40, 355, 0, 40, 45 },
-        { 40, 5, 40, 80, 75 },
-        { 40, 95, 40, 80, 345 },
-        { 40, 185, 40, 80, 255 },
-        { 40, 275, 40, 80, 165 },
-        { 40, 355, 40, 80, 85 },
-    };
-
-    const int16_t (*pStart)[5] = &test_data[0];
-    const int16_t (*pEnd)[5] = &test_data[0]+_countof(test_data);
-
-    channel1IgnDegrees = 0;
+    int16_t endAngle, startAngle;
     int16_t local[5];
     while (pStart!=pEnd)
     {
         memcpy_P(local, pStart, sizeof(local));
         ignition2EndAngle = local[0];
-        calculateIgnitionAngle4(local[1], local[2]);
-        TEST_ASSERT_EQUAL(local[3], ignition4EndAngle);
-        TEST_ASSERT_EQUAL(local[4], ignition4StartAngle);
+        calculateIgnitionTrailingRotary(local[1], local[2], local[0], &endAngle, &startAngle);
+        TEST_ASSERT_EQUAL(local[3], endAngle);
+        TEST_ASSERT_EQUAL(local[4], startAngle);
         ++pStart;
     } 
 
@@ -749,9 +607,7 @@ void test_rotary_channel4_calcs(void)
 
 void test_calc_ign_timeout(void)
 {
-    RUN_TEST(test_calc_ign1_timeout);
     RUN_TEST(test_calc_ign_timeout_360);
     RUN_TEST(test_calc_ign_timeout_720);
-    RUN_TEST(test_rotary_channel3_calcs);
-    RUN_TEST(test_rotary_channel4_calcs);
+    RUN_TEST(test_rotary_channel_calcs);
 }

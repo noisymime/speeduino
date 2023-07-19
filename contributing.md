@@ -2,13 +2,13 @@
 
 The Speeduino project is always looking for new contributors so thanks for your interest in this!
 
-If you haven't already, jump onto our Slack team as that is where most of the development discussion takes place: https://speeduino.com/forum/app.php/page/slack
+If you haven't already, jump onto our Discord as that is where most of the development discussion takes place: https://speeduino.com/home/community/discord
 
 Here are some important resources:
 
   * [Coding style guide](https://wiki.speeduino.com/dev/Style_code)
   * [Project forum](https://speeduino.com/forum)
-  * [Slack team](https://speeduino.com/forum/app.php/page/slack)
+  * [Discord](https://speeduino.com/home/community/discord)
 
 ## Testing
 
@@ -28,7 +28,7 @@ Always write a clear log message for your commits. One-line messages are fine fo
 
 ## Contributor Licensing
 
-Note that all contributions to the project are made under the Github Contributor Lincensing Agreement: https://cla.github.com/agreement
+Note that all contributions to the project are made under the Github Contributor Lincensing Agreement: https://github.com/noisymime/speeduino/wiki/Contributor-License-Agreement
 This ensures that all contributions made to the project are licensed in the same way as the existing work. Such an agreement is not intended to deprive contributors of their copyright, but to protect the project from claims by malicious contributors.
 
 ## Coding conventions

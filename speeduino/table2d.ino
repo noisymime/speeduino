@@ -136,6 +136,8 @@ int16_t table2D_getAxisValue(struct table2D *fromTable, byte X_in)
 
   if(fromTable->axisSize == SIZE_INT) { returnValue = ((int16_t*)fromTable->axisX)[X_in]; }
   else if(fromTable->axisSize == SIZE_BYTE) { returnValue = ((uint8_t*)fromTable->axisX)[X_in]; }
+  else if(fromTable->axisSize == SIZE_SIGNED_BYTE) { returnValue = ((int8_t*)fromTable->axisX)[X_in]; }
+  
 
   return returnValue;
 }
@@ -153,6 +155,7 @@ int16_t table2D_getRawValue(struct table2D *fromTable, byte X_index)
 
   if(fromTable->valueSize == SIZE_INT) { returnValue = ((int16_t*)fromTable->values)[X_index]; }
   else if(fromTable->valueSize == SIZE_BYTE) { returnValue = ((uint8_t*)fromTable->values)[X_index]; }
+  else if(fromTable->valueSize == SIZE_SIGNED_BYTE) { returnValue = ((int8_t*)fromTable->values)[X_index]; }
 
   return returnValue;
 }

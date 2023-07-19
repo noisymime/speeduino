@@ -269,4 +269,6 @@ void tachoOutputOff(void);
 
 void nullCallback(void);
 
+typedef void (*voidVoidCallback)(void);
+
 #endif

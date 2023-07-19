@@ -2,6 +2,7 @@
 #include "logger.h"
 #include "errors.h"
 #include "decoders.h"
+#include "init.h"
 
 /** 
  * Returns a numbered byte-field (partial field in case of multi-byte fields) from "current status" structure in the format expected by TunerStudio
@@ -168,6 +169,8 @@ byte getTSLogEntry(uint16_t byteNum)
     case 122: statusValue = highByte(currentStatus.EMAP); break;
     case 123: statusValue = currentStatus.fanDuty; break;
     case 124: statusValue = currentStatus.airConStatus; break;
+    case 125: statusValue = lowByte(currentStatus.actualDwell); break;
+    case 126: statusValue = highByte(currentStatus.actualDwell); break;
   }
 
   return statusValue;
@@ -290,6 +293,7 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 87: statusValue = currentStatus.EMAP; break;
     case 88: statusValue = currentStatus.fanDuty; break;
     case 89: statusValue = currentStatus.airConStatus; break;
+    case 90: statusValue = currentStatus.actualDwell; break;
   }
 
   return statusValue;
@@ -366,7 +370,7 @@ bool is2ByteEntry(uint8_t key)
 void startToothLogger(void)
 {
   currentStatus.toothLogEnabled = true;
-  currentStatus.compositeLogEnabled = false; //Safety first (Should never be required)
+  currentStatus.compositeTriggerUsed = 0; //Safety first (Should never be required)
   BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
   toothHistoryIndex = 0;
 
@@ -374,8 +378,12 @@ void startToothLogger(void)
   detachInterrupt( digitalPinToInterrupt(pinTrigger) );
   attachInterrupt( digitalPinToInterrupt(pinTrigger), loggerPrimaryISR, CHANGE );
 
-  detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-  attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );  
+  if(VSS_USES_RPM2() != true)
+  {
+    detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+    attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );  
+  }
+  
 }
 
 void stopToothLogger(void)
@@ -386,13 +394,16 @@ void stopToothLogger(void)
   detachInterrupt( digitalPinToInterrupt(pinTrigger) );
   attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
 
-  detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-  attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );  
+  if(VSS_USES_RPM2() != true)
+  {
+    detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+    attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );  
+  }
 }
 
 void startCompositeLogger(void)
 {
-  currentStatus.compositeLogEnabled = true;
+  currentStatus.compositeTriggerUsed = 2;
   currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
   BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
   toothHistoryIndex = 0;
@@ -401,18 +412,85 @@ void startCompositeLogger(void)
   detachInterrupt( digitalPinToInterrupt(pinTrigger) );
   attachInterrupt( digitalPinToInterrupt(pinTrigger), loggerPrimaryISR, CHANGE );
 
-  detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-  attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
+  if( (VSS_USES_RPM2() != true) && (FLEX_USES_RPM2() != true) )
+  {
+    detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+    attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
+  }
 }
 
 void stopCompositeLogger(void)
 {
-  currentStatus.compositeLogEnabled = false;
+  currentStatus.compositeTriggerUsed = 0;
 
   //Disconnect the logger interrupts and attach the normal ones
   detachInterrupt( digitalPinToInterrupt(pinTrigger) );
   attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
 
-  detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-  attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
+  if( (VSS_USES_RPM2() != true) && (FLEX_USES_RPM2() != true) )
+  {
+    detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+    attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
+  }
+}
+
+void startCompositeLoggerTertiary(void)
+{
+  currentStatus.compositeTriggerUsed = 3;
+  currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
+  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  toothHistoryIndex = 0;
+
+  //Disconnect the standard interrupt and add the logger version
+  detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger), loggerPrimaryISR, CHANGE );
+
+  detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger3), loggerTertiaryISR, CHANGE );
+}
+
+void stopCompositeLoggerTertiary(void)
+{
+  currentStatus.compositeTriggerUsed = 0;
+
+  //Disconnect the logger interrupts and attach the normal ones
+  detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
+
+  detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger3), triggerTertiaryHandler, tertiaryTriggerEdge );
+}
+
+
+void startCompositeLoggerCams(void)
+{
+  currentStatus.compositeTriggerUsed = 4;
+  currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
+  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  toothHistoryIndex = 0;
+
+  //Disconnect the standard interrupt and add the logger version
+  if( (VSS_USES_RPM2() != true) && (FLEX_USES_RPM2() != true) )
+  {
+    detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+    attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
+  }
+
+  detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger3), loggerTertiaryISR, CHANGE );
+}
+
+void stopCompositeLoggerCams(void)
+{
+  currentStatus.compositeTriggerUsed = false;
+
+  //Disconnect the logger interrupts and attach the normal ones
+  if( (VSS_USES_RPM2() != true) && (FLEX_USES_RPM2() != true) )
+  {
+    detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+    attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
+  }
+
+  detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger3), triggerTertiaryHandler, tertiaryTriggerEdge );
 }

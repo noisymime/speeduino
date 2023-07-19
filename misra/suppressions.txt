@@ -30,3 +30,8 @@ misra-c2012-20.1
 misra-c2012-20.5
 misra-c2012-20.10
 misra-c2012-21.12
+# As of cppcheck 2.9, these checks produce too many false positives
+# They do not account for class scope. 
+# E.g. class1::method1==class2::method1
+misra-c2012-5.8
+misra-c2012-8.6

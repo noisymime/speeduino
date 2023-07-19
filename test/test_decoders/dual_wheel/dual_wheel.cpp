@@ -2,6 +2,7 @@
 #include <globals.h>
 #include <unity.h>
 #include "dual_wheel.h"
+#include "schedule_calcs.h"
 
 
 void test_setup_dualwheel_12_1()

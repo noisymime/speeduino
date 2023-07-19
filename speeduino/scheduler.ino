@@ -28,6 +28,7 @@ A full copy of the license may be found in the projects root directory
 #include "scheduler.h"
 #include "scheduledIO.h"
 #include "timers.h"
+#include "schedule_calcs.h"
 
 FuelSchedule fuelSchedule1;
 FuelSchedule fuelSchedule2;
@@ -134,14 +135,110 @@ void initialiseSchedulers(void)
     FUEL8_TIMER_ENABLE();
 #endif
 
-    ignitionSchedule1.schedulesSet = 0;
-    ignitionSchedule2.schedulesSet = 0;
-    ignitionSchedule3.schedulesSet = 0;
-    ignitionSchedule4.schedulesSet = 0;
-    ignitionSchedule5.schedulesSet = 0;
-    ignitionSchedule6.schedulesSet = 0;
-    ignitionSchedule7.schedulesSet = 0;
-    ignitionSchedule8.schedulesSet = 0;
+  ignitionSchedule1.schedulesSet = 0;
+  ignitionSchedule2.schedulesSet = 0;
+  ignitionSchedule3.schedulesSet = 0;
+  ignitionSchedule4.schedulesSet = 0;
+  ignitionSchedule5.schedulesSet = 0;
+  ignitionSchedule6.schedulesSet = 0;
+  ignitionSchedule7.schedulesSet = 0;
+  ignitionSchedule8.schedulesSet = 0;
+
+  inj1StartFunction = nullCallback;
+  inj1EndFunction = nullCallback;
+  inj2StartFunction = nullCallback;
+  inj2EndFunction = nullCallback;
+  inj3StartFunction = nullCallback;
+  inj3EndFunction = nullCallback;
+  inj4StartFunction = nullCallback;
+  inj4EndFunction = nullCallback;
+#if INJ_CHANNELS>=5
+  inj5StartFunction = nullCallback;
+  inj5EndFunction = nullCallback;
+#endif
+#if INJ_CHANNELS>=6
+  inj6StartFunction = nullCallback;
+  inj6EndFunction = nullCallback;
+#endif
+#if INJ_CHANNELS>=7
+  inj7StartFunction = nullCallback;
+  inj7EndFunction = nullCallback;
+#endif
+#if INJ_CHANNELS>=8
+  inj8StartFunction = nullCallback;
+  inj8EndFunction = nullCallback;
+#endif
+
+  ign1StartFunction = nullCallback;
+  ign1EndFunction = nullCallback;
+  ignition1StartAngle=0;
+  ignition1EndAngle=0;
+  channel1IgnDegrees=0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
+
+  ign2StartFunction = nullCallback;
+  ign2EndFunction = nullCallback;
+  ignition2StartAngle=0;
+  ignition2EndAngle=0;
+  channel2IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+
+  ign3StartFunction = nullCallback;
+  ign3EndFunction = nullCallback;
+  ignition3StartAngle=0;
+  ignition3EndAngle=0;
+  channel3IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+
+  ign4StartFunction = nullCallback;
+  ign4EndFunction = nullCallback;
+  ignition4StartAngle=0;
+  ignition4EndAngle=0;
+  channel4IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+
+#if (IGN_CHANNELS >= 5)
+  ign5StartFunction = nullCallback;
+  ign5EndFunction = nullCallback;
+  ignition5StartAngle=0;
+  ignition5EndAngle=0;
+  channel5IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+#endif
+#if (IGN_CHANNELS >= 6)
+  ign6StartFunction = nullCallback;
+  ign6EndFunction = nullCallback;
+  ignition6StartAngle=0;
+  ignition6EndAngle=0;
+  channel6IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+#endif
+#if (IGN_CHANNELS >= 7)
+  ign7StartFunction = nullCallback;
+  ign7EndFunction = nullCallback;
+  ignition7StartAngle=0;
+  ignition7EndAngle=0;
+  channel7IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+#endif
+#if (IGN_CHANNELS >= 8)
+  ign8StartFunction = nullCallback;
+  ign8EndFunction = nullCallback;
+  ignition8StartAngle=0;
+  ignition8EndAngle=0;
+  channel8IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+#endif
+
+	channel1InjDegrees = 0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
+	channel2InjDegrees = 0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+	channel3InjDegrees = 0; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
+	channel4InjDegrees = 0; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
+#if (INJ_CHANNELS >= 5)
+	channel5InjDegrees = 0; /**< The number of crank degrees until cylinder 5 is at TDC */
+#endif
+#if (INJ_CHANNELS >= 6)
+	channel6InjDegrees = 0; /**< The number of crank degrees until cylinder 6 is at TDC */
+#endif
+#if (INJ_CHANNELS >= 7)
+	channel7InjDegrees = 0; /**< The number of crank degrees until cylinder 7 is at TDC */
+#endif
+#if (INJ_CHANNELS >= 8)
+	channel8InjDegrees = 0; /**< The number of crank degrees until cylinder 8 is at TDC */
+#endif
+
 }
 
 /*
@@ -801,27 +898,27 @@ extern void beginInjectorPriming(void)
   if( (primingValue > 0) && (currentStatus.TPS < configPage4.floodClear) )
   {
     primingValue = primingValue * 100 * 5; //to achieve long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
-    if ( BIT_CHECK(channelInjEnabled, INJ1_CMD_BIT) == true ) { setFuelSchedule1(100, primingValue); }
+    if ( maxInjOutputs >= 1 ) { setFuelSchedule1(100, primingValue); }
 #if (INJ_CHANNELS >= 2)
-    if ( BIT_CHECK(channelInjEnabled, INJ2_CMD_BIT) == true ) { setFuelSchedule2(100, primingValue); }
+    if ( maxInjOutputs >= 2 ) { setFuelSchedule2(100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 3)
-    if ( BIT_CHECK(channelInjEnabled, INJ3_CMD_BIT) == true ) { setFuelSchedule3(100, primingValue); }
+    if ( maxInjOutputs >= 3 ) { setFuelSchedule3(100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 4)
-    if ( BIT_CHECK(channelInjEnabled, INJ4_CMD_BIT) == true ) { setFuelSchedule4(100, primingValue); }
+    if ( maxInjOutputs >= 4 ) { setFuelSchedule4(100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 5)
-    if ( BIT_CHECK(channelInjEnabled, INJ5_CMD_BIT) == true ) { setFuelSchedule5(100, primingValue); }
+    if ( maxInjOutputs >= 5 ) { setFuelSchedule5(100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 6)
-    if ( BIT_CHECK(channelInjEnabled, INJ6_CMD_BIT) == true ) { setFuelSchedule6(100, primingValue); }
+    if ( maxInjOutputs >= 6 ) { setFuelSchedule6(100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 7)
-    if ( BIT_CHECK(channelInjEnabled, INJ7_CMD_BIT) == true) { setFuelSchedule7(100, primingValue); }
+    if ( maxInjOutputs >= 7 ) { setFuelSchedule7(100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 8)
-    if ( BIT_CHECK(channelInjEnabled, INJ8_CMD_BIT) == true ) { setFuelSchedule8(100, primingValue); }
+    if ( maxInjOutputs >= 8 ) { setFuelSchedule8(100, primingValue); }
 #endif
   }
 }
@@ -839,7 +936,7 @@ extern void beginInjectorPriming(void)
 //fuelSchedules 1 and 5
 ISR(TIMER3_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a function
+inline void fuelSchedule1Interrupt(void)
 #endif
   {
     if (fuelSchedule1.Status == PENDING) //Check to see if this schedule is turn on
@@ -876,7 +973,7 @@ static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a f
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a function
+inline void fuelSchedule2Interrupt(void)
 #endif
   {
     if (fuelSchedule2.Status == PENDING) //Check to see if this schedule is turn on
@@ -911,7 +1008,7 @@ static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a f
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a function
+inline void fuelSchedule3Interrupt(void)
 #endif
   {
     if (fuelSchedule3.Status == PENDING) //Check to see if this schedule is turn on
@@ -946,7 +1043,7 @@ static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a f
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER4_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a function
+inline void fuelSchedule4Interrupt(void)
 #endif
   {
     if (fuelSchedule4.Status == PENDING) //Check to see if this schedule is turn on
@@ -981,7 +1078,7 @@ static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a f
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void fuelSchedule5Interrupt() //Most ARM chips can simply call a function
+inline void fuelSchedule5Interrupt(void)
 #endif
 {
   if (fuelSchedule5.Status == PENDING) //Check to see if this schedule is turn on
@@ -1014,7 +1111,7 @@ static inline void fuelSchedule5Interrupt() //Most ARM chips can simply call a f
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void fuelSchedule6Interrupt() //Most ARM chips can simply call a function
+inline void fuelSchedule6Interrupt(void)
 #endif
 {
   if (fuelSchedule6.Status == PENDING) //Check to see if this schedule is turn on
@@ -1049,7 +1146,7 @@ static inline void fuelSchedule6Interrupt() //Most ARM chips can simply call a f
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void fuelSchedule7Interrupt() //Most ARM chips can simply call a function
+inline void fuelSchedule7Interrupt(void)
 #endif
 {
   if (fuelSchedule7.Status == PENDING) //Check to see if this schedule is turn on
@@ -1084,7 +1181,7 @@ static inline void fuelSchedule7Interrupt() //Most ARM chips can simply call a f
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void fuelSchedule8Interrupt() //Most ARM chips can simply call a function
+inline void fuelSchedule8Interrupt(void)
 #endif
 {
   if (fuelSchedule8.Status == PENDING) //Check to see if this schedule is turn on
@@ -1119,7 +1216,7 @@ static inline void fuelSchedule8Interrupt() //Most ARM chips can simply call a f
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void ignitionSchedule1Interrupt(void) //Most ARM chips can simply call a function
+inline void ignitionSchedule1Interrupt(void)
 #endif
   {
     if (ignitionSchedule1.Status == PENDING) //Check to see if this schedule is turn on
@@ -1137,6 +1234,7 @@ static inline void ignitionSchedule1Interrupt(void) //Most ARM chips can simply 
       ignitionSchedule1.schedulesSet = 0;
       ignitionSchedule1.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
+      currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule1.startTime) );
 
       //If there is a next schedule queued up, activate it
       if(ignitionSchedule1.hasNextSchedule == true)
@@ -1160,7 +1258,7 @@ static inline void ignitionSchedule1Interrupt(void) //Most ARM chips can simply 
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void ignitionSchedule2Interrupt(void) //Most ARM chips can simply call a function
+inline void ignitionSchedule2Interrupt(void)
 #endif
   {
     if (ignitionSchedule2.Status == PENDING) //Check to see if this schedule is turn on
@@ -1178,6 +1276,7 @@ static inline void ignitionSchedule2Interrupt(void) //Most ARM chips can simply 
       ignitionSchedule2.schedulesSet = 0;
       ignitionSchedule2.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
+      currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule2.startTime) );
       
       //If there is a next schedule queued up, activate it
       if(ignitionSchedule2.hasNextSchedule == true)
@@ -1201,7 +1300,7 @@ static inline void ignitionSchedule2Interrupt(void) //Most ARM chips can simply 
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void ignitionSchedule3Interrupt(void) //Most ARM chips can simply call a function
+inline void ignitionSchedule3Interrupt(void)
 #endif
   {
     if (ignitionSchedule3.Status == PENDING) //Check to see if this schedule is turn on
@@ -1219,6 +1318,7 @@ static inline void ignitionSchedule3Interrupt(void) //Most ARM chips can simply 
        ignitionSchedule3.schedulesSet = 0;
        ignitionSchedule3.endScheduleSetByDecoder = false;
        ignitionCount += 1; //Increment the ignition counter
+       currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule3.startTime) );
 
        //If there is a next schedule queued up, activate it
        if(ignitionSchedule3.hasNextSchedule == true)
@@ -1242,7 +1342,7 @@ static inline void ignitionSchedule3Interrupt(void) //Most ARM chips can simply 
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void ignitionSchedule4Interrupt(void) //Most ARM chips can simply call a function
+inline void ignitionSchedule4Interrupt(void)
 #endif
   {
     if (ignitionSchedule4.Status == PENDING) //Check to see if this schedule is turn on
@@ -1260,6 +1360,7 @@ static inline void ignitionSchedule4Interrupt(void) //Most ARM chips can simply 
        ignitionSchedule4.schedulesSet = 0;
        ignitionSchedule4.endScheduleSetByDecoder = false;
        ignitionCount += 1; //Increment the ignition counter
+       currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule4.startTime) );
 
        //If there is a next schedule queued up, activate it
        if(ignitionSchedule4.hasNextSchedule == true)
@@ -1283,7 +1384,7 @@ static inline void ignitionSchedule4Interrupt(void) //Most ARM chips can simply 
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void ignitionSchedule5Interrupt(void) //Most ARM chips can simply call a function
+inline void ignitionSchedule5Interrupt(void)
 #endif
   {
     if (ignitionSchedule5.Status == PENDING) //Check to see if this schedule is turn on
@@ -1301,6 +1402,7 @@ static inline void ignitionSchedule5Interrupt(void) //Most ARM chips can simply 
       ignitionSchedule5.schedulesSet = 0;
       ignitionSchedule5.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
+      currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule5.startTime) );
 
       //If there is a next schedule queued up, activate it
       if(ignitionSchedule5.hasNextSchedule == true)
@@ -1324,7 +1426,7 @@ static inline void ignitionSchedule5Interrupt(void) //Most ARM chips can simply 
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void ignitionSchedule6Interrupt(void) //Most ARM chips can simply call a function
+inline void ignitionSchedule6Interrupt(void)
 #endif
   {
     if (ignitionSchedule6.Status == PENDING) //Check to see if this schedule is turn on
@@ -1342,6 +1444,7 @@ static inline void ignitionSchedule6Interrupt(void) //Most ARM chips can simply 
       ignitionSchedule6.schedulesSet = 0;
       ignitionSchedule6.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
+      currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule6.startTime) );
 
       //If there is a next schedule queued up, activate it
       if(ignitionSchedule6.hasNextSchedule == true)
@@ -1365,7 +1468,7 @@ static inline void ignitionSchedule6Interrupt(void) //Most ARM chips can simply 
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER3_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void ignitionSchedule7Interrupt(void) //Most ARM chips can simply call a function
+inline void ignitionSchedule7Interrupt(void)
 #endif
   {
     if (ignitionSchedule7.Status == PENDING) //Check to see if this schedule is turn on
@@ -1383,6 +1486,7 @@ static inline void ignitionSchedule7Interrupt(void) //Most ARM chips can simply 
       ignitionSchedule7.schedulesSet = 0;
       ignitionSchedule7.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
+      currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule7.startTime) );
 
       //If there is a next schedule queued up, activate it
       if(ignitionSchedule7.hasNextSchedule == true)
@@ -1406,7 +1510,7 @@ static inline void ignitionSchedule7Interrupt(void) //Most ARM chips can simply 
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER3_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void ignitionSchedule8Interrupt(void) //Most ARM chips can simply call a function
+inline void ignitionSchedule8Interrupt(void)
 #endif
   {
     if (ignitionSchedule8.Status == PENDING) //Check to see if this schedule is turn on
@@ -1424,6 +1528,7 @@ static inline void ignitionSchedule8Interrupt(void) //Most ARM chips can simply 
       ignitionSchedule8.schedulesSet = 0;
       ignitionSchedule8.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
+      currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule8.startTime) );
 
       //If there is a next schedule queued up, activate it
       if(ignitionSchedule8.hasNextSchedule == true)

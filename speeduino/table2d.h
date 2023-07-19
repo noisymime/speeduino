@@ -4,6 +4,7 @@ This file is used for everything related to maps/tables including their definiti
 #ifndef TABLE_H
 #define TABLE_H
 
+#define SIZE_SIGNED_BYTE    4
 #define SIZE_BYTE           8
 #define SIZE_INT            16
 

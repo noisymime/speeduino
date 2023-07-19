@@ -10,6 +10,17 @@
 #ifndef NEW_COMMS_H
 #define NEW_COMMS_H
 
+#if defined(CORE_TEENSY)
+  #define BLOCKING_FACTOR       251
+  #define TABLE_BLOCKING_FACTOR 256
+#elif defined(CORE_STM32)
+  #define BLOCKING_FACTOR       121
+  #define TABLE_BLOCKING_FACTOR 64
+#elif defined(CORE_AVR)
+  #define BLOCKING_FACTOR       121
+  #define TABLE_BLOCKING_FACTOR 64
+#endif
+
 /**
  * @brief The serial receive pump. Should be called whenever the serial port
  * has data available to read.

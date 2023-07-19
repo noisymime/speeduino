@@ -17,6 +17,8 @@ A full copy of the license may be found in the projects root directory
 #include "corrections.h"
 #include "pages.h"
 #include "decoders.h"
+#include "auxiliaries.h"
+#include "utilities.h"
 
 /** Init all ADC conversions by setting resolutions, etc.
  */
@@ -625,10 +627,20 @@ uint32_t vssGetPulseGap(byte historyIndex)
 uint16_t getSpeed(void)
 {
   uint16_t tempSpeed = 0;
-
+  // Get VSS from CAN, Serial or Analog by using Aux input channels.
   if(configPage2.vssMode == 1)
   {
-    //VSS mode 1 is (Will be) CAN
+    // Direct reading from Aux channel
+    if (configPage2.vssPulsesPerKm == 0)
+    {
+      tempSpeed = currentStatus.canin[configPage2.vssAuxCh];
+    }
+    // Adjust the reading by dividing it by set amount.
+    else
+    {
+      tempSpeed = (currentStatus.canin[configPage2.vssAuxCh] / configPage2.vssPulsesPerKm);
+    }
+    tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
   }
   // Interrupt driven mode
   else if(configPage2.vssMode > 1)
@@ -643,12 +655,12 @@ uint16_t getSpeed(void)
     }
 
     pulseTime = vssTotalTime / (VSS_SAMPLES - 1);
-    if ( (micros() - vssTimes[0]) > 1000000UL ) { tempSpeed = 0; } // Check that the car hasn't come to a stop
+    if ( (micros() - vssTimes[vssIndex]) > 1000000UL ) { tempSpeed = 0; } // Check that the car hasn't come to a stop. Is true if last pulse was more than 1 second ago
     else 
-      {
-        tempSpeed = 3600000000UL / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
-        tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
-      }
+    {
+      tempSpeed = 3600000000UL / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
+      tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
+    }
     if(tempSpeed > 1000) { tempSpeed = currentStatus.vss; } //Safety check. This usually occurs when there is a hardware issue
 
   }
