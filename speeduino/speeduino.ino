@@ -53,6 +53,7 @@ uint16_t req_fuel_uS = 0; /**< The required fuel variable (As calculated by Tune
 uint16_t inj_opentime_uS = 0;
 
 uint8_t ignitionChannelsOn; /**< The current state of the ignition system (on or off) */
+uint8_t ignitionChannelsPending = 0; /**< Any ignition channels that are pending injections before they are resumed */
 uint8_t fuelChannelsOn; /**< The current state of the fuel system (on or off) */
 uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
 
@@ -216,32 +217,7 @@ void loop(void)
           }
       #endif     
 
-      //Check for launching/flat shift (clutch) can be done around here too
-      previousClutchTrigger = clutchTrigger;
-      //Only check for pinLaunch if any function using it is enabled. Else pins might break starting a board
-      if(configPage6.flatSEnable || configPage6.launchEnabled){
-        if(configPage6.launchHiLo > 0) { clutchTrigger = digitalRead(pinLaunch); }
-        else { clutchTrigger = !digitalRead(pinLaunch); }
-      }
-
-      if(previousClutchTrigger != clutchTrigger) { currentStatus.clutchEngagedRPM = currentStatus.RPM; }
-
-      if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage6.lnchHardLim) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) ) 
-      { 
-        //HardCut rev limit for 2-step launch control.
-        currentStatus.launchingHard = true; 
-        BIT_SET(currentStatus.spark, BIT_SPARK_HLAUNCH); 
-      } 
-      else 
-      { 
-        //FLag launch as being off
-        currentStatus.launchingHard = false; 
-        BIT_CLEAR(currentStatus.spark, BIT_SPARK_HLAUNCH); 
-
-        //If launch is not active, check whether flat shift should be active
-        if(configPage6.flatSEnable && clutchTrigger && (currentStatus.RPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > currentStatus.clutchEngagedRPM) ) { currentStatus.flatShiftingHard = true; }
-        else { currentStatus.flatShiftingHard = false; }
-      }
+      checkLaunchAndFlatShift(); //Check for launch control and flat shift being active
 
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
@@ -794,8 +770,8 @@ void loop(void)
       //Check each of the functions that has an RPM limit. Update the max allowed RPM if the function is active and has a lower RPM than already set
       if( checkEngineProtect() && (configPage4.engineProtectMaxRPM < maxAllowedRPM)) { maxAllowedRPM = configPage4.engineProtectMaxRPM; }
       if ( (currentStatus.launchingHard == true) && (configPage6.lnchHardLim < maxAllowedRPM) ) { maxAllowedRPM = configPage6.lnchHardLim; }
-      if ( (currentStatus.flatShiftingHard == true) && (configPage6.flatSArm < maxAllowedRPM) ) { maxAllowedRPM = configPage6.flatSArm; }
       maxAllowedRPM = maxAllowedRPM * 100; //All of the above limits are divided by 100, convert back to RPM
+      if ( (currentStatus.flatShiftingHard == true) && (currentStatus.clutchEngagedRPM < maxAllowedRPM) ) { maxAllowedRPM = currentStatus.clutchEngagedRPM; } //Flat shifting is a special case as the RPM limit is based on when the clutch was engaged. It is not divided by 100 as it is set with the actual RPM
     
       if( (configPage2.hardCutType == HARD_CUT_FULL) && (currentStatus.RPM > maxAllowedRPM) )
       {
@@ -828,31 +804,41 @@ void loop(void)
       { 
         uint8_t revolutionsToCut = 1;
         if(configPage2.strokes == FOUR_STROKE) { revolutionsToCut *= 2; } //4 stroke needs to cut for at least 2 revolutions
-        //if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) || (configPage2.injLayout != INJ_SEQUENTIAL) ) { revolutionsToCut *= 2; } //4 stroke and non-sequential will cut for 4 revolutions minimum. This is to ensure no half fuel ignition cycles take place
+        if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) || (configPage2.injLayout != INJ_SEQUENTIAL) ) { revolutionsToCut *= 2; } //4 stroke and non-sequential will cut for 4 revolutions minimum. This is to ensure no half fuel ignition cycles take place
 
         if(rollingCutLastRev == 0) { rollingCutLastRev = currentStatus.startRevolutions; } //First time check
-        if (currentStatus.startRevolutions >= (rollingCutLastRev + revolutionsToCut) )
+        if ( (currentStatus.startRevolutions >= (rollingCutLastRev + revolutionsToCut)) || (currentStatus.RPM > maxAllowedRPM) ) //If current RPM is over the max allowed RPM always cut, otherwise check if the required number of revolutions have passed since the last cut
         { 
           uint8_t cutPercent = 0;
           int16_t rpmDelta = currentStatus.RPM - maxAllowedRPM;
           if(rpmDelta >= 0) { cutPercent = 100; } //If the current RPM is over the max allowed RPM then cut is full (100%)
           else { cutPercent = table2D_getValue(&rollingCutTable, (rpmDelta / 10) ); } //
+          
 
           for(uint8_t x=0; x<max(maxIgnOutputs, maxInjOutputs); x++)
           {  
-            if( (configPage6.engineProtectType != PROTECT_CUT_OFF) && ( (cutPercent == 100) || (random1to100() < cutPercent) ) )
+            if( (cutPercent == 100) || (random1to100() < cutPercent) )
             {
               switch(configPage6.engineProtectType)
               {
+                case PROTECT_CUT_OFF:
+                  //Make sure all channels are turned on
+                  ignitionChannelsOn = 0xFF;
+                  fuelChannelsOn = 0xFF;
+                  break;
                 case PROTECT_CUT_IGN:
                   BIT_CLEAR(ignitionChannelsOn, x); //Turn off this ignition channel
+                  disablePendingIgnSchedule(x);
                   break;
                 case PROTECT_CUT_FUEL:
                   BIT_CLEAR(fuelChannelsOn, x); //Turn off this fuel channel
+                  disablePendingFuelSchedule(x);
                   break;
                 case PROTECT_CUT_BOTH:
                   BIT_CLEAR(ignitionChannelsOn, x); //Turn off this ignition channel
                   BIT_CLEAR(fuelChannelsOn, x); //Turn off this fuel channel
+                  disablePendingFuelSchedule(x);
+                  disablePendingIgnSchedule(x);
                   break;
                 default:
                   BIT_CLEAR(ignitionChannelsOn, x); //Turn off this ignition channel
@@ -862,11 +848,29 @@ void loop(void)
             }
             else
             {
-              BIT_SET(ignitionChannelsOn, x); //Turn on this ignition channel
+              //Turn fuel and ignition channels on
+
+              //Special case for non-sequential, 4-stroke where both fuel and ignition are cut. The ignition pulses should wait 1 cycle after the fuel channels are turned back on before firing again
+              if( (revolutionsToCut == 4) &&                          //4 stroke and non-sequential
+                  (BIT_CHECK(fuelChannelsOn, x) == false) &&          //Fuel on this channel is currently off, meaning it is the first revolution after a cut
+                  (configPage6.engineProtectType == PROTECT_CUT_BOTH) //Both fuel and ignition are cut
+                )
+              { BIT_SET(ignitionChannelsPending, x); } //Set this ignition channel as pending
+              else { BIT_SET(ignitionChannelsOn, x); } //Turn on this ignition channel
+                
+              
               BIT_SET(fuelChannelsOn, x); //Turn on this fuel channel
             }
           }
           rollingCutLastRev = currentStatus.startRevolutions;
+        }
+
+        //Check whether there are any ignition channels that are waiting for injection pulses to occur before being turned back on. This can only occur when at least 2 revolutions have taken place since the fuel was turned back on
+        //Note that ignitionChannelsPending can only be >0 on 4 stroke, non-sequential fuel when protect type is Both
+        if( (ignitionChannelsPending > 0) && (currentStatus.startRevolutions >= (rollingCutLastRev + 2)) )
+        {
+          ignitionChannelsOn = fuelChannelsOn;
+          ignitionChannelsPending = 0;
         }
       } //Rolling cut check
       else
@@ -1648,4 +1652,51 @@ void calculateStaging(uint32_t pwLimit)
     
   } 
 
+}
+
+void checkLaunchAndFlatShift()
+{
+  //Check for launching/flat shift (clutch) based on the current and previous clutch states
+  previousClutchTrigger = clutchTrigger;
+  //Only check for pinLaunch if any function using it is enabled. Else pins might break starting a board
+  if(configPage6.flatSEnable || configPage6.launchEnabled)
+  {
+    if(configPage6.launchHiLo > 0) { clutchTrigger = digitalRead(pinLaunch); }
+    else { clutchTrigger = !digitalRead(pinLaunch); }
+  }
+  if(clutchTrigger && (previousClutchTrigger != clutchTrigger) ) { currentStatus.clutchEngagedRPM = currentStatus.RPM; } //Check whether the clutch has been engaged or disengaged and store the current RPM if so
+
+  //Default flags to off
+  currentStatus.launchingHard = false; 
+  BIT_CLEAR(currentStatus.spark, BIT_SPARK_HLAUNCH); 
+  currentStatus.flatShiftingHard = false;
+
+  if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) ) 
+  { 
+    //Check whether RPM is above the launch limit
+    uint16_t launchRPMLimit = (configPage6.lnchHardLim * 100);
+    if( (configPage2.hardCutType == HARD_CUT_ROLLING) ) { launchRPMLimit += (configPage15.rollingProtRPMDelta[0] * 10); } //Add the rolling cut delta if enabled (Delta is a negative value)
+
+    if(currentStatus.RPM > launchRPMLimit)
+    {
+      //HardCut rev limit for 2-step launch control.
+      currentStatus.launchingHard = true; 
+      BIT_SET(currentStatus.spark, BIT_SPARK_HLAUNCH); 
+    }
+  } 
+  else 
+  { 
+    //If launch is not active, check whether flat shift should be active
+    if(configPage6.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM >= ((unsigned int)(configPage6.flatSArm * 100)) ) ) 
+    { 
+      uint16_t flatRPMLimit = currentStatus.clutchEngagedRPM;
+      if( (configPage2.hardCutType == HARD_CUT_ROLLING) ) { flatRPMLimit += (configPage15.rollingProtRPMDelta[0] * 10); } //Add the rolling cut delta if enabled (Delta is a negative value)
+
+      if(currentStatus.RPM > flatRPMLimit)
+      {
+        //Flat shift rev limit
+        currentStatus.flatShiftingHard = true;
+      }
+    }
+  }
 }

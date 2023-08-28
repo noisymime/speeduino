@@ -110,6 +110,9 @@ void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsign
 void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 
+void disablePendingFuelSchedule(byte channel);
+void disablePendingIgnSchedule(byte channel);
+
 inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
 
 //The ARM cores use separate functions for their ISRs
