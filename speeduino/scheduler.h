@@ -152,11 +152,7 @@ struct Schedule {
    * @param counter A <b>reference</b> to the timer counter
    * @param compare A <b>reference</b> to the timer comparator
    */
-  Schedule( counter_t &counter, compare_t &compare)
-  : _counter(counter)
-  , _compare(compare)
-  {
-  }
+  Schedule(counter_t &counter, compare_t &compare);
 
   volatile COMPARE_TYPE Duration;   ///< Scheduled duration (timer ticks)
   volatile ScheduleStatus Status;   ///< Schedule status: OFF, PENDING, STAGED, RUNNING

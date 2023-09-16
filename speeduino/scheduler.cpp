@@ -64,6 +64,18 @@ IgnitionSchedule ignitionSchedule7(IGN7_COUNTER, IGN7_COMPARE);
 IgnitionSchedule ignitionSchedule8(IGN8_COUNTER, IGN8_COMPARE);
 #endif
 
+Schedule::Schedule(counter_t &counter, compare_t &compare)
+  : Duration(0U)
+  , Status(OFF)
+  , pStartCallback(nullCallback)
+  , pEndCallback(nullCallback)
+  , nextStartCompare(0U)
+  , nextDuration(0U)
+  , _counter(counter)
+  , _compare(compare) 
+{
+}
+
 static void reset(Schedule &schedule)
 {
     schedule.Status = OFF;
