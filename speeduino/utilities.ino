@@ -32,7 +32,9 @@ For **analog pins**, it will translate them into the correct internal pin number
 byte pinTranslate(byte rawPin)
 {
   byte outputPin = rawPin;
-  if(rawPin > BOARD_MAX_DIGITAL_PINS) { outputPin = A8 + (outputPin - BOARD_MAX_DIGITAL_PINS - 1); }
+  // The pin list on speeduino.ini is: all_IO_Pins = "Board Default", "INVALID", "INVALID", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "53", "INVALID", "A8", "A9", "A10", "A11", "A12", "A13", "A14", "A15", "INVALID"
+  // If the selected pin is bigger than 54 or bigger than BOARD_MAX_DIGITAL_PINS, the output pin will be analog pin starting from A8. A8 = rawPin 55.
+  if( (rawPin > BOARD_MAX_DIGITAL_PINS) || (rawPin > 54) ) { outputPin = A8 + (outputPin - 55); }
 
   return outputPin;
 }
