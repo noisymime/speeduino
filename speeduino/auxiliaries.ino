@@ -887,10 +887,10 @@ void nitrousControl(void)
     if( (isArmed == true) && (currentStatus.coolant > (configPage10.n2o_minCLT - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.TPS > configPage10.n2o_minTPS) && (currentStatus.O2 < configPage10.n2o_maxAFR) && (currentStatus.MAP < (uint16_t)(configPage10.n2o_maxMAP * 2)) )
     {
       //Config page values are divided by 100 to fit within a byte. Multiply them back out to real values. 
-      uint16_t realStage1MinRPM = (uint16_t)configPage10.n2o_stage1_minRPM * 100;
-      uint16_t realStage1MaxRPM = (uint16_t)configPage10.n2o_stage1_maxRPM * 100;
-      uint16_t realStage2MinRPM = (uint16_t)configPage10.n2o_stage2_minRPM * 100;
-      uint16_t realStage2MaxRPM = (uint16_t)configPage10.n2o_stage2_maxRPM * 100;
+      uint16_t realStage1MinRPM = (uint16_t)configPage10.n2o_stage1.minRPM * 100;
+      uint16_t realStage1MaxRPM = (uint16_t)configPage10.n2o_stage1.maxRPM * 100;
+      uint16_t realStage2MinRPM = (uint16_t)configPage10.n2o_stage2.minRPM * 100;
+      uint16_t realStage2MaxRPM = (uint16_t)configPage10.n2o_stage2.maxRPM * 100;
 
       //The nitrous state is set to 0 and then the subsequent stages are added
       // OFF    = 0

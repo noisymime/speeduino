@@ -142,8 +142,8 @@ void doUpdates(void)
   if (readEEPROMVersion() == 8)
   {
     //May 2018 adds separate load sources for fuel and ignition. Copy the existing load algorithm into Both
-    configPage2.fuelAlgorithm = configPage2.legacyMAP; //Was configPage2.unused2_38c
-    configPage2.ignAlgorithm = configPage2.legacyMAP; //Was configPage2.unused2_38c
+    configPage2.fuelAlgorithm = (LoadSource)configPage2.legacyMAP; //Was configPage2.unused2_38c
+    configPage2.ignAlgorithm = (LoadSource)configPage2.legacyMAP; //Was configPage2.unused2_38c
 
     //Add option back in for open or closed loop boost. For all current configs to use closed
     configPage4.boostType = 1;
