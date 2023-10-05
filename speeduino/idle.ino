@@ -67,6 +67,11 @@ void initialiseIdle(bool forcehoming)
       iacPWMTable.values = configPage6.iacOLPWMVal;
       iacPWMTable.axisX = configPage6.iacBins;
 
+      iacPWMIATTable.xSize = 9;
+      iacPWMIATTable.valueSize = SIZE_BYTE;
+      iacPWMIATTable.axisSize = SIZE_BYTE;
+      iacPWMIATTable.values = configPage15.iacOLPWMIATVal;
+      iacPWMIATTable.axisX = configPage6.airDenBins;
 
       iacCrankDutyTable.xSize = 4;
       iacCrankDutyTable.valueSize = SIZE_BYTE;
@@ -91,6 +96,12 @@ void initialiseIdle(bool forcehoming)
       iacPWMTable.axisSize = SIZE_BYTE;
       iacPWMTable.values = configPage6.iacOLPWMVal;
       iacPWMTable.axisX = configPage6.iacBins;
+
+      iacPWMIATTable.xSize = 9;
+      iacPWMIATTable.valueSize = SIZE_BYTE;
+      iacPWMIATTable.axisSize = SIZE_BYTE;
+      iacPWMIATTable.values = configPage15.iacOLPWMIATVal;
+      iacPWMIATTable.axisX = configPage6.airDenBins;
 
       iacCrankDutyTable.xSize = 4;
       iacCrankDutyTable.valueSize = SIZE_BYTE;
@@ -469,13 +480,13 @@ void idleControl(void)
           //Tapering between cranking IAC value and running
           currentStatus.idleLoad = map(idleTaper, 0, configPage2.idleTaperTime,\
           table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET),\
-          table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET));
+          table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) + table2D_getValue(&iacPWMIATTable, currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET));
           if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { idleTaper++; }
         }
         else
         {
           //Standard running
-          currentStatus.idleLoad = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+          currentStatus.idleLoad = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) + table2D_getValue(&iacPWMIATTable, currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees 
         }
         // Add air conditioning idle-up - we only do this if the engine is running (A/C should never engage with engine off).
         if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true) { currentStatus.idleLoad += configPage15.airConIdleSteps; }
@@ -568,7 +579,7 @@ void idleControl(void)
       else
       {
         //Read the OL table as feedforward term
-        FeedForwardTerm = percentage(table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), idle_pwm_max_count<<2); //All temps are offset by 40 degrees
+        FeedForwardTerm = percentage(table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) + table2D_getValue(&iacPWMIATTable, currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET), idle_pwm_max_count<<2); //All temps are offset by 40 degrees
         
         // Add an offset to the feed forward term. When tuned correctly, the extra load from the air conditioning
         // should exactly cancel this out and the PID loop will be relatively unaffected.
