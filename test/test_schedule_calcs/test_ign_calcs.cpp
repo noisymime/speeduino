@@ -32,9 +32,7 @@ struct ign_test_parameters
     int16_t expectedEndAngle;      // Expected end angle
 };
 
-static void nullIgnCallback(void) { }
-
-void test_calc_ign_timeout(const ign_test_parameters &test_params)
+static void test_calc_ign_timeout(const ign_test_parameters &test_params)
 {
     char msg[150];
     IgnitionSchedule schedule(IGN4_COUNTER, IGN4_COMPARE);
@@ -55,7 +53,7 @@ void test_calc_ign_timeout(const ign_test_parameters &test_params)
     TEST_ASSERT_INT32_WITHIN_MESSAGE(1, test_params.running, calculateIgnitionTimeout(schedule, startAngle, test_params.channelAngle,  test_params.crankAngle), msg);
 }
 
-void test_calc_ign_timeout(const ign_test_parameters *pStart, const ign_test_parameters *pEnd)
+static void test_calc_ign_timeout(const ign_test_parameters *pStart, const ign_test_parameters *pEnd)
 {
     ign_test_parameters local;
     while (pStart!=pEnd)
@@ -66,7 +64,7 @@ void test_calc_ign_timeout(const ign_test_parameters *pStart, const ign_test_par
     }
 }
 
-void test_calc_ign_timeout_360()
+static void test_calc_ign_timeout_360()
 {
     setEngineSpeed(4000, 360);
     
@@ -271,8 +269,7 @@ void test_calc_ign_timeout_360()
 }
 
 
-
-void test_calc_ign_timeout_720()
+static void test_calc_ign_timeout_720()
 {
     setEngineSpeed(4000, 720);
 
@@ -554,7 +551,7 @@ void test_calc_ign_timeout_720()
     test_calc_ign_timeout(&test_data[0], &test_data[0]+_countof(test_data));
 }
 
-void test_rotary_channel_calcs(void)
+static void test_rotary_channel_calcs(void)
 {
     setEngineSpeed(4000, 360);
 
