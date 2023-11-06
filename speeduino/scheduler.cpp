@@ -30,38 +30,36 @@ A full copy of the license may be found in the projects root directory
 #include "timers.h"
 #include "schedule_calcs.h"
 
-FuelSchedule fuelSchedule1(FUEL1_COUNTER, FUEL1_COMPARE);
-FuelSchedule fuelSchedule2(FUEL2_COUNTER, FUEL2_COMPARE);
-FuelSchedule fuelSchedule3(FUEL3_COUNTER, FUEL3_COMPARE);
-FuelSchedule fuelSchedule4(FUEL4_COUNTER, FUEL4_COMPARE);
-
+FuelSchedule fuelSchedule1(FUEL1_COUNTER, FUEL1_COMPARE); //cppcheck-suppress misra-c2012-8.4
+FuelSchedule fuelSchedule2(FUEL2_COUNTER, FUEL2_COMPARE); //cppcheck-suppress misra-c2012-8.4
+FuelSchedule fuelSchedule3(FUEL3_COUNTER, FUEL3_COMPARE); //cppcheck-suppress misra-c2012-8.4
+FuelSchedule fuelSchedule4(FUEL4_COUNTER, FUEL4_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #if (INJ_CHANNELS >= 5)
-FuelSchedule fuelSchedule5(FUEL5_COUNTER, FUEL5_COMPARE);
+FuelSchedule fuelSchedule5(FUEL5_COUNTER, FUEL5_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #endif
 #if (INJ_CHANNELS >= 6)
-FuelSchedule fuelSchedule6(FUEL6_COUNTER, FUEL6_COMPARE);
+FuelSchedule fuelSchedule6(FUEL6_COUNTER, FUEL6_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #endif
 #if (INJ_CHANNELS >= 7)
-FuelSchedule fuelSchedule7(FUEL7_COUNTER, FUEL7_COMPARE);
+FuelSchedule fuelSchedule7(FUEL7_COUNTER, FUEL7_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #endif
 #if (INJ_CHANNELS >= 8)
-FuelSchedule fuelSchedule8(FUEL8_COUNTER, FUEL8_COMPARE);
+FuelSchedule fuelSchedule8(FUEL8_COUNTER, FUEL8_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #endif
 
-IgnitionSchedule ignitionSchedule1(IGN1_COUNTER, IGN1_COMPARE);
-IgnitionSchedule ignitionSchedule2(IGN2_COUNTER, IGN2_COMPARE);
-IgnitionSchedule ignitionSchedule3(IGN3_COUNTER, IGN3_COMPARE);
-IgnitionSchedule ignitionSchedule4(IGN4_COUNTER, IGN4_COMPARE);
-IgnitionSchedule ignitionSchedule5(IGN5_COUNTER, IGN5_COMPARE);
-
+IgnitionSchedule ignitionSchedule1(IGN1_COUNTER, IGN1_COMPARE); //cppcheck-suppress misra-c2012-8.4
+IgnitionSchedule ignitionSchedule2(IGN2_COUNTER, IGN2_COMPARE); //cppcheck-suppress misra-c2012-8.4
+IgnitionSchedule ignitionSchedule3(IGN3_COUNTER, IGN3_COMPARE); //cppcheck-suppress misra-c2012-8.4
+IgnitionSchedule ignitionSchedule4(IGN4_COUNTER, IGN4_COMPARE); //cppcheck-suppress misra-c2012-8.4
+IgnitionSchedule ignitionSchedule5(IGN5_COUNTER, IGN5_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #if IGN_CHANNELS >= 6
-IgnitionSchedule ignitionSchedule6(IGN6_COUNTER, IGN6_COMPARE);
+IgnitionSchedule ignitionSchedule6(IGN6_COUNTER, IGN6_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #endif
 #if IGN_CHANNELS >= 7
-IgnitionSchedule ignitionSchedule7(IGN7_COUNTER, IGN7_COMPARE);
+IgnitionSchedule ignitionSchedule7(IGN7_COUNTER, IGN7_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #endif
 #if IGN_CHANNELS >= 8
-IgnitionSchedule ignitionSchedule8(IGN8_COUNTER, IGN8_COMPARE);
+IgnitionSchedule ignitionSchedule8(IGN8_COUNTER, IGN8_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #endif
 
 Schedule::Schedule(counter_t &counter, compare_t &compare)
@@ -92,7 +90,7 @@ static void reset(IgnitionSchedule &schedule)
     reset((Schedule&)schedule);
 }
 
-void initialiseSchedulers()
+void initialiseSchedulers(void)
 {
     reset(fuelSchedule1);
     reset(fuelSchedule2);
@@ -115,7 +113,6 @@ void initialiseSchedulers()
     reset(ignitionSchedule2);
     reset(ignitionSchedule3);
     reset(ignitionSchedule4);
-    reset(ignitionSchedule5);
 #if (IGN_CHANNELS >= 5)
     reset(ignitionSchedule5);
 #endif
@@ -221,7 +218,7 @@ void startSchedulers(void)
 }
 
 static inline bool hasNextSchedule(const Schedule &schedule) {
-  return schedule.nextDuration!=0;
+  return schedule.nextDuration!=0U;
 }
 
 static inline void clearNextSchedule(Schedule &schedule) {
@@ -285,31 +282,31 @@ void refreshIgnitionSchedule1(unsigned long timeToEnd)
  */
 extern void beginInjectorPriming(void)
 {
-  unsigned long primingValue = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-  if( (primingValue > 0) && (currentStatus.TPS < configPage4.floodClear) )
+  unsigned long primingValue = (unsigned long)table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+  if( (primingValue > 0U) && (currentStatus.TPS < configPage4.floodClear) )
   {
-    primingValue = primingValue * 100 * 5; //to achieve long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
-    if ( maxInjOutputs >= 1 ) { setFuelSchedule(fuelSchedule1, 100, primingValue); }
+    primingValue = primingValue * 100UL * 5UL; //to achieve long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
+    if ( maxInjOutputs >= 1U ) { setFuelSchedule(fuelSchedule1, 100U, primingValue); }
 #if (INJ_CHANNELS >= 2)
-    if ( maxInjOutputs >= 2 ) { setFuelSchedule(fuelSchedule2, 100, primingValue); }
+    if ( maxInjOutputs >= 2U ) { setFuelSchedule(fuelSchedule2, 100U, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 3)
-    if ( maxInjOutputs >= 3 ) { setFuelSchedule(fuelSchedule3, 100, primingValue); }
+    if ( maxInjOutputs >= 3U ) { setFuelSchedule(fuelSchedule3, 100U, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 4)
-    if ( maxInjOutputs >= 4 ) { setFuelSchedule(fuelSchedule4, 100, primingValue); }
+    if ( maxInjOutputs >= 4U ) { setFuelSchedule(fuelSchedule4, 100U, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 5)
-    if ( maxInjOutputs >= 5 ) { setFuelSchedule(fuelSchedule5, 100, primingValue); }
+    if ( maxInjOutputs >= 5U ) { setFuelSchedule(fuelSchedule5, 100U, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 6)
-    if ( maxInjOutputs >= 6 ) { setFuelSchedule(fuelSchedule6, 100, primingValue); }
+    if ( maxInjOutputs >= 6U ) { setFuelSchedule(fuelSchedule6, 100U, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 7)
-    if ( maxInjOutputs >= 7) { setFuelSchedule(fuelSchedule7, 100, primingValue); }
+    if ( maxInjOutputs >= 7U) { setFuelSchedule(fuelSchedule7, 100U, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 8)
-    if ( maxInjOutputs >= 8 ) { setFuelSchedule(fuelSchedule8, 100, primingValue); }
+    if ( maxInjOutputs >= 8U ) { setFuelSchedule(fuelSchedule8, 100U, primingValue); }
 #endif
   }
 }
@@ -338,6 +335,8 @@ static inline __attribute__((always_inline)) void fuelScheduleISR(FuelSchedule &
         schedule.Status = PENDING;
         clearNextSchedule(schedule);
       }
+  } else {
+    // Nothing to do but keep MISRA checker happy
   }
 } 
 
@@ -433,6 +432,16 @@ void fuelSchedule8Interrupt() //Most ARM chips can simply call a function
   }
 #endif
 
+#define DWELL_AVERAGE_ALPHA 30
+#define DWELL_ONE_AVERAGE_ALPHA ((int32_t)256 - DWELL_AVERAGE_ALPHA)
+#define DWELL_ACTUAL_DWELL_ALPHA (currentStatus.actualDwell * (int32_t)DWELL_AVERAGE_ALPHA)
+#define DWELL_AVERAGE(input) (int16_t)( \
+  ( (input) * \
+    DWELL_ONE_AVERAGE_ALPHA + \
+    DWELL_ACTUAL_DWELL_ALPHA) >> INT32_C(8) \
+  )
+//#define DWELL_AVERAGE(input) (currentStatus.dwell) //Can be use to disable the above for testing
+
 // Shared ISR function for all ignition timers.
 // This is completely inlined into the ISR - there is no function call
 // overhead.
@@ -450,8 +459,9 @@ static inline __attribute__((always_inline)) void ignitionScheduleISR(IgnitionSc
     schedule.pEndCallback();
     schedule.Status = OFF; //Turn off the schedule
     schedule.endScheduleSetByDecoder = false;
-    ignitionCount = ignitionCount + 1; //Increment the ignition counter
-    currentStatus.actualDwell = DWELL_AVERAGE( (micros() - schedule.startTime) );
+    ignitionCount = ignitionCount + 1U; //Increment the ignition counter
+    int32_t elapsed = (int32_t)(micros() - schedule.startTime);
+    currentStatus.actualDwell = DWELL_AVERAGE( elapsed );
 
     //If there is a next schedule queued up, activate it
     if(hasNextSchedule(schedule))
@@ -461,6 +471,8 @@ static inline __attribute__((always_inline)) void ignitionScheduleISR(IgnitionSc
         schedule.Status = PENDING;
         clearNextSchedule(schedule);
     }
+  } else {
+    // Nothing to do but keep MISRA checker happy
   }
 }
 
@@ -587,6 +599,7 @@ void disablePendingFuelSchedule(byte channel)
       if(fuelSchedule8.Status == PENDING) { fuelSchedule8.Status = OFF; }
 #endif
       break;
+    default: break;
   }
   interrupts();
 }
@@ -625,6 +638,7 @@ void disablePendingIgnSchedule(byte channel)
       if(ignitionSchedule8.Status == PENDING) { ignitionSchedule8.Status = OFF; }
       break;
 #endif
+    default:break;
   }
   interrupts();
 }
