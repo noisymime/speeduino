@@ -177,7 +177,7 @@ static inline uint32_t div360(uint32_t n) {
  * @param value The value to operate on
  * @return uint32_t 
  */
-static inline uint32_t percentage(uint8_t percent, uint32_t value) 
+static inline uint32_t percentage(uint16_t percent, uint32_t value) 
 {
     return (uint32_t)div100((uint32_t)value * (uint32_t)percent);
 }
@@ -190,7 +190,7 @@ static inline uint32_t percentage(uint8_t percent, uint32_t value)
  * @param value The value to operate on
  * @return uint16_t 
  */
-static inline uint16_t halfPercentage(uint8_t percent, uint16_t value) {
+static inline uint16_t halfPercentage(uint16_t percent, uint16_t value) {
     uint32_t x200 = (uint32_t)percent * (uint32_t)value;
 #ifdef USE_LIBDIVIDE    
     return (uint16_t)libdivide::libdivide_u32_do_raw(x200 + DIV_ROUND_CORRECT(UINT32_C(200), uint32_t), 2748779070L, 7);
