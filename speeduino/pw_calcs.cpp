@@ -194,40 +194,36 @@ static inline pulseWidths applyStagingToPw(uint16_t primaryPW, uint16_t pwLimit,
   if ( (configPage10.stagingEnabled == true) && (configPage2.nCylinders <= INJ_CHANNELS || configPage2.injType == INJ_TYPE_TBODY) && (primaryPW!=0U) ) //Final check is to ensure that DFCO isn't active, which would cause an overflow below (See #267)
   {
     //Scale the 'full' pulsewidth by each of the injector capacities
-    primaryPW -= injOpenTimeUS; //Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. It is added on again after that calculation. 
-    uint16_t tempPW1 = percentage(staged_req_fuel_mult_pri, primaryPW);
+
+    //Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. It is added on again after that calculation. 
+    uint32_t pwPrimaryStaged = percentage(staged_req_fuel_mult_pri, primaryPW - injOpenTimeUS);
 
     if(configPage10.stagingMode == STAGING_MODE_TABLE)
     {
-      uint16_t tempPW3 = percentage(staged_req_fuel_mult_sec, primaryPW); //This is ONLY needed in in table mode. Auto mode only calculates the difference.
-
       uint8_t stagingSplit = get3DTableValue(&stagingTable, currentStatus.fuelLoad, currentStatus.RPM);
-      primaryPW = percentage(100U - stagingSplit, tempPW1);
-      primaryPW += injOpenTimeUS; 
 
       if(stagingSplit > 0U) 
       { 
-        secondaryPW = percentage(stagingSplit, tempPW3); 
-        secondaryPW += injOpenTimeUS;
+        uint32_t pwSecondaryStaged = percentage(staged_req_fuel_mult_sec, primaryPW - injOpenTimeUS); //This is ONLY needed in in table mode. Auto mode only calculates the difference.
+        primaryPW = percentage(100U - stagingSplit, pwPrimaryStaged) + injOpenTimeUS;
+        secondaryPW = percentage(stagingSplit, pwSecondaryStaged) + injOpenTimeUS;
+      } else {
+        primaryPW = (uint16_t)pwPrimaryStaged + injOpenTimeUS;
       }
     }
     else if(configPage10.stagingMode == STAGING_MODE_AUTO)
     {
-      primaryPW = tempPW1;
       //If automatic mode, the primary injectors are used all the way up to their limit (Configured by the pulsewidth limit setting)
       //If they exceed their limit, the extra duty is passed to the secondaries
-      if(tempPW1 > pwLimit)
+      if(pwPrimaryStaged > pwLimit)
       {
-        uint16_t extraPW = tempPW1 - pwLimit + injOpenTimeUS; //The open time must be added here AND below because tempPW1 does not include an open time. The addition of it here takes into account the fact that pwLlimit does not contain an allowance for an open time. 
+        uint32_t extraPW = pwPrimaryStaged - pwLimit + injOpenTimeUS; //The open time must be added here AND below because pwPrimaryStaged does not include an open time. The addition of it here takes into account the fact that pwLlimit does not contain an allowance for an open time. 
         primaryPW = pwLimit;
-        secondaryPW = udiv_32_16((uint32_t)extraPW * staged_req_fuel_mult_sec, staged_req_fuel_mult_pri); //Convert the 'left over' fuel amount from primary injector scaling to secondary
+        secondaryPW = udiv_32_16(extraPW * staged_req_fuel_mult_sec, staged_req_fuel_mult_pri); //Convert the 'left over' fuel amount from primary injector scaling to secondary
         secondaryPW += injOpenTimeUS;
+      } else {
+        primaryPW = (uint16_t)pwPrimaryStaged + injOpenTimeUS;
       }
-      else 
-      {
-        //If tempPW1 < pwLImit it means that the entire fuel load can be handled by the primaries and staging is inactive. 
-        primaryPW += injOpenTimeUS; //Add the open time back in
-      } 
     }
   }
   //Apply the pwLimit if staging is disabled and engine is not cranking
