@@ -30,6 +30,7 @@ void test_Staging_setCommon()
   configPage2.includeAFR = false;
   configPage2.incorporateAFR = false;
   configPage2.injOpen = 10;  //1ms inj open time
+  configPage2.battVCorMode = BATTV_COR_MODE_WHOLE; 
   // Turns off pwLimit
   configPage2.dutyLim = 100;
   revolutionTime = 10000;

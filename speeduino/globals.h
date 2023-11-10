@@ -40,10 +40,10 @@
   #define CORE_AVR
   #define BOARD_H "board_avr2560.h"
   #ifndef INJ_CHANNELS
-    #define INJ_CHANNELS 4
+    #define INJ_CHANNELS 4U
   #endif
   #ifndef IGN_CHANNELS
-    #define IGN_CHANNELS 5
+    #define IGN_CHANNELS 5U
   #endif
 
   #if defined(__AVR_ATmega2561__)
@@ -69,8 +69,8 @@
     #define CORE_TEENSY41
     #define BOARD_H "board_teensy41.h"
   #endif
-  #define INJ_CHANNELS 8
-  #define IGN_CHANNELS 8
+  #define INJ_CHANNELS 8U
+  #define IGN_CHANNELS 8U
 
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(STM32)
   #define BOARD_H "board_stm32_official.h"
@@ -78,18 +78,18 @@
 
   #define BOARD_MAX_ADC_PINS  NUM_ANALOG_INPUTS-1 //Number of analog pins from core.
   #if defined(STM32F407xx) //F407 can do 8x8 STM32F401/STM32F411 don't
-   #define INJ_CHANNELS 8
-   #define IGN_CHANNELS 8
+   #define INJ_CHANNELS 8U
+   #define IGN_CHANNELS 8U
   #else
-   #define INJ_CHANNELS 4
-   #define IGN_CHANNELS 5
+   #define INJ_CHANNELS 4U
+   #define IGN_CHANNELS 5U
   #endif
 #elif defined(__SAMD21G18A__)
   #define BOARD_H "board_samd21.h"
   #define CORE_SAMD21
   #define CORE_SAM
-  #define INJ_CHANNELS 4
-  #define IGN_CHANNELS 4
+  #define INJ_CHANNELS 4U
+  #define IGN_CHANNELS 4U
 #elif defined(__SAMC21J18A__)
   #define BOARD_H "board_samc21.h"
   #define CORE_SAMC21
@@ -98,8 +98,8 @@
   #define BOARD_H "board_same51.h"
   #define CORE_SAME51
   #define CORE_SAM
-  #define INJ_CHANNELS 8
-  #define IGN_CHANNELS 8
+  #define INJ_CHANNELS 8U
+  #define IGN_CHANNELS 8U
 #else
   #error Incorrect board selected. Please select the correct board (Usually Mega 2560) and upload again
 #endif
@@ -229,13 +229,13 @@
 #define EGO_TYPE_NARROW   1U
 #define EGO_TYPE_WIDE     2U
 
-#define INJ_TYPE_PORT 0
-#define INJ_TYPE_TBODY 1
+#define INJ_TYPE_PORT 0U
+#define INJ_TYPE_TBODY 1U
 
-#define INJ_PAIRED 0
-#define INJ_SEMISEQUENTIAL 1
-#define INJ_BANKED          2
-#define INJ_SEQUENTIAL      3
+#define INJ_PAIRED 0U
+#define INJ_SEMISEQUENTIAL 1U
+#define INJ_BANKED          2U
+#define INJ_SEQUENTIAL      3U
 
 #define INJ_PAIR_13_24      0
 #define INJ_PAIR_14_23      1
@@ -281,8 +281,8 @@
 #define EGO_ALGORITHM_PID      2U
 #define EGO_ALGORITHM_NONE     3U
 
-#define STAGING_MODE_TABLE  0
-#define STAGING_MODE_AUTO   1
+#define STAGING_MODE_TABLE  0U
+#define STAGING_MODE_AUTO   1U
 
 #define NITROUS_OFF         0U
 #define NITROUS_STAGE1      1U
@@ -357,8 +357,8 @@
 #define GOING_LOW         0
 #define GOING_HIGH        1
 
-#define BATTV_COR_MODE_WHOLE 0
-#define BATTV_COR_MODE_OPENTIME 1
+#define BATTV_COR_MODE_WHOLE 0U
+#define BATTV_COR_MODE_OPENTIME 1U
 
 #define INJ1_CMD_BIT      0
 #define INJ2_CMD_BIT      1

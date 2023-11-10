@@ -39,8 +39,8 @@ void initialisePWCalcs(void)
         staged_req_fuel_mult_pri = 300% (The primary injectors would have to run 3x the overall PW in order to be the equivalent of the full 750cc capacity
         staged_req_fuel_mult_sec = 150% (The secondary injectors would have to run 1.5x the overall PW in order to be the equivalent of the full 750cc capacity
     */
-    staged_req_fuel_mult_pri = (100 * totalInjector) / configPage10.stagedInjSizePri;
-    staged_req_fuel_mult_sec = (100 * totalInjector) / configPage10.stagedInjSizeSec;
+    staged_req_fuel_mult_pri = (100U * totalInjector) / configPage10.stagedInjSizePri;
+    staged_req_fuel_mult_sec = (100U * totalInjector) / configPage10.stagedInjSizeSec;
   }
   else
   {
@@ -56,11 +56,11 @@ void initialisePWCalcs(void)
 }
 
 void calculateRequiredFuel(uint8_t injLayout) {
-  req_fuel_uS = configPage2.reqFuel * 100; //Convert to uS and an int. This is the only variable to be used in calculations
+  req_fuel_uS = configPage2.reqFuel * 100U; //Convert to uS and an int. This is the only variable to be used in calculations
   if ((configPage2.strokes == FOUR_STROKE) && ((injLayout!= INJ_SEQUENTIAL) || (configPage2.nCylinders > INJ_CHANNELS)))
   {
     //Default is 1 squirt per revolution, so we halve the given req-fuel figure (Which would be over 2 revolutions)
-    req_fuel_uS = req_fuel_uS / 2; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
+    req_fuel_uS = req_fuel_uS / 2U; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
   }
 }
 
@@ -76,7 +76,7 @@ static inline uint16_t pwApplyNitrousStage(uint16_t pw, uint8_t minRPM, uint8_t 
 //Manual adder for nitrous. These are not in correctionsFuel() because they are direct adders to the ms value, not % based
 static inline uint16_t pwApplyNitrous(uint16_t pw)
 {
-  if (currentStatus.nitrous_status!=NITROUS_OFF && pw!=0)
+  if (currentStatus.nitrous_status!=NITROUS_OFF && pw!=0U)
   {
     if( (currentStatus.nitrous_status == NITROUS_STAGE1) || (currentStatus.nitrous_status == NITROUS_BOTH) )
     {
@@ -191,23 +191,23 @@ static inline pulseWidths applyStagingToPw(uint16_t primaryPW, uint16_t pwLimit,
   uint16_t secondaryPW = 0;
 
   //To run staged injection, the number of cylinders must be less than or equal to the injector channels (ie Assuming you're running paired injection, you need at least as many injector channels as you have cylinders, half for the primaries and half for the secondaries)
-  if ( (configPage10.stagingEnabled == true) && (configPage2.nCylinders <= INJ_CHANNELS || configPage2.injType == INJ_TYPE_TBODY) && (primaryPW!=0) ) //Final check is to ensure that DFCO isn't active, which would cause an overflow below (See #267)
+  if ( (configPage10.stagingEnabled == true) && (configPage2.nCylinders <= INJ_CHANNELS || configPage2.injType == INJ_TYPE_TBODY) && (primaryPW!=0U) ) //Final check is to ensure that DFCO isn't active, which would cause an overflow below (See #267)
   {
     //Scale the 'full' pulsewidth by each of the injector capacities
     primaryPW -= injOpenTimeUS; //Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. It is added on again after that calculation. 
-    uint32_t tempPW1 = div100((uint32_t)primaryPW * staged_req_fuel_mult_pri);
+    uint16_t tempPW1 = percentage(staged_req_fuel_mult_pri, primaryPW);
 
     if(configPage10.stagingMode == STAGING_MODE_TABLE)
     {
-      uint32_t tempPW3 = div100((uint32_t)primaryPW * staged_req_fuel_mult_sec); //This is ONLY needed in in table mode. Auto mode only calculates the difference.
+      uint16_t tempPW3 = percentage(staged_req_fuel_mult_sec, primaryPW); //This is ONLY needed in in table mode. Auto mode only calculates the difference.
 
       uint8_t stagingSplit = get3DTableValue(&stagingTable, currentStatus.fuelLoad, currentStatus.RPM);
-      primaryPW = div100((100U - stagingSplit) * tempPW1);
+      primaryPW = percentage(100U - stagingSplit, tempPW1);
       primaryPW += injOpenTimeUS; 
 
-      if(stagingSplit > 0) 
+      if(stagingSplit > 0U) 
       { 
-        secondaryPW = div100(stagingSplit * tempPW3); 
+        secondaryPW = percentage(stagingSplit, tempPW3); 
         secondaryPW += injOpenTimeUS;
       }
     }
@@ -218,9 +218,9 @@ static inline pulseWidths applyStagingToPw(uint16_t primaryPW, uint16_t pwLimit,
       //If they exceed their limit, the extra duty is passed to the secondaries
       if(tempPW1 > pwLimit)
       {
-        uint32_t extraPW = tempPW1 - pwLimit + injOpenTimeUS; //The open time must be added here AND below because tempPW1 does not include an open time. The addition of it here takes into account the fact that pwLlimit does not contain an allowance for an open time. 
+        uint16_t extraPW = tempPW1 - pwLimit + injOpenTimeUS; //The open time must be added here AND below because tempPW1 does not include an open time. The addition of it here takes into account the fact that pwLlimit does not contain an allowance for an open time. 
         primaryPW = pwLimit;
-        secondaryPW = udiv_32_16(extraPW * staged_req_fuel_mult_sec, staged_req_fuel_mult_pri); //Convert the 'left over' fuel amount from primary injector scaling to secondary
+        secondaryPW = udiv_32_16((uint32_t)extraPW * staged_req_fuel_mult_sec, staged_req_fuel_mult_pri); //Convert the 'left over' fuel amount from primary injector scaling to secondary
         secondaryPW += injOpenTimeUS;
       }
       else 
@@ -233,9 +233,11 @@ static inline pulseWidths applyStagingToPw(uint16_t primaryPW, uint16_t pwLimit,
   //Apply the pwLimit if staging is disabled and engine is not cranking
   else if( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && primaryPW>pwLimit) { 
     primaryPW = pwLimit; 
-  }    
+  } else {
+    // No staging needed - keep MISRA checker happy.
+  }
 
-  BIT_WRITE(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE, secondaryPW!=0);
+  BIT_WRITE(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE, secondaryPW!=0U);
 
   return { primaryPW, secondaryPW };
 }
@@ -245,7 +247,7 @@ static inline
 #endif
 pulseWidths computePulseWidths(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections) {
   // Apply voltage correction to injector open time if required
-  uint16_t injOpenTimeUS = configPage2.injOpen * (configPage2.battVCorMode == BATTV_COR_MODE_OPENTIME ? currentStatus.batCorrection : 100); 
+  uint16_t injOpenTimeUS = configPage2.injOpen * (configPage2.battVCorMode == BATTV_COR_MODE_OPENTIME ? currentStatus.batCorrection : 100U); 
   return applyStagingToPw(computePrimaryPulseWidth(REQ_FUEL, VE, MAP, corrections, injOpenTimeUS), calculatePWLimit(), injOpenTimeUS);
 }
 
