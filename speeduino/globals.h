@@ -232,10 +232,16 @@
 #define INJ_TYPE_PORT 0U
 #define INJ_TYPE_TBODY 1U
 
-#define INJ_PAIRED 0U
-#define INJ_SEMISEQUENTIAL 1U
-#define INJ_BANKED          2U
-#define INJ_SEQUENTIAL      3U
+enum InjectorLayout {
+  /** 2 injectors per output. Outputs active is equal to half the number of cylinders. Outputs are timed over 1 crank revolution. */
+  INJ_PAIRED,
+  /** Same as paired except that injector channels are mirrored (1&4, 2&3) meaning the number of outputs used are equal to the number of cylinders. Only valid for 4 cylinders or less. */
+  INJ_SEMISEQUENTIAL,
+  /** 2 outputs only used */
+  INJ_BANKED,
+  /** 1 injector per output and outputs used equals the number of cylinders. Injection is timed over full cycle.*/
+  INJ_SEQUENTIAL
+};
 
 #define INJ_PAIR_13_24      0
 #define INJ_PAIR_14_23      1
@@ -767,7 +773,7 @@ struct config2 {
   byte flexEnabled : 1; ///< Enable Flex fuel sensing (pin / interrupt)
   byte legacyMAP  : 1;  ///< Legacy MAP reading behaviour
   byte baroCorr : 1;    // Unused ?
-  byte injLayout : 2;   /**< Injector Layout - 0=INJ_PAIRED (number outputs == number cyls/2, timed over 1 crank rev), 1=INJ_SEMISEQUENTIAL (like paired, but number outputs == number cyls, only for 4 cyl),
+  InjectorLayout injLayout : 2;   /**< Injector Layout - 0=INJ_PAIRED (number outputs == number cyls/2, timed over 1 crank rev), 1=INJ_SEMISEQUENTIAL (like paired, but number outputs == number cyls, only for 4 cyl),
                          2=INJ_BANKED (2 outputs are used), 3=INJ_SEQUENTIAL (number outputs == number cyls, timed over full cycle, 2 crank revs) */
   byte perToothIgn : 1; ///< Experimental / New ignition mode ... (?) (See decoders.ino)
   byte dfcoEnabled : 1; ///< Whether or not DFCO (deceleration fuel cut-off) is turned on

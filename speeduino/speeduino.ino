@@ -119,6 +119,12 @@ static inline uint8_t getVE1(void)
   return get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
 }
 
+static inline uint16_t applyFuelTrimToPW(table3d6RpmLoad *pTrimTable, int16_t fuelLoad, int16_t RPM, uint16_t currentPW)
+{
+  uint8_t pw1percent = 100U + (int16_t)get3DTableValue(pTrimTable, fuelLoad, RPM) - (int16_t)OFFSET_FUELTRIM;
+  return percentage(pw1percent, currentPW);
+}
+
 /** Speeduino main loop.
  * 
  * Main loop chores (roughly in the order that they are performed):
