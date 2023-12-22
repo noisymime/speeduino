@@ -166,7 +166,7 @@ void calculateSecondarySpark(void)
  * This performs largely the same operations as getVE() however the lookup is of the secondary fuel table and uses the secondary load source
  * @return byte 
  */
-byte getVE2(void)
+uint8_t getVE2(void)
 {
   currentStatus.fuelLoad2 = getLoad(configPage10.fuel2Algorithm, currentStatus);
   return get3DTableValue(&fuelTable2, currentStatus.fuelLoad2, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
@@ -177,10 +177,10 @@ byte getVE2(void)
  * 
  * @return byte The current target advance value in degrees
  */
-byte getAdvance2(void)
+int8_t getAdvance2(void)
 {
   currentStatus.ignLoad2 = getLoad(configPage10.spark2Algorithm, currentStatus);
-  byte tempAdvance = get3DTableValue(&ignitionTable2, currentStatus.ignLoad2, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
+  int8_t tempAdvance = (int16_t)get3DTableValue(&ignitionTable2, currentStatus.ignLoad2, currentStatus.RPM) - INT16_C(OFFSET_IGNITION); //As above, but for ignition advance
 
   //Perform the corrections calculation on the secondary advance value, only if it uses a switched mode
   if( (configPage10.spark2SwitchVariable == SPARK2_MODE_CONDITIONAL_SWITCH) || (configPage10.spark2SwitchVariable == SPARK2_MODE_INPUT_SWITCH) ) { 
