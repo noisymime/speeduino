@@ -313,6 +313,8 @@ bool pinIsOutput(byte pin)
   return used;
 }
 
+#define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) || (((pin) == pinFlex) && (configPage2.flexEnabled != 0)) )
+
 bool pinIsUsed(byte pin)
 {
   bool used = false;
