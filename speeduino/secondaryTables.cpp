@@ -1,6 +1,7 @@
 #include "globals.h"
 #include "secondaryTables.h"
 #include "corrections.h"
+#include "load_source.h"
 
 void calculateSecondaryFuel(void)
 {
@@ -167,26 +168,8 @@ void calculateSecondarySpark(void)
  */
 byte getVE2(void)
 {
-  byte tempVE = 100;
-  if( configPage10.fuel2Algorithm == LOAD_SOURCE_MAP)
-  {
-    //Speed Density
-    currentStatus.fuelLoad2 = currentStatus.MAP;
-  }
-  else if (configPage10.fuel2Algorithm == LOAD_SOURCE_TPS)
-  {
-    //Alpha-N
-    currentStatus.fuelLoad2 = currentStatus.TPS * 2;
-  }
-  else if (configPage10.fuel2Algorithm == LOAD_SOURCE_IMAPEMAP)
-  {
-    //IMAP / EMAP
-    currentStatus.fuelLoad2 = ((int16_t)currentStatus.MAP * 100U) / currentStatus.EMAP;
-  }
-  else { currentStatus.fuelLoad2 = currentStatus.MAP; } //Fallback position
-  tempVE = get3DTableValue(&fuelTable2, currentStatus.fuelLoad2, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
-
-  return tempVE;
+  currentStatus.fuelLoad2 = getLoad(configPage10.fuel2Algorithm, currentStatus);
+  return get3DTableValue(&fuelTable2, currentStatus.fuelLoad2, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
 }
 
 /**
@@ -196,28 +179,13 @@ byte getVE2(void)
  */
 byte getAdvance2(void)
 {
-  byte tempAdvance = 0;
-  if (configPage10.spark2Algorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
-  {
-    //Speed Density
-    currentStatus.ignLoad2 = currentStatus.MAP;
-  }
-  else if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS)
-  {
-    //Alpha-N
-    currentStatus.ignLoad2 = currentStatus.TPS * 2;
-
-  }
-  else if (configPage10.spark2Algorithm == LOAD_SOURCE_IMAPEMAP)
-  {
-    //IMAP / EMAP
-    currentStatus.ignLoad2 = (currentStatus.MAP * 100) / currentStatus.EMAP;
-  }
-  else { currentStatus.ignLoad2 = currentStatus.MAP; }
-  tempAdvance = get3DTableValue(&ignitionTable2, currentStatus.ignLoad2, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
+  currentStatus.ignLoad2 = getLoad(configPage10.spark2Algorithm, currentStatus);
+  byte tempAdvance = get3DTableValue(&ignitionTable2, currentStatus.ignLoad2, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
 
   //Perform the corrections calculation on the secondary advance value, only if it uses a switched mode
-  if( (configPage10.spark2SwitchVariable == SPARK2_MODE_CONDITIONAL_SWITCH) || (configPage10.spark2SwitchVariable == SPARK2_MODE_INPUT_SWITCH) ) { tempAdvance = correctionsIgn(tempAdvance); } 
+  if( (configPage10.spark2SwitchVariable == SPARK2_MODE_CONDITIONAL_SWITCH) || (configPage10.spark2SwitchVariable == SPARK2_MODE_INPUT_SWITCH) ) { 
+    tempAdvance = correctionsIgn(tempAdvance);
+  } 
 
   return tempAdvance;
 }

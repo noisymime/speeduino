@@ -45,6 +45,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "SD_logger.h"
 #include "schedule_calcs.h"
 #include "auxiliaries.h"
+#include "load_source.h"
 #include RTC_LIB_H //Defined in each boards .h file
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
@@ -1270,26 +1271,8 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
  */
 byte getVE1(void)
 {
-  byte tempVE = 100;
-  if (configPage2.fuelAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
-  {
-    //Speed Density
-    currentStatus.fuelLoad = currentStatus.MAP;
-  }
-  else if (configPage2.fuelAlgorithm == LOAD_SOURCE_TPS)
-  {
-    //Alpha-N
-    currentStatus.fuelLoad = currentStatus.TPS * 2;
-  }
-  else if (configPage2.fuelAlgorithm == LOAD_SOURCE_IMAPEMAP)
-  {
-    //IMAP / EMAP
-    currentStatus.fuelLoad = ((int16_t)currentStatus.MAP * 100U) / currentStatus.EMAP;
-  }
-  else { currentStatus.fuelLoad = currentStatus.MAP; } //Fallback position
-  tempVE = get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
-
-  return tempVE;
+  currentStatus.fuelLoad = getLoad(configPage2.fuelAlgorithm, currentStatus);
+  return get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
 }
 
 /** Lookup the ignition advance from 3D ignition table.
@@ -1299,27 +1282,8 @@ byte getVE1(void)
  */
 byte getAdvance1(void)
 {
-  byte tempAdvance = 0;
-  if (configPage2.ignAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
-  {
-    //Speed Density
-    currentStatus.ignLoad = currentStatus.MAP;
-  }
-  else if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS)
-  {
-    //Alpha-N
-    currentStatus.ignLoad = currentStatus.TPS * 2;
-
-  }
-  else if (configPage2.fuelAlgorithm == LOAD_SOURCE_IMAPEMAP)
-  {
-    //IMAP / EMAP
-    currentStatus.ignLoad = ((int16_t)currentStatus.MAP * 100U) / currentStatus.EMAP;
-  }
-  tempAdvance = get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
-  tempAdvance = correctionsIgn(tempAdvance);
-
-  return tempAdvance;
+  currentStatus.ignLoad = getLoad(configPage2.ignAlgorithm, currentStatus);
+  return correctionsIgn((int16_t)get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION); //As above, but for ignition advance
 }
 
 /** Calculate the Ignition angles for all cylinders (based on @ref config2.nCylinders).
