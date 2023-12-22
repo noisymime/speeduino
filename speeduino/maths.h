@@ -173,15 +173,32 @@ static inline uint32_t div360(uint32_t n) {
 /**
  * @brief Integer based percentage calculation.
  * 
- * @param percent The percent to calculate ([0, 100])
+ * @param percent The percent to calculate 
  * @param value The value to operate on
- * @return uint32_t 
+ * @return uint16_t 
  */
 static inline uint32_t percentage(uint8_t percent, uint32_t value) 
 {
     return (uint32_t)div100((uint32_t)value * (uint32_t)percent);
 }
 
+
+/**
+ * @brief Integer based percentage calculation.
+ * 
+ * @param percent The percent to calculate
+ * @param value The value to operate on
+ * @return int16_t 
+ */
+#if defined(__arm__)
+static inline int percentage(int percent, int value) {
+    return div100((int)value * (int)percent);
+}
+#else    
+static inline int16_t percentage(int8_t percent, int16_t value) {
+    return (int16_t)div100((int32_t)value * (int32_t)percent);
+}
+#endif
 
 /**
  * @brief Integer based half-percentage calculation.
