@@ -1269,7 +1269,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
  * 
  * @return byte The current VE value
  */
-byte getVE1(void)
+uint8_t getVE1(void)
 {
   currentStatus.fuelLoad = getLoad(configPage2.fuelAlgorithm, currentStatus);
   return get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
@@ -1280,10 +1280,10 @@ byte getVE1(void)
  * 
  * @return byte The current target advance value in degrees
  */
-byte getAdvance1(void)
+int8_t getAdvance1(void)
 {
   currentStatus.ignLoad = getLoad(configPage2.ignAlgorithm, currentStatus);
-  return correctionsIgn((int16_t)get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION); //As above, but for ignition advance
+  return correctionsIgn((int16_t)get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - INT16_C(OFFSET_IGNITION)); //As above, but for ignition advance
 }
 
 /** Calculate the Ignition angles for all cylinders (based on @ref config2.nCylinders).
