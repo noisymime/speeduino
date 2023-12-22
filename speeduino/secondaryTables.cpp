@@ -2,6 +2,7 @@
 #include "secondaryTables.h"
 #include "corrections.h"
 #include "load_source.h"
+#include "maths.h"
 
 /**
  * @brief Looks up and returns the VE value from the secondary fuel table
@@ -50,14 +51,16 @@ static inline bool fuelModeInputSwitchActive(void) {
 
 void calculateSecondaryFuel(void)
 {
+  constexpr uint16_t MAX_VE = UINT8_MAX; // out-of-line constant required for ARM builds
+
   //If the secondary fuel table is in use, also get the VE value from there
   if(configPage10.fuel2Mode == FUEL2_MODE_MULTIPLY)
   {
     currentStatus.VE2 = getVE2();
     BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
     //Fuel 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
-    uint16_t combinedVE = ((uint16_t)currentStatus.VE1 * (uint16_t)currentStatus.VE2) / 100U;
-    currentStatus.VE = min(UINT8_MAX, combinedVE);
+    uint16_t combinedVE = percentage(currentStatus.VE2, (uint16_t)currentStatus.VE1);
+    currentStatus.VE = min(MAX_VE, combinedVE);
   }
   else if(configPage10.fuel2Mode == FUEL2_MODE_ADD)
   {
@@ -65,7 +68,7 @@ void calculateSecondaryFuel(void)
     BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
     //Fuel tables are added together, but a check is made to make sure this won't overflow the 8-bit VE value
     uint16_t combinedVE = (uint16_t)currentStatus.VE1 + (uint16_t)currentStatus.VE2;
-    currentStatus.VE = min(UINT8_MAX, combinedVE);
+    currentStatus.VE = min(MAX_VE, combinedVE);
   }
   else if(fuelModeCondSwitchActive() || fuelModeInputSwitchActive())
   {
@@ -133,16 +136,19 @@ static inline bool sparkModeInputSwitchActive(void) {
 
 void calculateSecondarySpark(void)
 {
+  constexpr int16_t MAX_ADVANCE = INT8_MAX; // out-of-line constant required for ARM builds
+
   //Same as above but for the secondary ignition table
   if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY)
   {
     BIT_SET(currentStatus.status5, BIT_STATUS5_SPARK2_ACTIVE);
     //make sure we don't have a negative value in the multiplier table (sharing a signed 8 bit table)
-    currentStatus.advance2 = max(0, getAdvance2());
+    constexpr int8_t MIN_ADVANCE = 0; // out-of-line constant required for ARM builds
+    currentStatus.advance2 = max(MIN_ADVANCE, getAdvance2());
     //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
-    int16_t combinedAdvance = ((int16_t)currentStatus.advance1 * (int16_t)currentStatus.advance2) / 100;
+    int16_t combinedAdvance = percentage(currentStatus.advance2, (int16_t)currentStatus.advance1);
     //make sure we don't overflow and accidentally set negative timing, currentStatus.advance can only hold a signed 8 bit value
-    currentStatus.advance = min(INT8_MAX, combinedAdvance);
+    currentStatus.advance = min(MAX_ADVANCE, combinedAdvance);
   }
   else if(configPage10.spark2Mode == SPARK2_MODE_ADD)
   {
@@ -150,7 +156,7 @@ void calculateSecondarySpark(void)
     currentStatus.advance2 = getAdvance2();
     //Spark tables are added together, but a check is made to make sure this won't overflow the 8-bit VE value
     int16_t combinedAdvance = (int16_t)currentStatus.advance1 + (int16_t)currentStatus.advance2;
-    currentStatus.advance = min(INT8_MAX, combinedAdvance);
+    currentStatus.advance = min(MAX_ADVANCE, combinedAdvance);
   }
   else if(sparkModeCondSwitchActive() || sparkModeInputSwitchActive())
   {
