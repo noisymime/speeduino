@@ -1,5 +1,6 @@
 
 #pragma once
+#include "table3d.h"
 
 #include <stdint.h>
 #include <unity.h>
@@ -37,3 +38,6 @@ static __inline__ void ufname_szrestore(char** __s)
 #define SET_UNITY_FILENAME()                                                        \
 for ( UNITY_FILENAME_RESTORE, _ufname_done = ufname_set(__FILE__);                  \
     _ufname_done; _ufname_done = 0 )
+
+
+void populateTable(table3d16RpmLoad &table, const table3d_value_t values[], const table3d_axis_t xAxis[], const table3d_axis_t yAxis[]);
