@@ -57,7 +57,7 @@ void setup_TestTable(void)
       ----------------------------------------------------------------------------------------------------------------
          500 |  700 |  900 | 1200 | 1600 | 2000 | 2500 | 3100 | 3500 | 4100 | 4700 | 5300 | 5900 | 6500 | 6750 | 7000
   */
-  populate_table_P(testTable, tempXAxis, tempYAxis, values);
+  populateTable(testTable, values, tempXAxis, tempYAxis);
 }
 
 void testTables()

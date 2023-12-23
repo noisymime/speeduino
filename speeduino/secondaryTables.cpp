@@ -79,9 +79,14 @@ void calculateSecondaryFuel(void)
   else
   {
     // Unknown mode or mode not activated
-    BIT_CLEAR(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Clear the bit indicating that the 2nd fuel table is in use. 
+    BIT_CLEAR(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Clear the bit indicating that the 2nd fuel table is in use.
+    currentStatus.VE2 = 0U;
+    currentStatus.fuelLoad2 = 0U;
   }
 }
+
+constexpr int16_t MAX_ADVANCE = INT8_MAX; // out-of-line constant required for ARM builds
+constexpr int16_t MIN_ADVANCE = INT8_MIN; // out-of-line constant required for ARM builds
 
 /**
  * @brief Performs a lookup of the second ignition advance table. The values used to look this up will be RPM and whatever load source the user has configured
@@ -91,14 +96,16 @@ void calculateSecondaryFuel(void)
 static inline int8_t getAdvance2(void)
 {
   currentStatus.ignLoad2 = getLoad(configPage10.spark2Algorithm, currentStatus);
-  int8_t tempAdvance = (int16_t)get3DTableValue(&ignitionTable2, currentStatus.ignLoad2, currentStatus.RPM) - INT16_C(OFFSET_IGNITION); //As above, but for ignition advance
-
+  int16_t advance2 = (int16_t)get3DTableValue(&ignitionTable2, currentStatus.ignLoad2, currentStatus.RPM) - INT16_C(OFFSET_IGNITION);
+  // Clamp to return type range.
+  advance2 = constrain(advance2, MIN_ADVANCE, MAX_ADVANCE);
+#if !defined(UNIT_TEST)
   //Perform the corrections calculation on the secondary advance value, only if it uses a switched mode
   if( (configPage10.spark2SwitchVariable == SPARK2_MODE_CONDITIONAL_SWITCH) || (configPage10.spark2SwitchVariable == SPARK2_MODE_INPUT_SWITCH) ) { 
-    tempAdvance = correctionsIgn(tempAdvance);
+    advance2 = correctionsIgn(advance2);
   } 
-
-  return tempAdvance;
+#endif
+  return advance2;
 }
 
 static inline bool sparkModeCondSwitchRpmActive(void) {
@@ -136,8 +143,6 @@ static inline bool sparkModeInputSwitchActive(void) {
 
 void calculateSecondarySpark(void)
 {
-  constexpr int16_t MAX_ADVANCE = INT8_MAX; // out-of-line constant required for ARM builds
-
   //Same as above but for the secondary ignition table
   if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY)
   {
@@ -172,7 +177,11 @@ void calculateSecondarySpark(void)
 
   //Apply the fixed timing correction manually. This has to be done again here if any of the above conditions are met to prevent any of the seconadary calculations applying instead of fixec timing
   if (BIT_CHECK(currentStatus.status5, BIT_STATUS5_SPARK2_ACTIVE)) {
-    currentStatus.advance = correctionFixedTiming(currentStatus.advance);
-    currentStatus.advance = correctionCrankingFixedTiming(currentStatus.advance); //This overrides the regular fixed timing, must come last
+#if !defined(UNIT_TEST)    
+    currentStatus.advance = correctionCrankingFixedTiming(correctionFixedTiming(currentStatus.advance));
+#endif
+  } else {
+    currentStatus.ignLoad2 = 0;
+    currentStatus.advance2 = 0;
   }
 }
