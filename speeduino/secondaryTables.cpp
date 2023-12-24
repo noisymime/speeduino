@@ -85,8 +85,13 @@ void calculateSecondaryFuel(void)
   }
 }
 
-constexpr int16_t MAX_ADVANCE = INT8_MAX; // out-of-line constant required for ARM builds
-constexpr int16_t MIN_ADVANCE = INT8_MIN; // out-of-line constant required for ARM builds
+static constexpr int16_t MAX_ADVANCE = INT8_MAX; // out-of-line constant required for ARM builds
+static constexpr int16_t MIN_ADVANCE = INT8_MIN; // out-of-line constant required for ARM builds
+
+static inline uint8_t lookupSpark2(void) {
+  currentStatus.ignLoad2 = getLoad(configPage10.spark2Algorithm, currentStatus);
+  return get3DTableValue(&ignitionTable2, currentStatus.ignLoad2, currentStatus.RPM);  
+}
 
 /**
  * @brief Performs a lookup of the second ignition advance table. The values used to look this up will be RPM and whatever load source the user has configured
@@ -95,8 +100,7 @@ constexpr int16_t MIN_ADVANCE = INT8_MIN; // out-of-line constant required for A
  */
 static inline int8_t getAdvance2(void)
 {
-  currentStatus.ignLoad2 = getLoad(configPage10.spark2Algorithm, currentStatus);
-  int16_t advance2 = (int16_t)get3DTableValue(&ignitionTable2, currentStatus.ignLoad2, currentStatus.RPM) - INT16_C(OFFSET_IGNITION);
+  int16_t advance2 = (int16_t)lookupSpark2() - INT16_C(OFFSET_IGNITION);
   // Clamp to return type range.
   advance2 = constrain(advance2, MIN_ADVANCE, MAX_ADVANCE);
 #if !defined(UNIT_TEST)
@@ -143,44 +147,44 @@ static inline bool sparkModeInputSwitchActive(void) {
 
 void calculateSecondarySpark(void)
 {
-  //Same as above but for the secondary ignition table
-  if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY)
+  BIT_CLEAR(currentStatus.status5, BIT_STATUS5_SPARK2_ACTIVE); //Clear the bit indicating that the 2nd spark table is in use. 
+
+  if (!isFixedTimingOn())
   {
-    BIT_SET(currentStatus.status5, BIT_STATUS5_SPARK2_ACTIVE);
-    //make sure we don't have a negative value in the multiplier table (sharing a signed 8 bit table)
-    constexpr int8_t MIN_ADVANCE = 0; // out-of-line constant required for ARM builds
-    currentStatus.advance2 = max(MIN_ADVANCE, getAdvance2());
-    //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
-    int16_t combinedAdvance = percentage(currentStatus.advance2, (int16_t)currentStatus.advance1);
-    //make sure we don't overflow and accidentally set negative timing, currentStatus.advance can only hold a signed 8 bit value
-    currentStatus.advance = min(MAX_ADVANCE, combinedAdvance);
-  }
-  else if(configPage10.spark2Mode == SPARK2_MODE_ADD)
-  {
-    BIT_SET(currentStatus.status5, BIT_STATUS5_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
-    currentStatus.advance2 = getAdvance2();
-    //Spark tables are added together, but a check is made to make sure this won't overflow the 8-bit VE value
-    int16_t combinedAdvance = (int16_t)currentStatus.advance1 + (int16_t)currentStatus.advance2;
-    currentStatus.advance = min(MAX_ADVANCE, combinedAdvance);
-  }
-  else if(sparkModeCondSwitchActive() || sparkModeInputSwitchActive())
-  {
-    BIT_SET(currentStatus.status5, BIT_STATUS5_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
-    currentStatus.advance2 = getAdvance2();
-    currentStatus.advance = currentStatus.advance2;
-  }
-  else
-  {
-    // Unknown mode or mode not activated
-    BIT_CLEAR(currentStatus.status5, BIT_STATUS5_SPARK2_ACTIVE); //Clear the bit indicating that the 2nd spark table is in use. 
+    if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY)
+    {
+      BIT_SET(currentStatus.status5, BIT_STATUS5_SPARK2_ACTIVE);
+      uint8_t spark2Percent = lookupSpark2();
+      //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
+      int16_t combinedAdvance = div100((int16_t)((int16_t)spark2Percent * (int16_t)currentStatus.advance1));
+      //make sure we don't overflow and accidentally set negative timing: currentStatus.advance can only hold a signed 8 bit value
+      currentStatus.advance = (int8_t)min((int16_t)MAX_ADVANCE, combinedAdvance);
+
+      // This is informational only, but the value needs corrected into the int8_t range
+      currentStatus.advance2 = (int8_t)max((int16_t)MIN_ADVANCE, (int16_t)((int16_t)spark2Percent-INT16_C(OFFSET_IGNITION)));
+    }
+    else if(configPage10.spark2Mode == SPARK2_MODE_ADD)
+    {
+      BIT_SET(currentStatus.status5, BIT_STATUS5_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
+      currentStatus.advance2 = getAdvance2();
+      //Spark tables are added together, but a check is made to make sure this won't overflow the 8-bit VE value
+      int16_t combinedAdvance = (int16_t)currentStatus.advance1 + (int16_t)currentStatus.advance2;
+      currentStatus.advance = min(MAX_ADVANCE, combinedAdvance);
+    }
+    else if(sparkModeCondSwitchActive() || sparkModeInputSwitchActive())
+    {
+      BIT_SET(currentStatus.status5, BIT_STATUS5_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
+      currentStatus.advance2 = getAdvance2();
+      currentStatus.advance = currentStatus.advance2;
+    }
+    else
+    {
+      // Unknown mode or mode not activated
+      // Keep MISRA checker happy.
+    }
   }
 
-  //Apply the fixed timing correction manually. This has to be done again here if any of the above conditions are met to prevent any of the seconadary calculations applying instead of fixec timing
-  if (BIT_CHECK(currentStatus.status5, BIT_STATUS5_SPARK2_ACTIVE)) {
-#if !defined(UNIT_TEST)    
-    currentStatus.advance = correctionCrankingFixedTiming(correctionFixedTiming(currentStatus.advance));
-#endif
-  } else {
+  if (!BIT_CHECK(currentStatus.status5, BIT_STATUS5_SPARK2_ACTIVE)) {
     currentStatus.ignLoad2 = 0;
     currentStatus.advance2 = 0;
   }

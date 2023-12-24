@@ -103,7 +103,7 @@ static void test_sparkmode_multiply_cap_UINT8_MAX(void) {
 }
 
 static void test_sparkmode_multiply(void) {
-    test_mode_simple(SPARK2_MODE_MULTIPLY, (SIMPLE_ADVANCE1*SIMPLE_LOAD_VALUE)/100);
+    test_mode_simple(SPARK2_MODE_MULTIPLY, (SIMPLE_ADVANCE1*(SIMPLE_LOAD_VALUE+OFFSET_IGNITION))/100);
 }
 
 static void test_sparkmode_add(void) {

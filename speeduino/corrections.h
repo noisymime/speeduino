@@ -41,6 +41,13 @@ int8_t correctionSoftFlatShift(int8_t advance);
 int8_t correctionKnock(int8_t advance);
 int8_t correctionDFCOignition(int8_t advance);
 
+static inline bool isFixedTimingOn(void) {
+            // Fixed timing is in effect
+    return  configPage2.fixAngEnable == 1U
+            // Cranking, so the cranking advance angle is in effect
+            || BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK);
+}
+
 uint16_t correctionsDwell(uint16_t dwell);
 
 extern byte activateMAPDOT; //The mapDOT value seen when the MAE was activated. 
