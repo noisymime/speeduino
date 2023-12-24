@@ -5,7 +5,7 @@ All functions in the gamma file return
 #ifndef CORRECTIONS_H
 #define CORRECTIONS_H
 
-#define IGN_IDLE_THRESHOLD 200 //RPM threshold (below CL idle target) for when ign based idle control will engage
+#include <stdint.h>
 
 void initialiseCorrections(void);
 uint16_t correctionsFuel(void);
@@ -40,24 +40,11 @@ int8_t correctionSoftLaunch(int8_t advance);
 int8_t correctionSoftFlatShift(int8_t advance);
 int8_t correctionKnock(int8_t advance);
 int8_t correctionDFCOignition(int8_t advance);
-
-static inline bool isFixedTimingOn(void) {
-            // Fixed timing is in effect
-    return  configPage2.fixAngEnable == 1U
-            // Cranking, so the cranking advance angle is in effect
-            || BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK);
-}
-
 uint16_t correctionsDwell(uint16_t dwell);
 
-extern byte activateMAPDOT; //The mapDOT value seen when the MAE was activated. 
-extern byte activateTPSDOT; //The tpsDOT value seen when the MAE was activated. 
+bool isFixedTimingOn(void);
 
 extern uint16_t AFRnextCycle;
 extern uint8_t aseTaper;
-extern uint8_t dfcoDelay;
-extern uint8_t idleAdvTaper;
-extern uint8_t crankingEnrichTaper;
-extern uint8_t dfcoTaper;
 
 #endif // CORRECTIONS_H

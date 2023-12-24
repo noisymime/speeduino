@@ -31,6 +31,8 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 #include "sensors.h"
 #include "src/PID_v1/PID_v1.h"
 
+#define IGN_IDLE_THRESHOLD 200 //RPM threshold (below CL idle target) for when ign based idle control will engage
+
 long PID_O2, PID_output, PID_AFRTarget;
 /** Instance of the PID object in case that algorithm is used (Always instantiated).
 * Needs to be global as it maintains state outside of each function call.
@@ -1098,4 +1100,12 @@ uint16_t correctionsDwell(uint16_t dwell)
   }
 
   return tempDwell;
+}
+
+
+bool isFixedTimingOn(void) {
+          // Fixed timing is in effect
+  return  configPage2.fixAngEnable == 1U
+          // Cranking, so the cranking advance angle is in effect
+          || BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK);  
 }

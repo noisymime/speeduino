@@ -4,6 +4,7 @@
 #include "globals.h"
 #include "../test_utils.h"
 #include "storage.h"
+#include "corrections.h"
 
 
 #if defined(PROGMEM)
@@ -33,7 +34,7 @@ static const table3d_axis_t tempXAxis[] = {500, 700, 900, 1200, 1600, 2000, 2500
 static const table3d_axis_t tempYAxis[] = {16, 26, 30, 36, 40, 46, 50, 56, 60, 66, 70, 76, 86, 90, 96, 100};
 
 static void __attribute__((noinline)) assert_2nd_spark_is_off(int8_t expectedAdvance) {
-    TEST_ASSERT_BIT_LOW(BIT_SPARK2_SPARK2_ACTIVE, currentStatus.spark2);
+    TEST_ASSERT_BIT_LOW(BIT_STATUS5_SPARK2_ACTIVE, currentStatus.status5);
     TEST_ASSERT_EQUAL(expectedAdvance, currentStatus.advance1);
     TEST_ASSERT_EQUAL(0, currentStatus.advance2);
     TEST_ASSERT_EQUAL(currentStatus.advance1, currentStatus.advance);
@@ -41,7 +42,7 @@ static void __attribute__((noinline)) assert_2nd_spark_is_off(int8_t expectedAdv
 } 
 
 static void __attribute__((noinline)) assert_2nd_spark_is_on(int8_t expectedAdvance1, int8_t expectedAdvance2, int8_t expectedAdvance) {
-    TEST_ASSERT_BIT_HIGH(BIT_SPARK2_SPARK2_ACTIVE, currentStatus.spark2);
+    TEST_ASSERT_BIT_HIGH(BIT_STATUS5_SPARK2_ACTIVE, currentStatus.status5);
     TEST_ASSERT_EQUAL(expectedAdvance1, currentStatus.advance1);
     TEST_ASSERT_EQUAL(expectedAdvance2, currentStatus.advance2);
     TEST_ASSERT_EQUAL(expectedAdvance, currentStatus.advance);
@@ -49,12 +50,12 @@ static void __attribute__((noinline)) assert_2nd_spark_is_on(int8_t expectedAdva
     TEST_ASSERT_EQUAL(currentStatus.MAP, currentStatus.ignLoad2);
 } 
 
-static void test_setup(void) {
+static void __attribute__((noinline)) test_setup(void) {
     resetConfigPages();
     memset(&currentStatus, 0, sizeof(currentStatus));
 }
 
-static void test_no_secondary_spark(void) {
+static void __attribute__((noinline)) test_mode_off_no_secondary_spark(void) {
     test_setup();
     configPage10.spark2Mode = SPARK2_MODE_OFF;
     configPage10.spark2Algorithm = LOAD_SOURCE_MAP;
@@ -84,33 +85,51 @@ static constexpr int8_t SIMPLE_ADVANCE1 = 75;
 static constexpr int16_t SIMPLE_LOAD_LOOKUP_VALUE = 68;
 static constexpr int16_t SIMPLE_LOAD_VALUE = SIMPLE_LOAD_LOOKUP_VALUE-INT16_C(OFFSET_IGNITION);
 
-static void __attribute__((noinline)) test_mode_simple(uint8_t mode, int8_t expectedAdvance) {
-    test_setup();
+static void __attribute__((noinline)) setup_test_mode_simple(uint8_t mode) {
+        test_setup();
     configPage10.spark2Mode = mode;    
     configPage10.spark2Algorithm = LOAD_SOURCE_MAP;
     currentStatus.advance1 = SIMPLE_ADVANCE1;
     currentStatus.advance = currentStatus.advance1;
     currentStatus.MAP = 50; //Load source value
     currentStatus.RPM = 3500;
+}
 
+static void __attribute__((noinline)) test_mode_simple(uint8_t mode, int8_t expectedAdvance) {
+    setup_test_mode_simple(mode);
     calculateSecondarySpark();
-
     assert_2nd_spark_is_on(SIMPLE_ADVANCE1, SIMPLE_LOAD_VALUE, expectedAdvance);
 }
 
-static void test_sparkmode_multiply_cap_UINT8_MAX(void) {
+static void __attribute__((noinline)) test_sparkmode_multiply_cap_INT8_MAX(void) {
     test_mode_cap_INT8_MAX(SPARK2_MODE_MULTIPLY);
 }
 
-static void test_sparkmode_multiply(void) {
+static void __attribute__((noinline)) test_sparkmode_multiply(void) {
     test_mode_simple(SPARK2_MODE_MULTIPLY, (SIMPLE_ADVANCE1*(SIMPLE_LOAD_VALUE+OFFSET_IGNITION))/100);
 }
 
-static void test_sparkmode_add(void) {
+static void __attribute__((noinline)) test_fixed_timing_no_secondary_spark(void) {
+    setup_test_mode_simple(SPARK2_MODE_MULTIPLY);
+    configPage2.fixAngEnable = 1U;// Should turn 2nd table off
+    TEST_ASSERT_TRUE(isFixedTimingOn());
+    calculateSecondarySpark();
+    assert_2nd_spark_is_off(SIMPLE_ADVANCE1);
+}
+
+static void __attribute__((noinline)) test_cranking_no_secondary_spark(void) {
+    setup_test_mode_simple(SPARK2_MODE_MULTIPLY);
+    BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);// Should turn 2nd table off
+    TEST_ASSERT_TRUE(isFixedTimingOn());
+    calculateSecondarySpark();
+    assert_2nd_spark_is_off(SIMPLE_ADVANCE1);
+}
+
+static void __attribute__((noinline)) test_sparkmode_add(void) {
     test_mode_simple(SPARK2_MODE_ADD, SIMPLE_ADVANCE1+SIMPLE_LOAD_VALUE);
 }
 
-static void test_sparkmode_add_cap_UINT8_MAX(void) {
+static void __attribute__((noinline)) test_sparkmode_add_cap_INT8_MAX(void) {
     test_mode_cap_INT8_MAX(SPARK2_MODE_ADD);
 }
 
@@ -204,11 +223,13 @@ void test_calculateSecondarySpark(void)
 {
     populateTable(ignitionTable2, values, tempXAxis, tempYAxis);
 
-    RUN_TEST(test_no_secondary_spark);
+    RUN_TEST(test_mode_off_no_secondary_spark);
+    RUN_TEST(test_fixed_timing_no_secondary_spark);
+    RUN_TEST(test_cranking_no_secondary_spark);
     RUN_TEST(test_sparkmode_multiply);
-    RUN_TEST(test_sparkmode_multiply_cap_UINT8_MAX);
+    RUN_TEST(test_sparkmode_multiply_cap_INT8_MAX); 
     RUN_TEST(test_sparkmode_add);
-    RUN_TEST(test_sparkmode_add_cap_UINT8_MAX);
+    RUN_TEST(test_sparkmode_add_cap_INT8_MAX);
     RUN_TEST(test_sparkmode_cond_switch_rpm);
     RUN_TEST(test_sparkmode_cond_switch_tps);
     RUN_TEST(test_sparkmode_cond_switch_map);
