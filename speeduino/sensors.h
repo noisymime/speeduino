@@ -35,8 +35,6 @@ extern volatile unsigned long flexPulseWidth;
   #define READ_FLEX() digitalRead(pinFlex)
 #endif
 
-#define ADMUX_DEFAULT_CONFIG  0x40 //AVCC reference, ADC0 input, right adjusted, ADC enabled
-
 extern unsigned int MAPcount; //Number of samples taken in the current MAP cycle
 extern uint32_t MAPcurRev; //Tracks which revolution we're sampling on
 extern bool auxIsEnabled;
