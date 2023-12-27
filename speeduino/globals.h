@@ -204,9 +204,6 @@
 #define BIT_AIRCON_FAN            6 //Indicates whether the A/C fan is running
 #define BIT_AIRCON_UNUSED8        7
 
-#define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
-#define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
-
 #ifndef UNIT_TEST 
 #define TOOTH_LOG_SIZE      127
 #else
@@ -301,9 +298,9 @@
 #define AE_MODE_MULTIPLIER  0
 #define AE_MODE_ADDER       1
 
-#define KNOCK_MODE_OFF      0
-#define KNOCK_MODE_DIGITAL  1
-#define KNOCK_MODE_ANALOG   2
+#define KNOCK_MODE_OFF      0U
+#define KNOCK_MODE_DIGITAL  1U
+#define KNOCK_MODE_ANALOG   2U
 
 #define KNOCK_TRIGGER_HIGH  0
 #define KNOCK_TRIGGER_LOW   1
@@ -587,13 +584,13 @@ struct statuses {
   byte RPMdiv100; ///< RPM value scaled (divided by 100) to fit a byte (0-255, e.g. 12000 => 120)
   long longRPM;   ///< RPM as long int (gets assigned to / maintained in statuses.RPM as well)
   uint16_t mapADC;
-  int baroADC;
+  uint16_t baroADC;
   long MAP;     ///< Manifold absolute pressure. Has to be a long for PID calcs (Boost control)
   int16_t EMAP; ///< EMAP ... (See @ref config6.useEMAP for EMAP enablement)
   uint16_t EMAPADC;
-  byte baro;   ///< Barometric pressure is simply the initial MAP reading, taken before the engine is running. Alternatively, can be taken from an external sensor
-  byte TPS;    /**< The current TPS reading (0% - 100%). Is the tpsADC value after the calibration is applied */
-  byte tpsADC; /**< byte (valued: 0-255) representation of the TPS. Downsampled from the original 10-bit (0-1023) reading, but before any calibration is applied */
+  uint8_t baro;   ///< Barometric pressure is simply the initial MAP reading, taken before the engine is running. Alternatively, can be taken from an external sensor
+  uint8_t TPS;    /**< The current TPS reading (0% - 100%). Is the tpsADC value after the calibration is applied */
+  uint8_t tpsADC; /**< byte (valued: 0-255) representation of the TPS. Downsampled from the original 10-bit (0-1023) reading, but before any calibration is applied */
   int16_t tpsDOT; /**< TPS delta over time. Measures the % per second that the TPS is changing. Note that is signed value, because TPSdot can be also negative */
   byte TPSlast; /**< The previous TPS reading */
   int16_t mapDOT; /**< MAP delta over time. Measures the kpa per second that the MAP is changing. Note that is signed value, because MAPdot can be also negative */
@@ -601,15 +598,15 @@ struct statuses {
   byte VE;     /**< The current VE value being used in the fuel calculation. Can be the same as VE1 or VE2, or a calculated value of both. */
   byte VE1;    /**< The VE value from fuel table 1 */
   byte VE2;    /**< The VE value from fuel table 2, if in use (and required conditions are met) */
-  byte O2;     /**< Primary O2 sensor reading */
-  byte O2_2;   /**< Secondary O2 sensor reading */
+  uint8_t O2;     /**< Primary O2 sensor reading */
+  uint8_t O2_2;   /**< Secondary O2 sensor reading */
   int coolant; /**< Coolant temperature reading */
-  int cltADC;
+  uint16_t cltADC;
   int IAT;     /**< Inlet air temperature reading */
-  int iatADC;
-  int batADC;
-  int O2ADC;
-  int O2_2ADC;
+  uint16_t iatADC;
+  uint16_t batADC;
+  uint16_t O2ADC;
+  uint16_t O2_2ADC;
   uint16_t dwell;          ///< dwell (coil primary winding/circuit on) time (in ms * 10 ? See @ref correctionsDwell)
   volatile uint16_t actualDwell;    ///< actual dwell time if new ignition mode is used (in uS)
   byte dwellCorrection; /**< The amount of correction being applied to the dwell time (in unit ...). */

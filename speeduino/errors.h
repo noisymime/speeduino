@@ -4,20 +4,20 @@
 /*
  * Up to 64 different error codes may be defined (6 bits)
  */
-#define ERR_NONE        0 //No error
-#define ERR_UNKNOWN     1 //Unknown error
-#define ERR_IAT_SHORT   2 //Inlet sensor shorted
-#define ERR_IAT_GND     3 //Inlet sensor grounded
-#define ERR_CLT_SHORT   4 //Coolant sensor shorted
-#define ERR_CLT_GND     5 //Coolant Sensor grounded
-#define ERR_O2_SHORT    6 //O2 sensor shorted
-#define ERR_O2_GND      7 //O2 sensor grounded
-#define ERR_TPS_SHORT   8 //TPS shorted (Is potentially valid)
-#define ERR_TPS_GND     9 //TPS grounded (Is potentially valid)
-#define ERR_BAT_HIGH    10 //Battery voltage is too high
-#define ERR_BAT_LOW     11 //Battery voltage is too low
-#define ERR_MAP_HIGH    12 //MAP output is too high
-#define ERR_MAP_LOW     13 //MAP output is too low
+#define ERR_NONE        0U //No error
+#define ERR_UNKNOWN     1U //Unknown error
+#define ERR_IAT_SHORT   2U //Inlet sensor shorted
+#define ERR_IAT_GND     3U //Inlet sensor grounded
+#define ERR_CLT_SHORT   4U //Coolant sensor shorted
+#define ERR_CLT_GND     5U //Coolant Sensor grounded
+#define ERR_O2_SHORT    6U //O2 sensor shorted
+#define ERR_O2_GND      7U //O2 sensor grounded
+#define ERR_TPS_SHORT   8U //TPS shorted (Is potentially valid)
+#define ERR_TPS_GND     9U //TPS grounded (Is potentially valid)
+#define ERR_BAT_HIGH    10U //Battery voltage is too high
+#define ERR_BAT_LOW     11U //Battery voltage is too low
+#define ERR_MAP_HIGH    12U //MAP output is too high
+#define ERR_MAP_LOW     13U //MAP output is too low
 
 #define ERR_DEFAULT_IAT_SHORT   80 //Note that the default is 40C. 80 is used due to the -40 offset
 #define ERR_DEFAULT_IAT_GND     80 //Note that the default is 40C. 80 is used due to the -40 offset

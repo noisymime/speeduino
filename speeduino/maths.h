@@ -14,7 +14,7 @@
 #include "src/libdivide/constant_fast_div.h"
 #endif
 
-extern uint8_t random1to100(void);
+uint8_t random1to100(void);
 
 /**
  * @defgroup group-rounded-div Rounding integer division
@@ -214,12 +214,6 @@ static inline int16_t nudge(int16_t min, int16_t max, int16_t value, int16_t nud
     if (value>max) { return value - nudgeAmount; }
     return value;
 }
-
-//This is a dedicated function that specifically handles the case of mapping 0-1023 values into a 0 to X range
-//This is a common case because it means converting from a standard 10-bit analog input to a byte or 10-bit analog into 0-511 (Eg the temperature readings)
-#define fastMap1023toX(x, out_max) ( rshift<10>((uint32_t)(x) * (out_max)) )
-//This is a new version that allows for out_min
-#define fastMap10Bit(x, out_min, out_max) ( rshift<10>( (uint32_t)(x) * ((out_max)-(out_min)) ) + (out_min))
 
 #if defined(CORE_AVR) || defined(ARDUINO_ARCH_AVR)
 
