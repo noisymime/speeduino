@@ -51,6 +51,18 @@ static inline int16_t fastMap10Bit(uint16_t value, int16_t rangeMin, int16_t ran
   return rangeMin + (int16_t)fromStartOfRange;
 }
 
+//
+static inline uint16_t readAnalogPin(uint8_t pin) {
+  // Why do we read twice? Who knows.....
+  analogRead(pin);
+  // According to the docs, analogRead result should be in range 0-1023
+  // Clip the result to zero minimum to prevent rollover just in case
+  int tmp = analogRead(pin);
+  // max is a macro on some platforms - DO NOT place the call to analogRead as an inline parameter:
+  // (you might end up calling it twice)
+  return max(0, tmp);
+}
+
 uint32_t MAPcurRev; //Tracks which revolution we're sampling on
 unsigned int MAPcount; //Number of samples taken in the current MAP cycle
 static uint32_t MAPrunningValue = 0UL; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
@@ -75,6 +87,13 @@ static uint8_t mapErrorCount = 0;
 static volatile uint16_t AnChannel[16];
 static inline uint16_t readAnalogSensor(uint8_t pin) {
   return AnChannel[pin-A0];
+}
+static inline uint16_t readMAPSensor(uint8_t pin) {
+#if defined(ANALOG_ISR_MAP)
+  return AnChannel[pin-A0];
+#else
+  return readAnalogPin(pin);
+#endif
 }
 #define ADMUX_DEFAULT_CONFIG  0x40 //AVCC reference, ADC0 input, right adjusted, ADC enabled
 
@@ -110,12 +129,10 @@ ISR(ADC_vect)
 }
 #else
 static inline uint16_t readAnalogSensor(uint8_t pin) {
-  // Why do we read twice? Who knows.....
-  analogRead(pin);
-  // According to the docs, analogRead result should be in range 0-1023
-  // Clip the result to zero minimum to prevent rollover just in case
-  int tmp = analogRead(pin);
-  return max(0, tmp);
+  return readAnalogPin(pin);
+}
+static inline uint16_t readMAPSensor(uint8_t pin) {
+  return readAnalogPin(pin);
 }
 #endif
 
@@ -269,7 +286,7 @@ void instanteneousMAPReading(void)
   MAP_time = micros();
 
   //Instantaneous MAP readings
-  uint16_t tempReading = readAnalogSensor(pinMAP);
+  uint16_t tempReading = readMAPSensor(pinMAP);
 
   //Error checking
   if( (tempReading >= VALID_MAP_MAX) || (tempReading <= VALID_MAP_MIN) ) { mapErrorCount += 1U; }
@@ -285,7 +302,7 @@ void instanteneousMAPReading(void)
   //Repeat for EMAP if it's enabled
   if(configPage6.useEMAP == true)
   {
-    tempReading = readAnalogSensor(pinEMAP);
+    tempReading = readMAPSensor(pinEMAP);
 
     //Error check
     if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
@@ -316,7 +333,7 @@ void readMAP(void)
       {
         if( (MAPcurRev == currentStatus.startRevolutions) || ( (MAPcurRev+1U) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
         {
-          tempReading = readAnalogSensor(pinMAP);
+          tempReading = readMAPSensor(pinMAP);
 
           //Error check
           if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
@@ -330,7 +347,7 @@ void readMAP(void)
           //Repeat for EMAP if it's enabled
           if(configPage6.useEMAP == true)
           {
-            tempReading = readAnalogSensor(pinEMAP);
+            tempReading = readMAPSensor(pinEMAP);
             //Error check
             if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
             {
@@ -389,7 +406,7 @@ void readMAP(void)
       {
         if( (MAPcurRev == currentStatus.startRevolutions) || ((MAPcurRev+1U) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
         {
-          tempReading = readAnalogSensor(pinMAP);
+          tempReading = readMAPSensor(pinMAP);
           //Error check
           if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
           {
@@ -427,7 +444,7 @@ void readMAP(void)
       {
         if( (MAPcurRev == ignitionCount) ) //Watch for a change in the ignition counter to determine whether we're still on the same event
         {
-          tempReading = readAnalogSensor(pinMAP);
+          tempReading = readMAPSensor(pinMAP);
           //Error check
           if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
           {
@@ -534,7 +551,7 @@ void readBaro(void)
   if ( configPage6.useExtBaro != 0U  )
   {
     // readings
-    uint16_t tempReading = readAnalogSensor(pinBaro);
+    uint16_t tempReading = readMAPSensor(pinBaro);
     if(currentStatus.initialisationComplete == true) { currentStatus.baroADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_BARO, currentStatus.baroADC); }//Very weak filter
     else { currentStatus.baroADC = tempReading; } //Baro reading (No filter)
 
