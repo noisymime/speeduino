@@ -604,7 +604,6 @@ struct statuses {
   uint16_t cltADC;
   int IAT;     /**< Inlet air temperature reading */
   uint16_t iatADC;
-  uint16_t batADC;
   uint16_t O2ADC;
   uint16_t O2_2ADC;
   uint16_t dwell;          ///< dwell (coil primary winding/circuit on) time (in ms * 10 ? See @ref correctionsDwell)
