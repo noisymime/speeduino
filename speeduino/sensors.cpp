@@ -76,7 +76,7 @@ static volatile uint8_t vssIndex = 0U;
 
 volatile uint8_t flexCounter = 0U;
 static volatile uint32_t flexStartTime = 0UL;
-volatile unsigned long flexPulseWidth = 0UL;
+volatile uint32_t flexPulseWidth = 0U;
 
 //These variables are used for tracking the number of running sensors values that appear to be errors. Once a threshold is reached, the sensor reading will go to default value and assume the sensor is faulty
 static uint8_t mapErrorCount = 0;
@@ -293,7 +293,7 @@ void instanteneousMAPReading(void)
   else { mapErrorCount = 0U; }
 
   //During startup a call is made here to get the baro reading. In this case, we can't apply the ADC filter
-  if(currentStatus.initialisationComplete == true) { currentStatus.mapADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.mapADC); } //Very weak filter
+  if(currentStatus.initialisationComplete == true) { currentStatus.mapADC = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.mapADC); } //Very weak filter
   else { currentStatus.mapADC = tempReading; } //Baro reading (No filter)
 
   currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
@@ -307,7 +307,7 @@ void instanteneousMAPReading(void)
     //Error check
     if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
       {
-        currentStatus.EMAPADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
+        currentStatus.EMAPADC = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
       }
     else { mapErrorCount += 1U; }
     currentStatus.EMAP = fastMap10Bit(currentStatus.EMAPADC, configPage2.EMAPMin, configPage2.EMAPMax);
@@ -338,7 +338,7 @@ void readMAP(void)
           //Error check
           if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
           {
-            currentStatus.mapADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.mapADC);
+            currentStatus.mapADC = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.mapADC);
             MAPrunningValue += currentStatus.mapADC; //Add the current reading onto the total
             MAPcount++;
           }
@@ -351,7 +351,7 @@ void readMAP(void)
             //Error check
             if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
             {
-              currentStatus.EMAPADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
+              currentStatus.EMAPADC = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
               EMAPrunningValue += currentStatus.EMAPADC; //Add the current reading onto the total
             }
             else { mapErrorCount += 1U; }
@@ -448,7 +448,7 @@ void readMAP(void)
           //Error check
           if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
           {
-            currentStatus.mapADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.mapADC);
+            currentStatus.mapADC = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.mapADC);
             MAPrunningValue += currentStatus.mapADC; //Add the current reading onto the total
             MAPcount++;
           }
@@ -497,14 +497,14 @@ void readTPS(bool useFilter)
   uint8_t tempTPS = (uint8_t)fastMap10Bit(readAnalogSensor(pinTPS), 0U, 255U); //Get the current raw TPS ADC value and map it into a uint8_t
 
   //The use of the filter can be overridden if required. This is used on startup to disable priming pulse if flood clear is wanted
-  if(useFilter == true) { currentStatus.tpsADC = (uint8_t)ADC_FILTER(tempTPS, configPage4.ADCFILTER_TPS, currentStatus.tpsADC); }
+  if(useFilter == true) { currentStatus.tpsADC = (uint8_t)LOW_PASS_FILTER((uint16_t)tempTPS, configPage4.ADCFILTER_TPS, (uint16_t)currentStatus.tpsADC); }
   else { currentStatus.tpsADC = tempTPS; }
   uint8_t tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
 
   if(configPage2.tpsMax > configPage2.tpsMin)
   {
     //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
-    tempADC = constrain(tempADC, configPage2.tpsMin, configPage2.tpsMax);
+    tempADC = clamp(tempADC, configPage2.tpsMin, configPage2.tpsMax);
     currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 0, 200); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
   }
   else
@@ -517,7 +517,7 @@ void readTPS(bool useFilter)
     uint8_t tempTPSMin = 255U - configPage2.tpsMin;
 
     //All checks below are reversed from the standard case above
-    tempADC = constrain(tempADC, tempTPSMin, tempTPSMax);
+    tempADC = clamp(tempADC, tempTPSMin, tempTPSMax);
     currentStatus.TPS = map(tempADC, tempTPSMin, tempTPSMax, 0, 200);
   }
 
@@ -534,7 +534,7 @@ void readCLT(bool useFilter)
 {
   uint16_t tempReading = readAnalogSensor(pinCLT);
   //The use of the filter can be overridden if required. This is used on startup so there can be an immediately accurate coolant value for priming
-  if(useFilter == true) { currentStatus.cltADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_CLT, currentStatus.cltADC); }
+  if(useFilter == true) { currentStatus.cltADC = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_CLT, currentStatus.cltADC); }
   else { currentStatus.cltADC = tempReading; }
   
   currentStatus.coolant = table2D_getValue(&cltCalibrationTable, currentStatus.cltADC) - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
@@ -542,7 +542,7 @@ void readCLT(bool useFilter)
 
 void readIAT(void)
 {
-  currentStatus.iatADC = ADC_FILTER(readAnalogSensor(pinIAT), configPage4.ADCFILTER_IAT, currentStatus.iatADC);
+  currentStatus.iatADC = LOW_PASS_FILTER(readAnalogSensor(pinIAT), configPage4.ADCFILTER_IAT, currentStatus.iatADC);
   currentStatus.IAT = table2D_getValue(&iatCalibrationTable, currentStatus.iatADC) - CALIBRATION_TEMPERATURE_OFFSET;
 }
 
@@ -552,7 +552,7 @@ void readBaro(void)
   {
     // readings
     uint16_t tempReading = readMAPSensor(pinBaro);
-    if(currentStatus.initialisationComplete == true) { currentStatus.baroADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_BARO, currentStatus.baroADC); }//Very weak filter
+    if(currentStatus.initialisationComplete == true) { currentStatus.baroADC = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_BARO, currentStatus.baroADC); }//Very weak filter
     else { currentStatus.baroADC = tempReading; } //Baro reading (No filter)
 
     int16_t tempValue = fastMap10Bit(currentStatus.baroADC, configPage2.baroMin, configPage2.baroMax);
@@ -596,7 +596,7 @@ void readO2(void)
   //An O2 read is only performed if an O2 sensor type is selected. This is to prevent potentially dangerous use of the O2 readings prior to proper setup/calibration
   if(configPage6.egoType > 0U)
   {
-    currentStatus.O2ADC = ADC_FILTER(readAnalogSensor(pinO2), configPage4.ADCFILTER_O2, currentStatus.O2ADC);
+    currentStatus.O2ADC = LOW_PASS_FILTER(readAnalogSensor(pinO2), configPage4.ADCFILTER_O2, currentStatus.O2ADC);
     currentStatus.O2 = table2D_getValue(&o2CalibrationTable, currentStatus.O2ADC);
   }
   else
@@ -611,7 +611,7 @@ void readO2_2(void)
 {
   //Second O2 currently disabled as its not being used
   //Get the current O2 value.
-  currentStatus.O2_2ADC = ADC_FILTER(readAnalogSensor(pinO2_2), configPage4.ADCFILTER_O2, currentStatus.O2_2ADC);
+  currentStatus.O2_2ADC = LOW_PASS_FILTER(readAnalogSensor(pinO2_2), configPage4.ADCFILTER_O2, currentStatus.O2_2ADC);
   currentStatus.O2_2 = table2D_getValue(&o2CalibrationTable, currentStatus.O2_2ADC);
 }
 
@@ -643,7 +643,7 @@ void readBat(void)
     }
   }
 
-  currentStatus.battery10 = ADC_FILTER(tempReading, configPage4.ADCFILTER_BAT, currentStatus.battery10);
+  currentStatus.battery10 = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_BAT, currentStatus.battery10);
 }
 
 /**
@@ -684,7 +684,7 @@ uint16_t getSpeed(void)
     {
       tempSpeed = (currentStatus.canin[configPage2.vssAuxCh] / configPage2.vssPulsesPerKm);
     }
-    tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
+    tempSpeed = LOW_PASS_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
   }
   // Interrupt driven mode
   else if(configPage2.vssMode > 1U)
@@ -703,7 +703,7 @@ uint16_t getSpeed(void)
     else 
     {
       tempSpeed = MICROS_PER_HOUR / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
-      tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
+      tempSpeed = LOW_PASS_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
     }
     if(tempSpeed > 1000U) { tempSpeed = currentStatus.vss; } //Safety check. This usually occurs when there is a hardware issue
   } else {
@@ -743,9 +743,9 @@ byte getFuelPressure(void)
   if(configPage10.fuelPressureEnable > 0U)
   {
     tempFuelPressure = fastMap10Bit(readAnalogSensor(pinFuelPressure), configPage10.fuelPressureMin, configPage10.fuelPressureMax);
-    tempFuelPressure = ADC_FILTER(tempFuelPressure, ADCFILTER_PSI_DEFAULT, currentStatus.fuelPressure); //Apply smoothing factor
+    tempFuelPressure = LOW_PASS_FILTER(tempFuelPressure, ADCFILTER_PSI_DEFAULT, currentStatus.fuelPressure); //Apply smoothing factor
     //Sanity checks
-    tempFuelPressure = constrain(tempFuelPressure, 0, configPage10.fuelPressureMax);
+    tempFuelPressure = clamp(tempFuelPressure, (int16_t)0, (int16_t)configPage10.fuelPressureMax);
   }
 
   return (byte)tempFuelPressure;
@@ -759,9 +759,9 @@ byte getOilPressure(void)
   {
     //Perform ADC read
     tempOilPressure = fastMap10Bit(readAnalogSensor(pinOilPressure), configPage10.oilPressureMin, configPage10.oilPressureMax);
-    tempOilPressure = ADC_FILTER(tempOilPressure, ADCFILTER_PSI_DEFAULT, currentStatus.oilPressure); //Apply smoothing factor
+    tempOilPressure = LOW_PASS_FILTER(tempOilPressure, ADCFILTER_PSI_DEFAULT, currentStatus.oilPressure); //Apply smoothing factor
     //Sanity check
-    tempOilPressure = constrain(tempOilPressure, 0, configPage10.oilPressureMax);
+    tempOilPressure = clamp(tempOilPressure, (int16_t)0, (int16_t)configPage10.oilPressureMax);
   }
 
 
@@ -788,8 +788,8 @@ void flexPulse(void)
 {
   if(READ_FLEX() == true)
   {
-    unsigned long tempPW = (micros() - flexStartTime); //Calculate the pulse width
-    flexPulseWidth = ADC_FILTER(tempPW, configPage4.FILTER_FLEX, flexPulseWidth);
+    uint16_t tempPW = clamp(micros() - flexStartTime, 0UL, (unsigned long)UINT16_MAX); //Calculate the pulse width
+    flexPulseWidth = LOW_PASS_FILTER(tempPW, configPage4.FILTER_FLEX, flexPulseWidth);
     ++flexCounter;
   }
   else

@@ -62,9 +62,6 @@ extern bool decoderHasSecondary; //Whether or not the pattern uses a secondary i
 extern bool decoderHasFixedCrankingTiming; 
 */
 
-//This isn't to to filter out wrong pulses on triggers, but just to smooth out the cam angle reading for better closed loop VVT control.
-#define ANGLE_FILTER(input, alpha, prior) (((long)(input) * (256 - (alpha)) + ((long)(prior) * (alpha)))) >> 8
-
 void loggerPrimaryISR(void);
 void loggerSecondaryISR(void);
 void loggerTertiaryISR(void);

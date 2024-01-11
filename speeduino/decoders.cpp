@@ -718,7 +718,7 @@ static inline void triggerRecordVVT1Angle (void)
     curAngle -= configPage4.triggerAngle; //Value at TDC
     if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCL0DutyAng; }
 
-    currentStatus.vvt1Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);
+    currentStatus.vvt1Angle = LOW_PASS_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);
   }
 }
 
@@ -749,7 +749,7 @@ void triggerThird_missingTooth(void)
     curAngle -= configPage4.triggerAngle; //Value at TDC
     if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage4.vvt2CL0DutyAng; }
     //currentStatus.vvt2Angle = int8_t (curAngle); //vvt1Angle is only int8, but +/-127 degrees is enough for VVT control
-    currentStatus.vvt2Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt2Angle);    
+    currentStatus.vvt2Angle = LOW_PASS_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt2Angle);    
 
     toothLastThirdToothTime = curTime3;
   } //Trigger filter
@@ -2631,7 +2631,7 @@ int getCamAngle_Miata9905(void)
   //lastVVTtime is the time between tooth #1 (10* BTDC) and the single cam tooth. 
   //All cam angles in in BTDC, so the actual advance angle is 370 - timeToAngleDegPerMicroSec(lastVVTtime) - <the angle of the cam at 0 advance>
   curAngle = 370 - timeToAngleDegPerMicroSec(lastVVTtime) - configPage10.vvtCL0DutyAng;
-  currentStatus.vvt1Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);
+  currentStatus.vvt1Angle = LOW_PASS_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);
 
   return currentStatus.vvt1Angle;
 }
@@ -4376,7 +4376,7 @@ void triggerSec_FordST170(void)
       while(curAngle > 360) { curAngle -= 360; }
       if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP )
       {
-        curAngle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, curAngle);
+        curAngle = LOW_PASS_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, curAngle);
         currentStatus.vvt1Angle = 360 - curAngle - configPage10.vvtCL0DutyAng;
       }
     }

@@ -294,4 +294,45 @@ static inline uint16_t udiv_32_16_closest(uint32_t dividend, uint16_t divisor)
 #endif
 }
 
+/**
+ * @brief clamps a given value between the minimum and maximum thresholds.
+ * 
+ * Uses operator< to compare the values.
+ * 
+ * @tparam T Any type that supports operator<
+ * @param v The value to clamp 
+ * @param lo The minimum threshold
+ * @param hi The maximum threshold
+ * @return if v compares less than lo, returns lo; otherwise if hi compares less than v, returns hi; otherwise returns v.
+ */
+template<class T>
+constexpr const T& clamp(const T& v, const T& lo, const T& hi){
+    return v<lo ? lo : hi<v ? hi : v;
+}
+
+/**
+ * @brief Simple low pass IIR filter for U16 values
+ * 
+ * This is effectively implementing the smooth filter from playground.arduino.cc/Main/Smooth
+ * But removes the use of floats and uses 8 bits of fixed precision.
+ */
+static inline uint16_t LOW_PASS_FILTER(uint16_t input, uint8_t alpha, uint16_t prior) {
+  // Intermediate steps are for MISRA compliance
+  // Equivalent to: (input * (256 - alpha) + (prior * alpha)) >> 8
+  uint16_t inv_alpha = 256U - (uint16_t)alpha;
+  uint32_t prior_alpha = (prior * (uint32_t)alpha);
+  uint32_t preshift = (input * (uint32_t)inv_alpha) + prior_alpha;
+  return preshift >> 8U;
+}
+
+/** @brief Simple low pass IIR filter for S16 values */
+static inline int16_t LOW_PASS_FILTER(int16_t input, uint8_t alpha, int16_t prior) {
+  // Intermediate steps are for MISRA compliance
+  // Equivalent to: (input * (256 - alpha) + (prior * alpha)) >> 8
+  int16_t inv_alpha = 256 - (int16_t)alpha;
+  int32_t prior_alpha = (prior * (int32_t)alpha);
+  int32_t preshift = ((input * (int32_t)inv_alpha) + prior_alpha);
+  return (uint32_t)preshift >> 8U;
+}
+
 #endif

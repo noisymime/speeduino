@@ -26,7 +26,7 @@
 #define TPS_READ_FREQUENCY  30 //ONLY VALID VALUES ARE 15 or 30!!!
 
 extern volatile byte flexCounter;
-extern volatile unsigned long flexPulseWidth;
+extern volatile uint32_t flexPulseWidth;
 
 #if defined(CORE_AVR)
   #define READ_FLEX() ((*flex_pin_port & flex_pin_mask) ? true : false)
@@ -40,15 +40,6 @@ extern bool auxIsEnabled;
 extern uint16_t MAPlast; /**< The previous MAP reading */
 extern unsigned long MAP_time; //The time the MAP sample was taken
 extern unsigned long MAPlast_time; //The time the previous MAP sample was taken
-
-/**
- * @brief Simple low pass IIR filter macro for the analog inputs
- * This is effectively implementing the smooth filter from playground.arduino.cc/Main/Smooth
- * But removes the use of floats and uses 8 bits of fixed precision.
- */
-static inline uint16_t ADC_FILTER(uint16_t input, uint8_t alpha, uint16_t prior) {
-  return ((input * (256U - (uint16_t)alpha) + (prior * alpha))) >> 8U;
-}
 
 void initialiseADC(void);
 void readTPS(bool useFilter=true); //Allows the option to override the use of the filter
