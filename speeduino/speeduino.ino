@@ -1056,7 +1056,7 @@ void loop(void)
 #endif
 
 #if defined(USE_IGN_REFRESH)
-        if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > crankAngle) && (configPage4.StgCycles == 0) && (configPage2.perToothIgn != true) )
+        if( isRunning(ignitionSchedule1) && (ignition1EndAngle > crankAngle) && (configPage4.StgCycles == 0) && (configPage2.perToothIgn != true) )
         {
           unsigned long uSToEnd = 0;
 

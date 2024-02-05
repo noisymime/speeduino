@@ -27,7 +27,7 @@ static inline uint16_t calculateInjectorStartAngle(uint16_t pwDegrees, int16_t i
 
 static inline __attribute__((always_inline)) uint32_t _calculateAngularTime(const Schedule &schedule, uint16_t eventAngle, uint16_t crankAngle, uint16_t maxAngle) {
   int16_t delta = eventAngle - crankAngle;
-  if (delta<0 && (schedule.Status == RUNNING)) {
+  if (delta<0 && isRunning(schedule)) {
     delta = delta + (int16_t)maxAngle; 
   } 
 
@@ -84,18 +84,17 @@ static inline uint32_t calculateIgnitionTimeout(const IgnitionSchedule &schedule
 static inline void adjustCrankAngle(IgnitionSchedule &schedule, int startAngle, int endAngle, int crankAngle) {
   constexpr uint8_t MIN_CYCLES_FOR_CORRECTION = 6U;
 
-  if( (schedule.Status == RUNNING) ) { 
+  if( isRunning(schedule) ) { 
     // Coil is charging so change the charge time so the spark fires at
     // the requested crank angle (this could reduce dwell time & potentially
     // result in a weaker spark).
     uint32_t timeToSpark = angleToTimeMicroSecPerDegree( ignitionLimits(endAngle-crankAngle) );
     COMPARE_TYPE ticksToSpark = (COMPARE_TYPE)uS_TO_TIMER_COMPARE( timeToSpark );
-    schedule.Duration = ticksToSpark; 
     SET_COMPARE(schedule._compare, schedule._counter + ticksToSpark); 
   }
   else if((schedule.Status==PENDING) && (currentStatus.startRevolutions > MIN_CYCLES_FOR_CORRECTION) ) { 
     // We are waiting for the timer to fire & start charging the coil.
-    // Keep dwell constant (for better spark) - instead adjust the waiting period so 
+    // Keep dwell (I.e. duration) constant (for better spark) - instead adjust the waiting period so 
     // the spark fires at the requested crank angle.
     uint32_t timeToRun = angleToTimeMicroSecPerDegree( ignitionLimits(startAngle-crankAngle) );
     COMPARE_TYPE ticksToRun = (COMPARE_TYPE)uS_TO_TIMER_COMPARE( timeToRun );

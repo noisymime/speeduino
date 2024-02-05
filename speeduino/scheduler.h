@@ -110,6 +110,8 @@ enum ScheduleStatus {
   PENDING,
   /** The schedule action is running */
   RUNNING,
+  /** The schedule is running, with a next schedule queued up */
+  RUNNING_WITHNEXT,
 }; 
 
 
@@ -150,18 +152,27 @@ struct Schedule {
    */
   Schedule(counter_t &counter, compare_t &compare);
 
-  volatile COMPARE_TYPE Duration;   ///< Scheduled duration (timer ticks)
-  volatile ScheduleStatus Status;   ///< Schedule status: OFF, PENDING, STAGED, RUNNING
+  /**
+   * @brief Scheduled duration (timer ticks) 
+   *
+   * This captures the duration of the *next* interval to be scheduled. I.e.
+   *  * Status==PENDING: this is the duration that will be used when the schedule moves to the RUNNING state 
+   *  * Status==RUNNING_WITHNEXT: this is the duration that will be used after the current schedule finishes and the queued up scheduled starts 
+   */
+  volatile COMPARE_TYPE Duration;   ///< 
+  volatile ScheduleStatus Status;   ///< Schedule status
   voidVoidCallback pStartCallback;  ///< Start Callback function for schedule
   voidVoidCallback pEndCallback;    ///< End Callback function for schedule
 
-  volatile COMPARE_TYPE nextStartCompare;    ///< Planned start of next schedule (when current schedule is RUNNING)
-  volatile COMPARE_TYPE nextDuration;        ///< Planned end of next schedule (when current schedule is RUNNING)
+  volatile COMPARE_TYPE nextStartCompare;    ///< Planned start of next schedule (when current schedule is RUNNING_WITHNEXT)
   
   counter_t &_counter;       ///< **Reference** to the counter register. E.g. TCNT3
   compare_t &_compare;       ///< **Reference**to the compare register. E.g. OCR3A
 };
 
+static inline bool isRunning(const Schedule &schedule) {
+  return schedule.Status==RUNNING || schedule.Status==RUNNING_WITHNEXT;
+}
 
 void _setScheduleNext(Schedule &schedule, uint32_t timeout, uint32_t duration);
 
@@ -182,7 +193,7 @@ void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeo
 
 static inline __attribute__((always_inline)) void setIgnitionSchedule(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration) {
   noInterrupts();
-  if(schedule.Status != RUNNING) { //Check that we're not already part way through a schedule
+  if(!isRunning(schedule)) { //Check that we're not already part way through a schedule
     _setIgnitionScheduleRunning(schedule, timeout, duration);
   // Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
   } else if(timeout < MAX_TIMER_PERIOD){
@@ -209,7 +220,7 @@ static inline __attribute__((always_inline)) void setFuelSchedule(FuelSchedule &
     //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
   if(timeout < MAX_TIMER_PERIOD) {
     noInterrupts();
-    if(schedule.Status != RUNNING) { //Check that we're not already part way through a schedule
+    if(!isRunning(schedule)) { //Check that we're not already part way through a schedule
       _setFuelScheduleRunning(schedule, timeout, duration);
     }
     else {
