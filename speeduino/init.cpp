@@ -3630,47 +3630,47 @@ void initialiseTriggers(void)
 }
 
 static inline bool isAnyFuelScheduleRunning(void) {
-  return fuelSchedule1.Status==RUNNING
-      || fuelSchedule2.Status==RUNNING
-      || fuelSchedule3.Status==RUNNING
-      || fuelSchedule4.Status==RUNNING
+  return isRunning(fuelSchedule1)
+      || isRunning(fuelSchedule2)
+      || isRunning(fuelSchedule3)
+      || isRunning(fuelSchedule4)
 #if INJ_CHANNELS >= 5      
-      || fuelSchedule5.Status==RUNNING
+      || isRunning(fuelSchedule5)
 #endif
 #if INJ_CHANNELS >= 6
-      || fuelSchedule6.Status==RUNNING
+      || isRunning(fuelSchedule6)
 #endif
 #if INJ_CHANNELS >= 7
-      || fuelSchedule7.Status==RUNNING
+      || isRunning(fuelSchedule7)
 #endif
 #if INJ_CHANNELS >= 8
-      || fuelSchedule8.Status==RUNNING
+      || isRunning(fuelSchedule8)
 #endif
       ;
 }
 
 static inline bool isAnyIgnScheduleRunning(void) {
-  return ignitionSchedule1.Status==RUNNING      
+  return isRunning(ignitionSchedule1)      
 #if IGN_CHANNELS >= 2 
-      || ignitionSchedule2.Status==RUNNING
+      || isRunning(ignitionSchedule2)
 #endif      
 #if IGN_CHANNELS >= 3 
-      || ignitionSchedule3.Status==RUNNING
+      || isRunning(ignitionSchedule3)
 #endif      
 #if IGN_CHANNELS >= 4       
-      || ignitionSchedule4.Status==RUNNING
+      || isRunning(ignitionSchedule4)
 #endif      
 #if IGN_CHANNELS >= 5      
-      || ignitionSchedule5.Status==RUNNING
+      || isRunning(ignitionSchedule5)
 #endif
 #if IGN_CHANNELS >= 6
-      || ignitionSchedule6.Status==RUNNING
+      || isRunning(ignitionSchedule6)
 #endif
 #if IGN_CHANNELS >= 7
-      || ignitionSchedule7.Status==RUNNING
+      || isRunning(ignitionSchedule7)
 #endif
 #if IGN_CHANNELS >= 8
-      || ignitionSchedule8.Status==RUNNING
+      || isRunning(ignitionSchedule8)
 #endif
       ;
 }
