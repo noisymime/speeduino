@@ -234,10 +234,10 @@ void TMR1_isr(void)
   bool interrupt3 = (TMR1_CSCTRL2 & TMR_CSCTRL_TCF1);
   bool interrupt4 = (TMR1_CSCTRL3 & TMR_CSCTRL_TCF1);
 
-  if(interrupt1)      { TMR1_CSCTRL0 &= ~TMR_CSCTRL_TCF1; fuelSchedule1Interrupt(); }
-  else if(interrupt2) { TMR1_CSCTRL1 &= ~TMR_CSCTRL_TCF1; fuelSchedule2Interrupt(); }
-  else if(interrupt3) { TMR1_CSCTRL2 &= ~TMR_CSCTRL_TCF1; fuelSchedule3Interrupt(); }
-  else if(interrupt4) { TMR1_CSCTRL3 &= ~TMR_CSCTRL_TCF1; fuelSchedule4Interrupt(); }
+  if(interrupt1)      { TMR1_CSCTRL0 &= ~TMR_CSCTRL_TCF1; FUEL_INTERRUPT_NAME(1)(); }
+  else if(interrupt2) { TMR1_CSCTRL1 &= ~TMR_CSCTRL_TCF1; FUEL_INTERRUPT_NAME(2)(); }
+  else if(interrupt3) { TMR1_CSCTRL2 &= ~TMR_CSCTRL_TCF1; FUEL_INTERRUPT_NAME(3)(); }
+  else if(interrupt4) { TMR1_CSCTRL3 &= ~TMR_CSCTRL_TCF1; FUEL_INTERRUPT_NAME(4)(); }
 }
 void TMR2_isr(void)
 {
@@ -247,10 +247,10 @@ void TMR2_isr(void)
   bool interrupt3 = (TMR2_CSCTRL2 & TMR_CSCTRL_TCF1);
   bool interrupt4 = (TMR2_CSCTRL3 & TMR_CSCTRL_TCF1);
 
-  if(interrupt1)      { TMR2_CSCTRL0 &= ~TMR_CSCTRL_TCF1; ignitionSchedule1Interrupt(); }
-  else if(interrupt2) { TMR2_CSCTRL1 &= ~TMR_CSCTRL_TCF1; ignitionSchedule2Interrupt(); }
-  else if(interrupt3) { TMR2_CSCTRL2 &= ~TMR_CSCTRL_TCF1; ignitionSchedule3Interrupt(); }
-  else if(interrupt4) { TMR2_CSCTRL3 &= ~TMR_CSCTRL_TCF1; ignitionSchedule4Interrupt(); }
+  if(interrupt1)      { TMR2_CSCTRL0 &= ~TMR_CSCTRL_TCF1; IGNITION_INTERRUPT_NAME(1)(); }
+  else if(interrupt2) { TMR2_CSCTRL1 &= ~TMR_CSCTRL_TCF1; IGNITION_INTERRUPT_NAME(2)(); }
+  else if(interrupt3) { TMR2_CSCTRL2 &= ~TMR_CSCTRL_TCF1; IGNITION_INTERRUPT_NAME(3)(); }
+  else if(interrupt4) { TMR2_CSCTRL3 &= ~TMR_CSCTRL_TCF1; IGNITION_INTERRUPT_NAME(4)(); }
 }
 void TMR3_isr(void)
 {
@@ -260,10 +260,10 @@ void TMR3_isr(void)
   bool interrupt3 = (TMR3_CSCTRL2 & TMR_CSCTRL_TCF1);
   bool interrupt4 = (TMR3_CSCTRL3 & TMR_CSCTRL_TCF1);
 
-  if(interrupt1)      { TMR3_CSCTRL0 &= ~TMR_CSCTRL_TCF1; fuelSchedule5Interrupt(); }
-  else if(interrupt2) { TMR3_CSCTRL1 &= ~TMR_CSCTRL_TCF1; fuelSchedule6Interrupt(); }
-  else if(interrupt3) { TMR3_CSCTRL2 &= ~TMR_CSCTRL_TCF1; fuelSchedule7Interrupt(); }
-  else if(interrupt4) { TMR3_CSCTRL3 &= ~TMR_CSCTRL_TCF1; fuelSchedule8Interrupt(); }
+  if(interrupt1)      { TMR3_CSCTRL0 &= ~TMR_CSCTRL_TCF1; FUEL_INTERRUPT_NAME(5)(); }
+  else if(interrupt2) { TMR3_CSCTRL1 &= ~TMR_CSCTRL_TCF1; FUEL_INTERRUPT_NAME(6)(); }
+  else if(interrupt3) { TMR3_CSCTRL2 &= ~TMR_CSCTRL_TCF1; FUEL_INTERRUPT_NAME(7)(); }
+  else if(interrupt4) { TMR3_CSCTRL3 &= ~TMR_CSCTRL_TCF1; FUEL_INTERRUPT_NAME(8)(); }
 }
 void TMR4_isr(void)
 {
@@ -273,10 +273,10 @@ void TMR4_isr(void)
   bool interrupt3 = (TMR4_CSCTRL2 & TMR_CSCTRL_TCF1);
   bool interrupt4 = (TMR4_CSCTRL3 & TMR_CSCTRL_TCF1);
 
-  if(interrupt1)      { TMR4_CSCTRL0 &= ~TMR_CSCTRL_TCF1; ignitionSchedule5Interrupt(); }
-  else if(interrupt2) { TMR4_CSCTRL1 &= ~TMR_CSCTRL_TCF1; ignitionSchedule6Interrupt(); }
-  else if(interrupt3) { TMR4_CSCTRL2 &= ~TMR_CSCTRL_TCF1; ignitionSchedule7Interrupt(); }
-  else if(interrupt4) { TMR4_CSCTRL3 &= ~TMR_CSCTRL_TCF1; ignitionSchedule8Interrupt(); }
+  if(interrupt1)      { TMR4_CSCTRL0 &= ~TMR_CSCTRL_TCF1; IGNITION_INTERRUPT_NAME(5)(); }
+  else if(interrupt2) { TMR4_CSCTRL1 &= ~TMR_CSCTRL_TCF1; IGNITION_INTERRUPT_NAME(6)(); }
+  else if(interrupt3) { TMR4_CSCTRL2 &= ~TMR_CSCTRL_TCF1; IGNITION_INTERRUPT_NAME(7)(); }
+  else if(interrupt4) { TMR4_CSCTRL3 &= ~TMR_CSCTRL_TCF1; IGNITION_INTERRUPT_NAME(8)(); }
 }
 
 uint16_t freeRam()

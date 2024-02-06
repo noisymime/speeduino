@@ -318,95 +318,56 @@ static inline __attribute__((always_inline)) void onFuelScheduleTimer(FuelSchedu
   movetoNextState(schedule, defaultPendingToRunning, defaultRunningToOff, defaultRunningToPending);
 } 
 
+/** @brief Declares and defines a fuel schedule timer interrupt */
+#if defined(CORE_AVR) //AVR chips use the ISR for this
+#define FUEL_INTERRUPT(index, avr_vector) \
+  ISR((avr_vector)) { \
+    onFuelScheduleTimer(fuelSchedule ## index); \
+  }
+#else
+#define FUEL_INTERRUPT(index, avr_vector) \
+  void FUEL_INTERRUPT_NAME(index) (void) { \
+    onFuelScheduleTimer(fuelSchedule ## index); \
+  }
+#endif
+
 /** @brief ISR for fuel channel 1 */
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-ISR(TIMER3_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void fuelSchedule1Interrupt() //Most ARM chips can simply call a function
-#endif
-  {
-    onFuelScheduleTimer(fuelSchedule1);
-  }
-
-
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(1, TIMER3_COMPA_vect)
+#if INJ_CHANNELS >= 2
 /** @brief ISR for fuel channel 2 */
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-ISR(TIMER3_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void fuelSchedule2Interrupt() //Most ARM chips can simply call a function
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(2, TIMER3_COMPB_vect)
 #endif
-  {
-    onFuelScheduleTimer(fuelSchedule2);
-  }
-
-
+#if INJ_CHANNELS >= 3
 /** @brief ISR for fuel channel 3 */
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-ISR(TIMER3_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void fuelSchedule3Interrupt() //Most ARM chips can simply call a function
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(3, TIMER3_COMPC_vect)
 #endif
-  {
-    onFuelScheduleTimer(fuelSchedule3);
-  }
-
-
+#if INJ_CHANNELS >= 4
 /** @brief ISR for fuel channel 4 */
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-ISR(TIMER4_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void fuelSchedule4Interrupt() //Most ARM chips can simply call a function
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(4, TIMER4_COMPB_vect)
 #endif
-  {
-    onFuelScheduleTimer(fuelSchedule4);
-  }
-
 #if INJ_CHANNELS >= 5
 /** @brief ISR for fuel channel 5 */
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER4_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void fuelSchedule5Interrupt() //Most ARM chips can simply call a function
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(5, TIMER4_COMPC_vect)
 #endif
-  {
-    onFuelScheduleTimer(fuelSchedule5);
-  }
-#endif
-
 #if INJ_CHANNELS >= 6
 /** @brief ISR for fuel channel 6 */
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER4_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void fuelSchedule6Interrupt() //Most ARM chips can simply call a function
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(6, TIMER4_COMPA_vect)
 #endif
-  {
-    onFuelScheduleTimer(fuelSchedule6);
-  }
-#endif
-
 #if INJ_CHANNELS >= 7
 /** @brief ISR for fuel channel 7 */
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER5_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void fuelSchedule7Interrupt() //Most ARM chips can simply call a function
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(7, TIMER5_COMPC_vect)
 #endif
-  {
-    onFuelScheduleTimer(fuelSchedule7);
-  }
-#endif
-
 #if INJ_CHANNELS >= 8
 /** @brief ISR for fuel channel 8 */
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER5_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void fuelSchedule8Interrupt() //Most ARM chips can simply call a function
-#endif
-  {
-    onFuelScheduleTimer(fuelSchedule8);
-  }
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(8, TIMER5_COMPB_vect)
 #endif
 
 ///@}
@@ -465,110 +426,66 @@ static inline void ignitionRunningToPending(Schedule *pSchedule) {
   onEndIgnitionEvent((IgnitionSchedule *)pSchedule);
 }
 
-
 /**
  * @brief Shared ignition schedule timer ISR *implementation*. Should be called by the actual ignition timer ISRs
  * (as timed interrupts) when either the start time or the duration time are reached. See @ref schedule-state-machine
  * 
  * @param schedule The ignition schedule to move to the next state
  */
-static inline __attribute__((always_inline)) void ignitionScheduleISR(IgnitionSchedule &schedule)
+static inline __attribute__((always_inline)) void onIgnitionScheduleTimer(IgnitionSchedule &schedule)
 {
   movetoNextState(schedule, ignitionPendingToRunning, ignitionRunningToOff, ignitionRunningToPending);
 }
 
-/** @brief ISR for ignition channel 1 */
+/** @brief Declares and defines an ignition schedule timer interrupt */
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER5_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void ignitionSchedule1Interrupt(void) //Most ARM chips can simply call a function
-#endif
-  {
-    ignitionScheduleISR(ignitionSchedule1);
+#define IGNITION_INTERRUPT(index, avr_vector) \
+  ISR((avr_vector)) { \
+    onIgnitionScheduleTimer(ignitionSchedule ## index); \
   }
+#else
+#define IGNITION_INTERRUPT(index, avr_vector) \
+  void IGNITION_INTERRUPT_NAME(index) (void) { \
+    onIgnitionScheduleTimer(ignitionSchedule ## index); \
+  }
+#endif
 
+/** @brief ISR for ignition channel 1 */
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(1, TIMER5_COMPA_vect)
 #if IGN_CHANNELS >= 2
 /** @brief ISR for ignition channel 2 */
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER5_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void ignitionSchedule2Interrupt(void) //Most ARM chips can simply call a function
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(2, TIMER5_COMPB_vect)
 #endif
-  {
-    ignitionScheduleISR(ignitionSchedule2);
-  }
-#endif
-
 #if IGN_CHANNELS >= 3
 /** @brief ISR for ignition channel 3 */
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER5_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void ignitionSchedule3Interrupt(void) //Most ARM chips can simply call a function
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(3, TIMER5_COMPC_vect)
 #endif
-  {
-    ignitionScheduleISR(ignitionSchedule3);
-  }
-#endif
-
 #if IGN_CHANNELS >= 4
 /** @brief ISR for ignition channel 4 */
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER4_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void ignitionSchedule4Interrupt(void) //Most ARM chips can simply call a function
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(4, TIMER4_COMPA_vect)
 #endif
-  {
-    ignitionScheduleISR(ignitionSchedule4);
-  }
-#endif
-
 #if IGN_CHANNELS >= 5
-/** @brief ISR for ignition channel 5 */
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER4_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void ignitionSchedule5Interrupt(void) //Most ARM chips can simply call a function
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(5, TIMER4_COMPC_vect)
 #endif
-  {
-    ignitionScheduleISR(ignitionSchedule5);
-  }
-#endif
-
 #if IGN_CHANNELS >= 6
 /** @brief ISR for ignition channel 6 */
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER4_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void ignitionSchedule6Interrupt(void) //Most ARM chips can simply call a function
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(6, TIMER4_COMPB_vect)
 #endif
-  {
-    ignitionScheduleISR(ignitionSchedule6);
-  }
-#endif
-
 #if IGN_CHANNELS >= 7
 /** @brief ISR for ignition channel 7 */
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER3_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void ignitionSchedule7Interrupt(void) //Most ARM chips can simply call a function
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(7, TIMER3_COMPC_vect)
 #endif
-  {
-    ignitionScheduleISR(ignitionSchedule7);
-  }
-#endif
-
 #if IGN_CHANNELS >= 8
 /** @brief ISR for ignition channel 8 */
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER3_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void ignitionSchedule8Interrupt(void) //Most ARM chips can simply call a function
-#endif
-  {
-    ignitionScheduleISR(ignitionSchedule8);
-  }
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(8, TIMER3_COMPB_vect)
 #endif
 
 ///@}

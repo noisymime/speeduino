@@ -58,45 +58,52 @@ void refreshIgnitionSchedule1(unsigned long timeToEnd);
 
 //The ARM cores use separate functions for their ISRs
 #if defined(ARDUINO_ARCH_STM32) || defined(CORE_TEENSY)
-  void fuelSchedule1Interrupt(void);
-  void fuelSchedule2Interrupt(void);
-  void fuelSchedule3Interrupt(void);
-  void fuelSchedule4Interrupt(void);
+  #define FUEL_INTERRUPT_NAME(index) CONCAT(CONCAT(fuelSchedule, index), Interrupt)
+  void FUEL_INTERRUPT_NAME(1)(void);
+#if (INJ_CHANNELS >= 2)
+  void FUEL_INTERRUPT_NAME(2)(void);
+#endif
+#if (INJ_CHANNELS >= 3)
+  void FUEL_INTERRUPT_NAME(3)(void);
+#endif
+#if (INJ_CHANNELS >= 4)
+  void FUEL_INTERRUPT_NAME(4)(void);
+#endif
 #if (INJ_CHANNELS >= 5)
-  void fuelSchedule5Interrupt(void);
+  void FUEL_INTERRUPT_NAME(5)(void);
 #endif
 #if (INJ_CHANNELS >= 6)
-  void fuelSchedule6Interrupt(void);
+  void FUEL_INTERRUPT_NAME(6)(void);
 #endif
 #if (INJ_CHANNELS >= 7)
-  void fuelSchedule7Interrupt(void);
+  void FUEL_INTERRUPT_NAME(7)(void);
 #endif
 #if (INJ_CHANNELS >= 8)
-  void fuelSchedule8Interrupt(void);
+  void FUEL_INTERRUPT_NAME(8)(void);
 #endif
-#if (IGN_CHANNELS >= 1)
-  void ignitionSchedule1Interrupt(void);
-#endif
+
+  #define IGNITION_INTERRUPT_NAME(index) CONCAT(CONCAT(ignitionSchedule, index), Interrupt)
+  void IGNITION_INTERRUPT_NAME(1)(void);
 #if (IGN_CHANNELS >= 2)
-  void ignitionSchedule2Interrupt(void);
+  void IGNITION_INTERRUPT_NAME(2)(void);
 #endif
 #if (IGN_CHANNELS >= 3)
-  void ignitionSchedule3Interrupt(void);
+  void IGNITION_INTERRUPT_NAME(3)(void);
 #endif
 #if (IGN_CHANNELS >= 4)
-  void ignitionSchedule4Interrupt(void);
+  void IGNITION_INTERRUPT_NAME(4)(void);
 #endif
 #if (IGN_CHANNELS >= 5)
-  void ignitionSchedule5Interrupt(void);
+  void IGNITION_INTERRUPT_NAME(5)(void);
 #endif
 #if (IGN_CHANNELS >= 6)
-  void ignitionSchedule6Interrupt(void);
+  void IGNITION_INTERRUPT_NAME(6)(void);
 #endif
 #if (IGN_CHANNELS >= 7)
-  void ignitionSchedule7Interrupt(void);
+  void IGNITION_INTERRUPT_NAME(7)(void);
 #endif
 #if (IGN_CHANNELS >= 8)
-  void ignitionSchedule8Interrupt(void);
+  void IGNITION_INTERRUPT_NAME(8)(void);
 #endif
 #endif
 
