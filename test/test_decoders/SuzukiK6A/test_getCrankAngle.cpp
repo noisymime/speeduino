@@ -14,7 +14,8 @@ static void test_k6a_getCrankAngle_tooth(uint8_t toothNum, uint16_t expectedCran
 }
 
 static void test_k6a_getCrankAngle_tooth0(void) {
-    test_k6a_getCrankAngle_tooth(0, 0, 90);
+    // Zero isn't a valid tooth, but just in case....
+    test_k6a_getCrankAngle_tooth(0, 650, 90);
 }
 
 static void test_k6a_getCrankAngle_tooth1(void) {
@@ -47,7 +48,8 @@ static void test_k6a_getCrankAngle_tooth7(void) {
 }
 
 static void test_k6a_getCrankAngle_tooth8(void) {
-    test_k6a_getCrankAngle_tooth(8, 0, 90);
+    // 8 isn't a valid tooth, but just in case....
+    test_k6a_getCrankAngle_tooth(8, 0, 70);
 }
 
 void testSuzukiK6A_getCrankAngle()

@@ -5435,6 +5435,7 @@ void triggerSetup_SuzukiK6A(void)
 
   // not using toothAngles[0] as i'm hoping it makes logic easier
 
+  toothAngles[0] = -70;                 // Wrap around to 650, 
   toothAngles[1] = 0;                   // 0 TDC cylinder 1, 
   toothAngles[2] = 170;                 // 170 - end of cylinder 1, start of cylinder 3, trigger ignition for cylinder 3 on this tooth
   toothAngles[3] = 240;                 // 70 TDC cylinder 3
@@ -5678,56 +5679,23 @@ uint16_t getRPM_SuzukiK6A(void)
 
 int getCrankAngle_SuzukiK6A(void)
 {
-  int crankAngle = 0;
-
-  //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
-  unsigned long tempToothLastToothTime;
-  int tempToothCurrentCount;
   //Grab some variables that are used in the trigger code and assign them to temp variables.
   noInterrupts();
-  tempToothCurrentCount = toothCurrentCount;
-  tempToothLastToothTime = toothLastToothTime;
+  uint16_t tempToothCurrentCount = toothCurrentCount;
+  unsigned long tempToothLastToothTime = toothLastToothTime;
   lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
   interrupts();
 
-  crankAngle = toothAngles[(tempToothCurrentCount)] + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
+  if (tempToothCurrentCount>0U) {
+    triggerToothAngle  = toothAngles[tempToothCurrentCount]- toothAngles[tempToothCurrentCount-1U];
+  }
   
   //Estimate the number of degrees travelled since the last tooth}
   elapsedTime = (lastCrankAngleCalc - tempToothLastToothTime);
 
-  switch(toothCurrentCount)
-  {
-    case 2:
-    case 4:
-      // equivalent of tooth 1 except we've not done rotation code yet so its 8
-      // 170 degree tooth, next tooth is 70          
-      triggerToothAngle = 170;
-      break;
-
-    case 5:
-      // 70 degrees, next tooth is 35
-      triggerToothAngle = 70;
-      break;
-
-    case 6:
-      // sync tooth, next tooth is 135
-      triggerToothAngle = 35;
-      break;
-
-    case 7:
-      // 135 degre tooth, next tooth is 70
-      triggerToothAngle = 135;
-      break;
-
-    case 1:
-    case 3:
-      // 70 degree tooth, next tooth is 170
-      triggerToothAngle = 70;
-      break;
-  }
+  int crankAngle = toothAngles[tempToothCurrentCount] + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
   crankAngle += timeToAngleDegPerMicroSec(elapsedTime);
   if (crankAngle >= 720) { crankAngle -= 720; }
-//  if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; } not needed, crank angle max gets max from injection or ignition, we have to be over 720 degrees so can ignore
   if (crankAngle < 0) { crankAngle += 720; }   
 
   return crankAngle;
