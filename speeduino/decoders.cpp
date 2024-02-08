@@ -5685,7 +5685,7 @@ int getCrankAngle_SuzukiK6A(void)
   lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
   interrupts();
 
-  if (tempToothCurrentCount>0U) {
+  if (tempToothCurrentCount>0) {
     triggerToothAngle  = toothAngles[tempToothCurrentCount]- toothAngles[tempToothCurrentCount-1U];
   }
   
@@ -5701,71 +5701,29 @@ int getCrankAngle_SuzukiK6A(void)
 }
 
 // Assumes no advance greater than 48 degrees. Trigers on the tooth before the ignition event
+static uint16_t __attribute__((noinline)) calcEndTeeth_SuzukiK6A(int ignitionAngle) {
+  //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
+  const int16_t tempIgnitionEndTooth = ignitionLimits(ignitionAngle - configPage4.triggerAngle);
+
+  uint8_t nCount=1;
+  while ((nCount<8U) && (tempIgnitionEndTooth > toothAngles[nCount])) {
+    ++nCount;
+  }
+  if(nCount==1U || nCount==8U) {
+    // didn't find a match, use tooth 7 as it must be greater than 7 but less than 1.  
+    return 7U;
+  } 
+
+  // The tooth we want is the tooth prior to this one.     
+  return nCount-1U;
+}
+
 void triggerSetEndTeeth_SuzukiK6A(void)
 {
-  byte nCount, bExit;
-
-  //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
-  int16_t tempIgnitionEndTooth;
-
-  tempIgnitionEndTooth = (ignition1EndAngle - configPage4.triggerAngle);
-
-  tempIgnitionEndTooth = ignitionLimits(tempIgnitionEndTooth);
-
-  for (nCount = 1, bExit = false; nCount < 8 && bExit == false; nCount++)
-  {
-    if(tempIgnitionEndTooth <= toothAngles[nCount])
-    { 
-      // The tooth we want is the tooth prior to this one.     
-      tempIgnitionEndTooth = nCount-1;
-      if (tempIgnitionEndTooth <= 0)
-      { tempIgnitionEndTooth = 7; }    
-      bExit = true;
-    }
-  }
-  if(nCount == 8)
-  { tempIgnitionEndTooth = 7; } // didn't find a match, use tooth 7 as it must be greater than 7 but less than 1.  
-  ignition1EndTooth = tempIgnitionEndTooth;
-
-  //--------------------
-
-  tempIgnitionEndTooth = (ignition2EndAngle - configPage4.triggerAngle);
-  tempIgnitionEndTooth = ignitionLimits(tempIgnitionEndTooth);
-  
-  for (nCount = 1, bExit = false; nCount < 8 && bExit == false; nCount++)
-  {
-    if(tempIgnitionEndTooth <= toothAngles[nCount])
-    { 
-      // The tooth we want is the tooth prior to this one.     
-      tempIgnitionEndTooth = nCount-1;
-      if (tempIgnitionEndTooth <= 0)
-      { tempIgnitionEndTooth = 7; }    
-      bExit = true; // force exit from loop   
-    }
-  }
-  if(nCount == 8)
-  { tempIgnitionEndTooth = 7; } // didn't find a match, use tooth 7 as it must be greater than 7 but less than 1.  
-  ignition2EndTooth = tempIgnitionEndTooth;
-
-  //--------------
-
-  tempIgnitionEndTooth = (ignition3EndAngle - configPage4.triggerAngle);
-  tempIgnitionEndTooth = ignitionLimits(tempIgnitionEndTooth);
-  
-  for (nCount = 1, bExit = false; nCount < 8 && bExit == false; nCount++)
-  {
-    if(tempIgnitionEndTooth <= toothAngles[nCount])
-    { 
-      // The tooth we want is the tooth prior to this one.     
-      tempIgnitionEndTooth = nCount-1;
-      if (tempIgnitionEndTooth <= 0)
-      { tempIgnitionEndTooth = 7; }    
-      bExit = true; // force exit from loop   
-    }
-  }
-  if(nCount == 8)
-  { tempIgnitionEndTooth = 7; } // didn't find a match, use tooth 7 as it must be greater than 7 but less than 1.  
-  ignition3EndTooth = tempIgnitionEndTooth;
+  ignition1EndTooth = calcEndTeeth_SuzukiK6A(ignition1EndAngle);
+  ignition2EndTooth = calcEndTeeth_SuzukiK6A(ignition2EndAngle);
+  ignition3EndTooth = calcEndTeeth_SuzukiK6A(ignition3EndAngle);
 }
+
 /** @} */
 
