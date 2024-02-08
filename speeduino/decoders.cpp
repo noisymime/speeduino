@@ -5669,7 +5669,7 @@ uint16_t getRPM_SuzukiK6A(void)
 
   uint16_t tempRPM;
 
-  tempRPM = stdGetRPM(720);
+  tempRPM = stdGetRPM(CAM_SPEED);
   MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
   if(MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
 
