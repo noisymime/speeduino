@@ -5460,7 +5460,7 @@ void triggerPri_SuzukiK6A(void)
 {
   curTime = micros();  
   curGap = curTime - toothLastToothTime;
-  if ( (curGap >= triggerFilterTime) || (currentStatus.startRevolutions == 0) )
+  if ( (curGap >= triggerFilterTime) || (currentStatus.startRevolutions == 0U) )
   {    
     toothCurrentCount++;
     BIT_SET(decoderState, BIT_DECODER_VALID_TRIGGER); //Flag this pulse as being a valid trigger (ie that it passed filters)
@@ -5485,21 +5485,24 @@ void triggerPri_SuzukiK6A(void)
     curGap2 = curGap;
     
     
-    if( (toothCurrentCount == (triggerActualTeeth + 1)) && currentStatus.hasSync == true  )
+    if( (toothCurrentCount == (triggerActualTeeth + 1U)) && currentStatus.hasSync == true  )
     {
       // seen enough teeth to have a revolution of the crank
       toothCurrentCount = 1; //Reset the counter
       toothOneMinusOneTime = toothOneTime;
       toothOneTime = curTime;
-      currentStatus.startRevolutions = currentStatus.startRevolutions + 2; // increment for 2 revs as we do 720 degrees on the the crank       
+      currentStatus.startRevolutions = currentStatus.startRevolutions + 2U; // increment for 2 revs as we do 720 degrees on the the crank       
     }
-    else if (toothCurrentCount > (triggerActualTeeth + 1))
+    else if (toothCurrentCount > (triggerActualTeeth + 1U))
     {
       // Lost sync
       currentStatus.hasSync = false; 
       currentStatus.syncLossCounter++;
       triggerFilterTime = 0;
       toothCurrentCount=0;
+    } else {
+      // We have sync, but are part way through a revolution
+      // Nothing to do but keep MISRA happy.
     }
 
     // check gaps match with tooth to check we have sync 
@@ -5525,6 +5528,7 @@ void triggerPri_SuzukiK6A(void)
       case 2:
       case 4:
       case 7:
+      default:
         // current tooth gap is smaller than the previous tooth gap = syncloss
         // eg tooth 2 should be bigger than tooth 1, if its not then we've got syncloss
         if (curGap < curGap2)
@@ -5551,13 +5555,13 @@ void triggerPri_SuzukiK6A(void)
           switch (configPage4.triggerFilter)
           {
             case 1: // 25 % 17 degrees
-              triggerFilterTime = curGap>>3;
+              triggerFilterTime = curGap>>3U;
               break;
             case 2: // 50 % 35 degrees
-              triggerFilterTime = (curGap>>3) + (curGap>>4);
+              triggerFilterTime = (curGap>>3U) + (curGap>>4U);
               break;
             case 3: // 75 % 52 degrees
-              triggerFilterTime = (curGap>>2) + (curGap>>4);
+              triggerFilterTime = (curGap>>2U) + (curGap>>4U);
               break;
             default:
               triggerFilterTime = 0;
@@ -5570,13 +5574,13 @@ void triggerPri_SuzukiK6A(void)
           switch (configPage4.triggerFilter)
           {
             case 1: // 25 % 8 degrees
-              triggerFilterTime = curGap>>3;
+              triggerFilterTime = curGap>>3U;
               break;
             case 2: // 50 % 17 degrees
-              triggerFilterTime = curGap>>2;
+              triggerFilterTime = curGap>>2U;
               break;
             case 3: // 75 % 25 degrees
-              triggerFilterTime = (curGap>>2) + (curGap>>3);
+              triggerFilterTime = (curGap>>2U) + (curGap>>3U);
               break;
             default:
               triggerFilterTime = 0;
@@ -5592,10 +5596,10 @@ void triggerPri_SuzukiK6A(void)
               triggerFilterTime = curGap;
               break;
             case 2: // 50 % 67 degrees
-              triggerFilterTime = curGap * 2;
+              triggerFilterTime = curGap * 2U;
               break;
             case 3: // 75 % 100 degrees
-              triggerFilterTime = curGap * 3;
+              triggerFilterTime = curGap * 3U;
               break;
             default:
               triggerFilterTime = 0;
@@ -5608,13 +5612,13 @@ void triggerPri_SuzukiK6A(void)
           switch (configPage4.triggerFilter)
           {
             case 1: // 25 % 17 degrees
-              triggerFilterTime = curGap>>3;
+              triggerFilterTime = curGap>>3U;
               break;
             case 2: // 50 % 35 degrees
-              triggerFilterTime = curGap>>2;
+              triggerFilterTime = curGap>>2U;
               break;
             case 3: // 75 % 52 degrees
-              triggerFilterTime = (curGap>>2) + (curGap>>3);
+              triggerFilterTime = (curGap>>2U) + (curGap>>3U);
               break;
             default:
               triggerFilterTime = 0;
@@ -5628,13 +5632,13 @@ void triggerPri_SuzukiK6A(void)
           switch (configPage4.triggerFilter)
           {
             case 1: // 25 % 42 degrees
-              triggerFilterTime = (curGap>>1) + (curGap>>3);
+              triggerFilterTime = (curGap>>1) + (curGap>>3U);
               break;
             case 2: // 50 % 85 degrees
-              triggerFilterTime = curGap + (curGap>>2);
+              triggerFilterTime = curGap + (curGap>>2U);
               break;
             case 3: // 75 % 127 degrees
-              triggerFilterTime = curGap + (curGap>>1) + (curGap>>2);
+              triggerFilterTime = curGap + (curGap>>1) + (curGap>>2U);
               break;
             default:
               triggerFilterTime = 0;
@@ -5642,6 +5646,9 @@ void triggerPri_SuzukiK6A(void)
           }
           break;
 
+        default:
+          triggerFilterTime = 0;
+          break;
       }
       
       //NEW IGNITION MODE
@@ -5667,9 +5674,8 @@ uint16_t getRPM_SuzukiK6A(void)
 {
   //Cranking code needs working out. 
 
-  uint16_t tempRPM;
+  uint16_t tempRPM = stdGetRPM(CAM_SPEED);
 
-  tempRPM = stdGetRPM(CAM_SPEED);
   MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
   if(MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
 
@@ -5680,20 +5686,20 @@ int getCrankAngle_SuzukiK6A(void)
 {
   //Grab some variables that are used in the trigger code and assign them to temp variables.
   noInterrupts();
-  int tempToothCurrentCount = toothCurrentCount;
+  uint16_t tempToothCurrentCount = toothCurrentCount;
   unsigned long tempToothLastToothTime = toothLastToothTime;
   lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
   interrupts();
 
-  if (tempToothCurrentCount>0) {
-    triggerToothAngle  = toothAngles[tempToothCurrentCount]- toothAngles[tempToothCurrentCount-1U];
+  if (tempToothCurrentCount>0U) {
+    triggerToothAngle = (uint16_t)toothAngles[tempToothCurrentCount] - (uint16_t)toothAngles[tempToothCurrentCount-1U];
   }
   
   //Estimate the number of degrees travelled since the last tooth}
   elapsedTime = (lastCrankAngleCalc - tempToothLastToothTime);
 
   int crankAngle = toothAngles[tempToothCurrentCount] + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
-  crankAngle += timeToAngleDegPerMicroSec(elapsedTime);
+  crankAngle += (int)timeToAngleDegPerMicroSec(elapsedTime);
   if (crankAngle >= 720) { crankAngle -= 720; }
   if (crankAngle < 0) { crankAngle += 720; }   
 
@@ -5705,7 +5711,7 @@ static uint16_t __attribute__((noinline)) calcEndTeeth_SuzukiK6A(int ignitionAng
   //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
   const int16_t tempIgnitionEndTooth = ignitionLimits(ignitionAngle - configPage4.triggerAngle);
 
-  uint8_t nCount=1;
+  uint8_t nCount=1U;
   while ((nCount<8U) && (tempIgnitionEndTooth > toothAngles[nCount])) {
     ++nCount;
   }
