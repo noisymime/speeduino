@@ -15,46 +15,9 @@ uint32_t angleToTimeMicroSecPerDegree(uint16_t angle) {
   return RSHIFT_ROUND(micros, microsPerDegree_Shift);
 }
 
-uint32_t angleToTimeIntervalTooth(uint16_t angle) {
-  noInterrupts();
-  if(BIT_CHECK(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT))
-  {
-    unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime);
-    uint16_t tempTriggerToothAngle = triggerToothAngle; // triggerToothAngle is set by interrupts
-    interrupts();
-    
-    return (toothTime * (uint32_t)angle) / tempTriggerToothAngle;
-  }
-  //Safety check. This can occur if the last tooth seen was outside the normal pattern etc
-  else { 
-    interrupts();
-    return angleToTimeMicroSecPerDegree(angle); 
-  }
-}
-
 uint16_t timeToAngleDegPerMicroSec(uint32_t time) {
     uint32_t degFixed = time * (uint32_t)degreesPerMicro;
     return RSHIFT_ROUND(degFixed, degreesPerMicro_Shift);
-}
-
-
-uint16_t timeToAngleIntervalTooth(uint32_t time)
-{
-    noInterrupts();
-    //Still uses a last interval method (ie retrospective), but bases the interval on the gap between the 2 most recent teeth rather than the last full revolution
-    if(BIT_CHECK(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT))
-    {
-      unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime);
-      uint16_t tempTriggerToothAngle = triggerToothAngle; // triggerToothAngle is set by interrupts
-      interrupts();
-
-      return (unsigned long)(time * (uint32_t)tempTriggerToothAngle) / toothTime;
-    }
-    else { 
-      interrupts();
-      //Safety check. This can occur if the last tooth seen was outside the normal pattern etc
-      return timeToAngleDegPerMicroSec(time);
-    }
 }
 
 #if SECOND_DERIV_ENABLED!=0
