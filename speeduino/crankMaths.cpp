@@ -10,6 +10,28 @@ byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
 #endif
 
+typedef uint32_t UQ24X8_t;
+static constexpr uint8_t UQ24X8_Shift = 8U;
+
+/** @brief uS per degree at current RPM in UQ24.8 fixed point */
+static  UQ24X8_t microsPerDegree;
+static constexpr uint8_t microsPerDegree_Shift = UQ24X8_Shift;
+
+typedef uint16_t UQ1X15_t;
+static constexpr uint8_t UQ1X15_Shift = 15U;
+
+/** @brief Degrees per uS in UQ1.15 fixed point.
+ * 
+ * Ranges from 8 (0.000246) at MIN_RPM to 3542 (0.108) at MAX_RPM
+ */
+static UQ1X15_t degreesPerMicro;
+static constexpr uint8_t degreesPerMicro_Shift = UQ1X15_Shift;
+
+void setAngleConverterRevolutionTime(uint32_t revolutionTime) {
+  microsPerDegree = div360(revolutionTime << microsPerDegree_Shift);
+  degreesPerMicro = (uint16_t)UDIV_ROUND_CLOSEST((UINT32_C(360) << degreesPerMicro_Shift), revolutionTime, uint32_t);
+}
+
 uint32_t angleToTimeMicroSecPerDegree(uint16_t angle) {
   UQ24X8_t micros = (uint32_t)angle * (uint32_t)microsPerDegree;
   return RSHIFT_ROUND(micros, microsPerDegree_Shift);

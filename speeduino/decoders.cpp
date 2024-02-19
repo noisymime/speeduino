@@ -100,9 +100,6 @@ volatile unsigned long triggerThirdFilterTime; // The shortest time (in uS) that
 
 volatile uint8_t decoderState = 0;
 
-UQ24X8_t microsPerDegree;
-UQ1X15_t degreesPerMicro;
-
 unsigned int triggerSecFilterTime_duration; // The shortest valid time (in uS) pulse DURATION
 volatile uint16_t triggerToothAngle; //The number of crank degrees that elapse per tooth
 byte checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
@@ -346,8 +343,7 @@ static __attribute__((noinline)) bool SetRevolutionTime(uint32_t revTime)
 {
   if (revTime!=revolutionTime) {
     revolutionTime = revTime;
-    microsPerDegree = div360(revolutionTime << microsPerDegree_Shift);
-    degreesPerMicro = (uint16_t)UDIV_ROUND_CLOSEST((UINT32_C(360) << degreesPerMicro_Shift), revolutionTime, uint32_t);
+    setAngleConverterRevolutionTime(revolutionTime);
     return true;
   } 
   return false;
