@@ -4,6 +4,7 @@
 
 extern void testPercent(void);
 extern void testDivision(void);
+extern void testBitShift(void);
 
 #define UNITY_EXCLUDE_DETAILS
 
@@ -20,6 +21,7 @@ void setup()
     testCrankMaths();
     testPercent();
     testDivision();
+    testBitShift();
 
     UNITY_END(); // stop unit testing
 }
