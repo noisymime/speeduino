@@ -1,6 +1,6 @@
 #include "globals.h"
 #include "crankMaths.h"
-#include "decoders.h"
+#include "bit_shifts.h"
 
 #define SECOND_DERIV_ENABLED                0          
 
@@ -28,18 +28,18 @@ static UQ1X15_t degreesPerMicro;
 static constexpr uint8_t degreesPerMicro_Shift = UQ1X15_Shift;
 
 void setAngleConverterRevolutionTime(uint32_t revolutionTime) {
-  microsPerDegree = div360(revolutionTime << microsPerDegree_Shift);
-  degreesPerMicro = (uint16_t)UDIV_ROUND_CLOSEST((UINT32_C(360) << degreesPerMicro_Shift), revolutionTime, uint32_t);
+  microsPerDegree = div360(lshift<microsPerDegree_Shift>(revolutionTime));
+  degreesPerMicro = (uint16_t)UDIV_ROUND_CLOSEST(lshift<degreesPerMicro_Shift>(UINT32_C(360)), revolutionTime, uint32_t);
 }
 
 uint32_t angleToTimeMicroSecPerDegree(uint16_t angle) {
   UQ24X8_t micros = (uint32_t)angle * (uint32_t)microsPerDegree;
-  return RSHIFT_ROUND(micros, microsPerDegree_Shift);
+  return rshift_round<microsPerDegree_Shift>(micros);
 }
 
 uint16_t timeToAngleDegPerMicroSec(uint32_t time) {
     uint32_t degFixed = time * (uint32_t)degreesPerMicro;
-    return RSHIFT_ROUND(degFixed, degreesPerMicro_Shift);
+    return rshift_round<degreesPerMicro_Shift>(degFixed);
 }
 
 #if SECOND_DERIV_ENABLED!=0
@@ -77,7 +77,7 @@ void doCrankSpeedCalcs(void)
           uint32_t toothDeltaT = toothHistory[toothHistoryIndex];
           //long timeToLastTooth = micros() - toothLastToothTime;
 
-          rpmDelta = (toothDeltaV << 10) / (6 * toothDeltaT);
+          rpmDelta = lshift<10>(toothDeltaV) / (6 * toothDeltaT);
         }
 
           timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpmDelta).quot; //This gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low resolution triggers

@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "globals.h"
+#include "bit_shifts.h"
 
 #ifdef USE_LIBDIVIDE
 // We use pre-computed constant parameters with libdivide where possible. 
@@ -91,26 +92,19 @@ extern uint8_t random1to100(void);
  */
 #define UDIV_ROUND_CLOSEST(n, d, t) ((t)((n) + DIV_ROUND_CORRECT(d, t))/(t)(d))
 
-/**
- * @brief Rounded arithmetic right shift
- * 
- * Right shifting throws away bits. When use for fixed point division, this
- * effectively rounds down (towards zero). To round-to-the-nearest-integer
- * when right-shifting by S, just add in 2 power S−1 (which is the 
- * fixed-point equivalent of 0.5) first
- * 
- * @param n The value to shift
- * @param s The shift distance in bits
- */
-#define RSHIFT_ROUND(n, s) (((n)+(1UL<<(s-1UL)))>>(s))
 ///@}
 
 /** @brief Test whether the parameter is an integer or not. */
 #define IS_INTEGER(d) ((d) == (int32_t)(d))
 
-/**
- * @defgroup group-div100 Optimised integer division by 100
+/** 
  * @{
+ * @brief Performance optimised integer division by 100. I.e. same as n/100
+ * 
+ * Uses the rounding behaviour controlled by @ref DIV_ROUND_BEHAVIOR
+ * 
+ * @param n Dividend to divide by 100
+ * @return n/100, with rounding behavior applied
  */
 static inline uint16_t div100(uint16_t n) {
     // As of avr-gcc 5.4.0, the compiler will optimize this to a multiply/shift
@@ -223,9 +217,9 @@ static inline int16_t nudge(int16_t min, int16_t max, int16_t value, int16_t nud
 
 //This is a dedicated function that specifically handles the case of mapping 0-1023 values into a 0 to X range
 //This is a common case because it means converting from a standard 10-bit analog input to a byte or 10-bit analog into 0-511 (Eg the temperature readings)
-#define fastMap1023toX(x, out_max) ( ((uint32_t)(x) * (out_max)) >> 10)
+#define fastMap1023toX(x, out_max) ( rshift<10>((uint32_t)(x) * (out_max)) )
 //This is a new version that allows for out_min
-#define fastMap10Bit(x, out_min, out_max) ( ( ((uint32_t)(x) * ((out_max)-(out_min))) >> 10 ) + (out_min))
+#define fastMap10Bit(x, out_min, out_max) ( rshift<10>( (uint32_t)(x) * ((out_max)-(out_min)) ) + (out_min))
 
 #if defined(CORE_AVR) || defined(ARDUINO_ARCH_AVR)
 
