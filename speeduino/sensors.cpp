@@ -81,10 +81,6 @@ volatile uint32_t flexPulseWidth = 0U;
 volatile uint8_t knockCounter = 0;
 // volatile uint16_t knockAngle;
 
-//These variables are used for tracking the number of running sensors values that appear to be errors. Once a threshold is reached, the sensor reading will go to default value and assume the sensor is faulty
-static uint8_t mapErrorCount = 0;
-//uint8_t iatErrorCount = 0; Not used
-//uint8_t cltErrorCount = 0; Not used
 
 #if defined(ANALOG_ISR)
 static volatile uint16_t AnChannel[16];
@@ -261,13 +257,11 @@ static inline void validateMAP(void)
   if(currentStatus.MAP < (long)VALID_MAP_MIN)
   {
     currentStatus.MAP = ERR_DEFAULT_MAP_LOW;
-    mapErrorCount += 1U;
     (void)setError(ERR_MAP_LOW);
   }
   else if(currentStatus.MAP > (long)VALID_MAP_MAX)
   {
     currentStatus.MAP = ERR_DEFAULT_MAP_HIGH;
-    mapErrorCount += 1U;
     (void)setError(ERR_MAP_HIGH);
   }
   else
@@ -277,7 +271,6 @@ static inline void validateMAP(void)
       clearError(ERR_MAP_HIGH);
       clearError(ERR_MAP_LOW);
     }
-    mapErrorCount = 0;
   }
 }
 
@@ -290,10 +283,6 @@ void instanteneousMAPReading(void)
 
   //Instantaneous MAP readings
   uint16_t tempReading = readMAPSensor(pinMAP);
-
-  //Error checking
-  if( (tempReading >= VALID_MAP_MAX) || (tempReading <= VALID_MAP_MIN) ) { mapErrorCount += 1U; }
-  else { mapErrorCount = 0U; }
 
   //During startup a call is made here to get the baro reading. In this case, we can't apply the ADC filter
   if(currentStatus.initialisationComplete == true) { currentStatus.mapADC = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.mapADC); } //Very weak filter
@@ -312,7 +301,6 @@ void instanteneousMAPReading(void)
       {
         currentStatus.EMAPADC = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
       }
-    else { mapErrorCount += 1U; }
     currentStatus.EMAP = fastMap10Bit(currentStatus.EMAPADC, configPage2.EMAPMin, configPage2.EMAPMax);
     if(currentStatus.EMAP < 0) { currentStatus.EMAP = 0; } //Sanity check
   }
@@ -345,7 +333,6 @@ void readMAP(void)
             MAPrunningValue += currentStatus.mapADC; //Add the current reading onto the total
             MAPcount++;
           }
-          else { mapErrorCount += 1U; }
 
           //Repeat for EMAP if it's enabled
           if(configPage6.useEMAP == true)
@@ -357,7 +344,6 @@ void readMAP(void)
               currentStatus.EMAPADC = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
               EMAPrunningValue += currentStatus.EMAPADC; //Add the current reading onto the total
             }
-            else { mapErrorCount += 1U; }
           }
         }
         else
@@ -415,7 +401,6 @@ void readMAP(void)
           {
             if( (uint32_t)tempReading < MAPrunningValue ) { MAPrunningValue = (uint32_t)tempReading; } //Check whether the current reading is lower than the running minimum
           }
-          else { mapErrorCount += 1U; }
         }
         else
         {
@@ -455,7 +440,6 @@ void readMAP(void)
             MAPrunningValue += currentStatus.mapADC; //Add the current reading onto the total
             MAPcount++;
           }
-          else { mapErrorCount += 1U; }
         }
         else
         {
