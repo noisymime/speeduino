@@ -166,7 +166,7 @@ void loop(void)
       currentStatus.startRevolutions = 0;
       toothSystemCount = 0;
       secondaryToothCount = 0;
-      initialiseMAP();
+      initialiseMAPBaro();
       currentStatus.rpmDOT = 0;
       AFRnextCycle = 0;
       ignitionCount = 0;

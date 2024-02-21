@@ -165,8 +165,6 @@ void initialiseADC(void)
   analogReadResolution(10); //use 10bits for analog reading on STM32 boards
 #endif
 
-  initialiseMAP();
-
   //The following checks the aux inputs and initialises pins if required
   auxIsEnabled = false;
   for (uint8_t AuxinChan = 0U; AuxinChan <16U ; AuxinChan++)
@@ -287,15 +285,12 @@ static inline bool isValidMapSensorReading(uint16_t reading) {
   return (reading < VALID_MAP_MAX) && (reading > VALID_MAP_MIN);  
 }
 
-static inline uint16_t readMapADC(uint8_t pin, bool applyFilter, uint8_t alpha, uint16_t prior) {
+static inline uint16_t readFilteredMapADC(uint8_t pin, uint8_t alpha, uint16_t prior) {
   uint16_t tempReading = readMAPSensor(pin);
 
   //Error check
   if (isValidMapSensorReading(tempReading)) { 
-    if (applyFilter) {
-      return LOW_PASS_FILTER(tempReading, alpha, prior);
-    }
-    return tempReading;
+    return LOW_PASS_FILTER(tempReading, alpha, prior);
   }
   return prior;
 }
@@ -312,32 +307,38 @@ static inline void resetMAPLast(void) {
   MAP_time = micros();
 }
 
-void instanteneousMAPReading(void)
+static void resetMAP(void) {
+  MAPcurRev = 0U;
+  MAPcount = 0U;
+  MAPrunningValue = 0U;
+  EMAPrunningValue = 0U;
+}
+
+static void instanteneousMAPReading(void)
 {
   resetMAPLast();
 
-  //During startup a call is made here to get the baro reading. In this case, we can't apply the ADC filter
-  currentStatus.mapADC = readMapADC(pinMAP, currentStatus.initialisationComplete, configPage4.ADCFILTER_MAP, currentStatus.mapADC);
+  currentStatus.mapADC = readFilteredMapADC(pinMAP, configPage4.ADCFILTER_MAP, currentStatus.mapADC);
   currentStatus.MAP = mapADCToMAP(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
   validateMAP();
   
   //Repeat for EMAP if it's enabled
   if(configPage6.useEMAP == true)
   {
-    currentStatus.EMAPADC = readMapADC(pinEMAP, true, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
+    currentStatus.EMAPADC = readFilteredMapADC(pinEMAP, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
     currentStatus.EMAP = mapADCToMAP(currentStatus.EMAPADC, configPage2.EMAPMin, configPage2.EMAPMax);
   }
 }
 
 static inline void cycleAverageMAPReadingAccumulate(void) {
-  currentStatus.mapADC = readMapADC(pinMAP, true, configPage4.ADCFILTER_MAP, currentStatus.mapADC);
+  currentStatus.mapADC = readFilteredMapADC(pinMAP, configPage4.ADCFILTER_MAP, currentStatus.mapADC);
   MAPrunningValue += currentStatus.mapADC; //Add the current reading onto the total
   MAPcount++;
   
   //Repeat for EMAP if it's enabled
   if(configPage6.useEMAP == true)
   {
-    currentStatus.EMAPADC = readMapADC(pinEMAP, true, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
+    currentStatus.EMAPADC = readFilteredMapADC(pinEMAP, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
     EMAPrunningValue += currentStatus.EMAPADC; //Add the current reading onto the total
   }
 }
@@ -362,7 +363,7 @@ static inline void cycleAverageEndCycle(void) {
   }
 
   // Reset for next cycle.
-  initialiseMAP();
+  resetMAP();
   MAPcurRev = currentStatus.startRevolutions;
 }
 
@@ -432,7 +433,7 @@ static inline void cycleMinimumMAPReading(void) {
 
 
 static inline void eventAverageAccumulate(void) {
-  currentStatus.mapADC = readMapADC(pinMAP, true, configPage4.ADCFILTER_MAP, currentStatus.mapADC);
+  currentStatus.mapADC = readFilteredMapADC(pinMAP, configPage4.ADCFILTER_MAP, currentStatus.mapADC);
   MAPrunningValue += currentStatus.mapADC; //Add the current reading onto the total
   MAPcount++;
 }
@@ -453,7 +454,7 @@ static inline void eventAverageEndEvent(void) {
   }
 
   // Reset for next cycle.
-  initialiseMAP();
+  resetMAP();
   MAPcurRev = ignitionCount;
 }
 
@@ -473,11 +474,8 @@ void eventAverageMAPReading(void) {
   }
 }
 
-void initialiseMAP(void) {
-  MAPcurRev = 0U;
-  MAPcount = 0U;
-  MAPrunningValue = 0U;
-  EMAPrunningValue = 0U;
+static void initialiseMAP(void) {
+  resetMAP();
 }
 
 void readMAP(void)
@@ -579,56 +577,72 @@ void readIAT(void)
   currentStatus.IAT = table2D_getValue(&iatCalibrationTable, currentStatus.iatADC) - CALIBRATION_TEMPERATURE_OFFSET;
 }
 
+// ========================================== Baro ==========================================
+
+/* 
+* The highest sea-level pressure on Earth occurs in Siberia, where the Siberian High often attains a sea-level pressure above 105 kPa;
+* with record highs close to 108.5 kPa.
+* The lowest possible baro reading is based on an altitude of 3500m above sea level.
+*/
+static inline bool isValidBaro(uint8_t baro) {
 static constexpr uint16_t BARO_MIN = 65U;
 static constexpr uint16_t BARO_MAX = 108U;
 
+  return (baro >= BARO_MIN) && (baro <= BARO_MAX);
+}
+
+static inline void setBaroFromSensorReading(uint16_t sensorReading) {
+  currentStatus.baroADC = sensorReading;
+  int16_t tempValue = fastMap10Bit(currentStatus.baroADC, configPage2.baroMin, configPage2.baroMax);
+  currentStatus.baro = (uint8_t)max((int16_t)0, tempValue);
+}
+
+// Should only be called when the engine isn't running.
+static inline void setBaroFromMAP(void) {
+  uint16_t tempReading = mapADCToMAP(readMAPSensor(pinMAP), configPage2.mapMin, configPage2.mapMax);
+  if (isValidBaro(tempReading)) //Safety check to ensure the baro reading is within the physical limits
+  {
+    currentStatus.baro = tempReading;
+    storeLastBaro(currentStatus.baro);
+  }
+}
+
 void readBaro(void)
 {
+  if ( configPage6.useExtBaro != 0U  ) {
+    // readings
+    setBaroFromSensorReading(LOW_PASS_FILTER(readMAPSensor(pinBaro), configPage4.ADCFILTER_BARO, currentStatus.baroADC)); //Very weak filter
+  // If no dedicated baro sensor is available, attempt to get a reading from the MAP sensor. This can only be done if the engine is not running. 
+  } else if ((currentStatus.RPM == 0U) && !engineIsRunning(micros()-MICROS_PER_SEC)) {
+    setBaroFromMAP();
+  } else {
+    // Do nothing - baro remains at last read value & MISRA checker is kept happy.
+  }
+}
+
+static void initialiseBaro(void) {
   if ( configPage6.useExtBaro != 0U  )
   {
-    // readings
-    uint16_t tempReading = readMAPSensor(pinBaro);
-    if(currentStatus.initialisationComplete == true) { currentStatus.baroADC = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_BARO, currentStatus.baroADC); }//Very weak filter
-    else { currentStatus.baroADC = tempReading; } //Baro reading (No filter)
-
-    int16_t tempValue = fastMap10Bit(currentStatus.baroADC, configPage2.baroMin, configPage2.baroMax);
-    currentStatus.baro  = tempValue<0 ? 0U : (uint8_t)tempValue;  //Get the current MAP value
+    // Use raw unfiltered value initially
+    setBaroFromSensorReading(readMAPSensor(pinBaro));
   }
   else
   {
-    /*
-    * If no dedicated baro sensor is available, attempt to get a reading from the MAP sensor. This can only be done if the engine is not running. 
-    * 1. Verify that the engine is not running
-    * 2. Verify that the reading from the MAP sensor is within the possible physical limits
-    */
-
     //Attempt to use the last known good baro reading from EEPROM as a starting point
     uint8_t lastBaro = readLastBaro();
-    if ((lastBaro >= BARO_MIN) && (lastBaro <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
-    { currentStatus.baro = lastBaro; } //last baro correction
-    else { currentStatus.baro = 100U; } //Fall back position.
-
-    //Verify the engine isn't running by confirming RPM is 0 and it has been at least 0.5 second since the decoder thinks the engine was running
-    // if ((currentStatus.RPM == 0U) && !engineIsRunning(micros()-(MICROS_PER_SEC/2)))
-
-    //Verify the engine isn't running by confirming RPM is 0 and it has been at least 1 second since the last tooth was detected
-    uint32_t timeToLastTooth = (micros() - toothLastToothTime);
-    if((currentStatus.RPM == 0U) && (timeToLastTooth > MICROS_PER_SEC))
-    {
-      instanteneousMAPReading(); //Get the current MAP value
-      /* 
-      * The highest sea-level pressure on Earth occurs in Siberia, where the Siberian High often attains a sea-level pressure above 105 kPa;
-      * with record highs close to 108.5 kPa.
-      * The lowest possible baro reading is based on an altitude of 3500m above sea level.
-      */
-      if ((currentStatus.MAP >= (long)BARO_MIN) && (currentStatus.MAP <= (long)BARO_MAX)) //Safety check to ensure the baro reading is within the physical limits
-      {
-        currentStatus.baro = currentStatus.MAP;
-        storeLastBaro(currentStatus.baro);
-      }
-    }
+    // Make sure it's not invalid (Possible on first run etc)
+    currentStatus.baro = isValidBaro(lastBaro) ? lastBaro : 100U;
+    // We assume external callers already made sure the engine isn't running
+    setBaroFromMAP();
   }
 }
+
+void initialiseMAPBaro(void) {
+  initialiseMAP();
+  initialiseBaro();
+}
+
+// ========================================== O2 ==========================================
 
 void readO2(void)
 {

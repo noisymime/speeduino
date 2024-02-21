@@ -228,6 +228,7 @@ void initialiseAll(void)
     initialiseCorrections();
     BIT_CLEAR(currentStatus.engineProtectStatus, PROTECT_IO_ERROR); //Clear the I/O error bit. The bit will be set in initialiseADC() if there is problem in there.
     initialiseADC();
+    initialiseMAPBaro();
     initialiseProgrammableIO();
 
     //Check whether the flex sensor is enabled and if so, attach an interrupt for it
@@ -302,10 +303,6 @@ void initialiseAll(void)
     timer5_overflow_count = 0;
     toothHistoryIndex = 0;
     toothLastToothTime = 0;
-
-    //Lookup the current MAP reading for barometric pressure
-    instanteneousMAPReading();
-    readBaro();
     
     noInterrupts();
     initialiseTriggers();
