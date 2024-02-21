@@ -1175,9 +1175,7 @@ static void test_corrections_TAE()
   RUN_TEST_P(test_corrections_TAE_timout);
 }
 
-extern uint16_t MAPlast;
-extern uint32_t MAP_time;
-extern uint32_t MAPlast_time;
+extern map_last_read_t& getMapLast(void);
 
 //**********************************************************************************************************************
 //Setup a basic MAE enrichment curve, threshold etc that are common to all tests. Specifica values maybe updated in each individual test
@@ -1201,9 +1199,9 @@ static void test_corrections_MAE_negative_mapdot()
   disable_AE_taper();
 
   configPage2.decelAmount = 50;
-  MAPlast_time = UINT16_MAX*2UL;
-  MAP_time = MAPlast_time + 25000UL; 
-  MAPlast = 50;
+  getMapLast().previousReadingTime = UINT16_MAX*2UL;
+  getMapLast().lastReadingTime = getMapLast().previousReadingTime + 25000UL; 
+  getMapLast().lastMAPValue = 50;
   currentStatus.MAP = 40;
 
   uint16_t accelValue = correctionAccel(); //Run the AE calcs
@@ -1219,9 +1217,9 @@ static void test_corrections_MAE_no_rpm_taper()
   setup_MAE();
   disable_AE_taper();
 
-  MAPlast_time = UINT16_MAX*2UL;
-  MAP_time = MAPlast_time + 25000UL; 
-  MAPlast = 40;
+  getMapLast().previousReadingTime = UINT16_MAX*2UL;
+  getMapLast().lastReadingTime = getMapLast().previousReadingTime + 25000UL; 
+  getMapLast().lastMAPValue = 40;
   currentStatus.MAP = 50;
   uint16_t accelValue = correctionAccel(); //Run the AE calcs
   TEST_ASSERT_EQUAL(400, currentStatus.mapDOT);
@@ -1231,9 +1229,9 @@ static void test_corrections_MAE_no_rpm_taper()
 
   // No change
   reset_AE();
-  MAPlast_time = UINT16_MAX*2UL;
-  MAP_time = MAPlast_time + 1000UL; 
-  MAPlast = 40;
+  getMapLast().previousReadingTime = UINT16_MAX*2UL;
+  getMapLast().lastReadingTime = getMapLast().previousReadingTime + 1000UL; 
+  getMapLast().lastMAPValue = 40;
   currentStatus.MAP = 40;
   accelValue = correctionAccel(); //Run the AE calcs
   TEST_ASSERT_EQUAL(0, currentStatus.mapDOT);
@@ -1243,9 +1241,9 @@ static void test_corrections_MAE_no_rpm_taper()
 
   // Small change over small time period  
   reset_AE();
-  MAPlast_time = UINT16_MAX*2UL;
-  MAP_time = MAPlast_time + 1000UL; 
-  MAPlast = 40;
+  getMapLast().previousReadingTime = UINT16_MAX*2UL;
+  getMapLast().lastReadingTime = getMapLast().previousReadingTime + 1000UL; 
+  getMapLast().lastMAPValue = 40;
   currentStatus.MAP = 41;
   accelValue = correctionAccel(); //Run the AE calcs
   TEST_ASSERT_EQUAL(1000, currentStatus.mapDOT);
@@ -1255,9 +1253,9 @@ static void test_corrections_MAE_no_rpm_taper()
 
   // Small change over long (>UINT16_MAX) time period  
   reset_AE();
-  MAPlast_time = UINT16_MAX*2UL;
-  MAP_time = MAPlast_time + UINT16_MAX*2UL; 
-  MAPlast = 40;
+  getMapLast().previousReadingTime = UINT16_MAX*2UL;
+  getMapLast().lastReadingTime = getMapLast().previousReadingTime + UINT16_MAX*2UL; 
+  getMapLast().lastMAPValue = 40;
   currentStatus.MAP = 41;
   accelValue = correctionAccel(); //Run the AE calcs
   TEST_ASSERT_EQUAL(7, currentStatus.mapDOT);
@@ -1267,9 +1265,9 @@ static void test_corrections_MAE_no_rpm_taper()
 
   // Large change over small time period  
   reset_AE();
-  MAPlast_time = UINT16_MAX*2UL;
-  MAP_time = MAPlast_time + 1000UL; 
-  MAPlast = 10;
+  getMapLast().previousReadingTime = UINT16_MAX*2UL;
+  getMapLast().lastReadingTime = getMapLast().previousReadingTime + 1000UL; 
+  getMapLast().lastMAPValue = 10;
   currentStatus.MAP = 1000;
   accelValue = correctionAccel(); //Run the AE calcs
   TEST_ASSERT_EQUAL(6960, currentStatus.mapDOT);
@@ -1279,9 +1277,9 @@ static void test_corrections_MAE_no_rpm_taper()
 
   // Large change over long (>UINT16_MAX) time period  
   reset_AE();
-  MAPlast_time = UINT16_MAX*2UL;
-  MAP_time = MAPlast_time + UINT16_MAX*2UL; 
-  MAPlast = 10;
+  getMapLast().previousReadingTime = UINT16_MAX*2UL;
+  getMapLast().lastReadingTime = getMapLast().previousReadingTime + UINT16_MAX*2UL; 
+  getMapLast().lastMAPValue = 10;
   currentStatus.MAP = 1000;
   accelValue = correctionAccel(); //Run the AE calcs
   TEST_ASSERT_EQUAL(6930, currentStatus.mapDOT);
@@ -1299,9 +1297,9 @@ static void test_corrections_MAE_50pc_rpm_taper()
   configPage2.aeTaperMin = 10; //1000
   configPage2.aeTaperMax = 50; //5000
 
-  MAPlast_time = UINT16_MAX*2UL;
-  MAP_time = MAPlast_time + 25000UL; 
-  MAPlast = 40;
+  getMapLast().previousReadingTime = UINT16_MAX*2UL;
+  getMapLast().lastReadingTime = getMapLast().previousReadingTime + 25000UL; 
+  getMapLast().lastMAPValue = 40;
   currentStatus.MAP = 50;
 
   uint16_t accelValue = correctionAccel(); //Run the AE calcs
@@ -1320,9 +1318,9 @@ static void test_corrections_MAE_110pc_rpm_taper()
   configPage2.aeTaperMin = 10; //1000
   configPage2.aeTaperMax = 50; //5000
 
-  MAPlast_time = UINT16_MAX*2UL;
-  MAP_time = MAPlast_time + 25000UL; 
-  MAPlast = 40;
+  getMapLast().previousReadingTime = UINT16_MAX*2UL;
+  getMapLast().lastReadingTime = getMapLast().previousReadingTime + 25000UL; 
+  getMapLast().lastMAPValue = 40;
   currentStatus.MAP = 50;
 
   uint16_t accelValue = correctionAccel(); //Run the AE calcs
@@ -1341,9 +1339,9 @@ static void test_corrections_MAE_under_threshold()
   configPage2.aeTaperMin = 10; //1000
   configPage2.aeTaperMax = 50; //5000
 
-  MAPlast_time = UINT16_MAX*2UL;
-  MAP_time = MAPlast_time + 25000UL; 
-  MAPlast = 0;
+  getMapLast().previousReadingTime = UINT16_MAX*2UL;
+  getMapLast().lastReadingTime = getMapLast().previousReadingTime + 25000UL; 
+  getMapLast().lastMAPValue = 0;
   currentStatus.MAP = 6; 
 	configPage2.maeThresh = 241; //Above the reading of 240%/s
 
@@ -1359,9 +1357,9 @@ static void test_corrections_MAE_50pc_warmup_taper()
   setup_MAE();
   disable_AE_taper();
 
-  MAPlast_time = UINT16_MAX*2UL;
-  MAP_time = MAPlast_time + 25000UL; 
-  MAPlast = 40;
+  getMapLast().previousReadingTime = UINT16_MAX*2UL;
+  getMapLast().lastReadingTime = getMapLast().previousReadingTime + 25000UL; 
+  getMapLast().lastMAPValue = 40;
   currentStatus.MAP = 50;
 
 	//Set a cold % of 50% increase
@@ -1384,9 +1382,9 @@ static void test_corrections_MAE_timout()
   disable_AE_taper();
 
   // Confirm MAE is on
-  MAPlast_time = UINT16_MAX*2UL;
-  MAP_time = MAPlast_time + 25000UL; 
-  MAPlast = 40;
+  getMapLast().previousReadingTime = UINT16_MAX*2UL;
+  getMapLast().lastReadingTime = getMapLast().previousReadingTime + 25000UL; 
+  getMapLast().lastMAPValue = 40;
   currentStatus.MAP = 50;
   configPage2.aeTime = 0; // This should cause the current cycle to expire & the next one to not occur.
   TEST_ASSERT_EQUAL((100+132), correctionAccel());
