@@ -608,6 +608,9 @@ void readBaro(void)
     { currentStatus.baro = lastBaro; } //last baro correction
     else { currentStatus.baro = 100U; } //Fall back position.
 
+    //Verify the engine isn't running by confirming RPM is 0 and it has been at least 0.5 second since the decoder thinks the engine was running
+    // if ((currentStatus.RPM == 0U) && !engineIsRunning(micros()-(MICROS_PER_SEC/2)))
+
     //Verify the engine isn't running by confirming RPM is 0 and it has been at least 1 second since the last tooth was detected
     uint32_t timeToLastTooth = (micros() - toothLastToothTime);
     if((currentStatus.RPM == 0U) && (timeToLastTooth > MICROS_PER_SEC))

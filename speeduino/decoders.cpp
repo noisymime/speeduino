@@ -35,6 +35,7 @@ A full copy of the license may be found in the projects root directory
  * - To compare Speeduino Doxyfile to default config, do: `doxygen -g Doxyfile.default ; diff Doxyfile.default Doxyfile`
  */
 #include <limits.h>
+#include <SimplyAtomic.h>
 #include "globals.h"
 #include "decoders.h"
 #include "scheduledIO.h"
@@ -334,6 +335,17 @@ static uint16_t timeToAngleIntervalTooth(uint32_t time)
 static inline bool IsCranking(const statuses &status) {
   return (status.RPM < status.crankRPM) && (status.startRevolutions == 0U);
 }
+
+bool engineIsRunning(uint32_t curTime) {
+  // Check how long ago the last tooth was seen compared to now. 
+  // If it was more than MAX_STALL_TIME then the engine is probably stopped. 
+  // toothLastToothTime can be greater than curTime if a pulse occurs between getting the latest time and doing the comparison
+  ATOMIC() {
+    return (toothLastToothTime > curTime) || ((curTime - toothLastToothTime) < MAX_STALL_TIME); 
+  }
+  return false; // Just here to avoid compiler warning.
+}
+
 
 #if defined(UNIT_TEST)
 bool SetRevolutionTime(uint32_t revTime)

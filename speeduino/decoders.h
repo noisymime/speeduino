@@ -53,6 +53,17 @@
 //220 bytes free
 extern volatile uint8_t decoderState;
 
+/**
+ * @brief Is the engine running?
+ * 
+ * This is based on whether or not the decoder has detected a tooth recently
+ * 
+ * @param curTime The time in µS to use for the liveness check. Typically the result of a recent call to micros() 
+ * @return true If the engine is turning
+ * @return false If the engine is not turning
+ */
+bool engineIsRunning(uint32_t curTime);
+
 /*
 extern volatile bool validTrigger; //Is set true when the last trigger (Primary or secondary) was valid (ie passed filters)
 extern volatile bool triggerToothAngleIsCorrect; //Whether or not the triggerToothAngle variable is currently accurate. Some patterns have times when the triggerToothAngle variable cannot be accurately set.
