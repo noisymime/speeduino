@@ -56,11 +56,10 @@ void readO2(void);
 void readBat(void);
 void readBaro(void);
 
-/** @brief Initialize the MAP calculation */
-void initialiseMAP(void);
+/** @brief Initialize the MAP calculation & Baro values */
+void initialiseMAPBaro(void);
 
 void readMAP(void);
-void instanteneousMAPReading(void);
 
 /** @brief Get the MAP change between the last 2 readings */
 int16_t getMAPDelta(void);
