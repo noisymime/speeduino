@@ -17,9 +17,6 @@
 
 #define FILTER_FLEX_DEFAULT     75U
 
-#define BARO_MIN      65U
-#define BARO_MAX      108U
-
 #define VSS_GEAR_HYSTERESIS 10U
 #define VSS_SAMPLES         4U //Must be a power of 2 and smaller than 255
 
@@ -34,12 +31,7 @@ extern volatile uint32_t flexPulseWidth;
   #define READ_FLEX() digitalRead(pinFlex)
 #endif
 
-extern unsigned int MAPcount; //Number of samples taken in the current MAP cycle
-extern uint32_t MAPcurRev; //Tracks which revolution we're sampling on
 extern bool auxIsEnabled;
-extern uint16_t MAPlast; /**< The previous MAP reading */
-extern unsigned long MAP_time; //The time the MAP sample was taken
-extern unsigned long MAPlast_time; //The time the previous MAP sample was taken
 
 void initialiseADC(void);
 void readTPS(bool useFilter=true); //Allows the option to override the use of the filter
@@ -59,8 +51,18 @@ void readIAT(void);
 void readO2(void);
 void readBat(void);
 void readBaro(void);
+
+/** @brief Initialize the MAP calculation */
+void initialiseMAP(void);
+
 void readMAP(void);
 void instanteneousMAPReading(void);
 uint8_t getAnalogKnock(void);
+
+/** @brief Get the MAP change between the last 2 readings */
+int16_t getMAPDelta(void);
+
+/** @brief Get the time in µS between the last 2 MAP readings */
+uint32_t getMAPDeltaTime(void);
 
 #endif // SENSORS_H

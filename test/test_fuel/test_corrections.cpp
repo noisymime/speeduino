@@ -1175,6 +1175,9 @@ static void test_corrections_TAE()
   RUN_TEST_P(test_corrections_TAE_timout);
 }
 
+extern uint16_t MAPlast;
+extern uint32_t MAP_time;
+extern uint32_t MAPlast_time;
 
 //**********************************************************************************************************************
 //Setup a basic MAE enrichment curve, threshold etc that are common to all tests. Specifica values maybe updated in each individual test

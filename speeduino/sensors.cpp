@@ -60,14 +60,8 @@ static inline uint16_t readAnalogPin(uint8_t pin) {
   return max(0, tmp);
 }
 
-uint32_t MAPcurRev; //Tracks which revolution we're sampling on
-unsigned int MAPcount; //Number of samples taken in the current MAP cycle
-static uint32_t MAPrunningValue = 0UL; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
-static uint32_t EMAPrunningValue = 0UL; //As above but for EMAP
 bool auxIsEnabled;
-uint16_t MAPlast; /**< The previous MAP reading */
-unsigned long  MAP_time; //The time the MAP sample was taken
-unsigned long  MAPlast_time; //The time the previous MAP sample was taken
+
 static volatile uint32_t vssTimes[VSS_SAMPLES] = {0};
 static volatile uint8_t vssIndex = 0U;
 
@@ -170,9 +164,8 @@ void initialiseADC(void)
 #elif defined(ARDUINO_ARCH_STM32) //STM32GENERIC core and ST STM32duino core, change analog read to 12 bit
   analogReadResolution(10); //use 10bits for analog reading on STM32 boards
 #endif
-  MAPcurRev = 0;
-  MAPcount = 0;
-  MAPrunningValue = 0;
+
+  initialiseMAP();
 
   //The following checks the aux inputs and initialises pins if required
   auxIsEnabled = false;
@@ -244,6 +237,25 @@ void initialiseADC(void)
   vssIndex = 0;
 }
 
+
+// ==========================================  MAP ==========================================
+
+static uint32_t MAPcurRev; //Tracks which revolution we're sampling on
+static uint16_t MAPcount; //Number of samples taken in the current MAP cycle
+static uint32_t MAPrunningValue = 0UL; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
+static uint32_t EMAPrunningValue = 0UL; //As above but for EMAP
+#if !defined(UNIT_TEST)
+static 
+#endif
+uint16_t MAPlast; /**< The previous MAP reading */
+#if !defined(UNIT_TEST)
+static 
+#endif
+uint32_t MAP_time; //The time the MAP sample was taken
+#if !defined(UNIT_TEST)
+static 
+#endif
+uint32_t MAPlast_time; //The time the previous MAP sample was taken
 
 static constexpr uint16_t VALID_MAP_MAX=1022U; //The largest ADC value that is valid for the MAP sensor
 static constexpr uint16_t VALID_MAP_MIN=2U; //The smallest ADC value that is valid for the MAP sensor
@@ -349,10 +361,9 @@ static inline void cycleAverageEndCycle(void) {
     instanteneousMAPReading(); 
   }
 
-  MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
-  MAPrunningValue = 0;
-  EMAPrunningValue = 0; //Can reset this even if EMAP not used
-  MAPcount = 0;  
+  // Reset for next cycle.
+  initialiseMAP();
+  MAPcurRev = currentStatus.startRevolutions;
 }
 
 static inline void cycleAverageMAPReading(void) {
@@ -441,9 +452,9 @@ static inline void eventAverageEndEvent(void) {
     instanteneousMAPReading(); 
   }
 
-  MAPcurRev = ignitionCount; //Reset the current event count
-  MAPrunningValue = 0;
-  MAPcount = 0;
+  // Reset for next cycle.
+  initialiseMAP();
+  MAPcurRev = ignitionCount;
 }
 
 void eventAverageMAPReading(void) {
@@ -460,6 +471,13 @@ void eventAverageMAPReading(void) {
     MAPrunningValue = currentStatus.mapADC; //Keep updating the MAPrunningValue to give it head start when switching to ignition event average.
     MAPcount = 1;
   }
+}
+
+void initialiseMAP(void) {
+  MAPcurRev = 0U;
+  MAPcount = 0U;
+  MAPrunningValue = 0U;
+  EMAPrunningValue = 0U;
 }
 
 void readMAP(void)
@@ -493,6 +511,18 @@ void readMAP(void)
     break;
   }
 }
+
+/** @brief Get the MAP change between the last 2 readings */
+int16_t getMAPDelta(void) {
+  return (int16_t)currentStatus.MAP - (int16_t)MAPlast;
+}
+
+/** @brief Get the time in µS between the last 2 MAP readings */
+uint32_t getMAPDeltaTime(void) {
+  return MAP_time - MAPlast_time;
+}
+
+// ========================================== TPS ==========================================
 
 void readTPS(bool useFilter)
 {
@@ -548,6 +578,9 @@ void readIAT(void)
   currentStatus.iatADC = LOW_PASS_FILTER(readAnalogSensor(pinIAT), configPage4.ADCFILTER_IAT, currentStatus.iatADC);
   currentStatus.IAT = table2D_getValue(&iatCalibrationTable, currentStatus.iatADC) - CALIBRATION_TEMPERATURE_OFFSET;
 }
+
+static constexpr uint16_t BARO_MIN = 65U;
+static constexpr uint16_t BARO_MAX = 108U;
 
 void readBaro(void)
 {

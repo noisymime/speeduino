@@ -167,8 +167,7 @@ void loop(void)
       currentStatus.startRevolutions = 0;
       toothSystemCount = 0;
       secondaryToothCount = 0;
-      MAPcurRev = 0;
-      MAPcount = 0;
+      initialiseMAP();
       currentStatus.rpmDOT = 0;
       AFRnextCycle = 0;
       ignitionCount = 0;
