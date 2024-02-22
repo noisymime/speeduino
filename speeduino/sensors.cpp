@@ -245,12 +245,12 @@ static constexpr uint16_t VALID_MAP_MIN=2U; //The smallest ADC value that is val
 static inline void validateMAP(void)
 {
   //Error checks
-  if(currentStatus.MAP < (long)VALID_MAP_MIN)
+  if((uint16_t)currentStatus.MAP < VALID_MAP_MIN)
   {
     currentStatus.MAP = ERR_DEFAULT_MAP_LOW;
     (void)setError(ERR_MAP_LOW);
   }
-  else if(currentStatus.MAP > (long)VALID_MAP_MAX)
+  else if((uint16_t)currentStatus.MAP > VALID_MAP_MAX)
   {
     currentStatus.MAP = ERR_DEFAULT_MAP_HIGH;
     (void)setError(ERR_MAP_HIGH);
