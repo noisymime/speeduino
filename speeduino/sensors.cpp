@@ -242,29 +242,6 @@ void initialiseADC(void)
 static constexpr uint16_t VALID_MAP_MAX=1022U; //The largest ADC value that is valid for the MAP sensor
 static constexpr uint16_t VALID_MAP_MIN=2U; //The smallest ADC value that is valid for the MAP sensor
 
-static inline void validateMAP(void)
-{
-  //Error checks
-  if((uint16_t)currentStatus.MAP < VALID_MAP_MIN)
-  {
-    currentStatus.MAP = ERR_DEFAULT_MAP_LOW;
-    (void)setError(ERR_MAP_LOW);
-  }
-  else if((uint16_t)currentStatus.MAP > VALID_MAP_MAX)
-  {
-    currentStatus.MAP = ERR_DEFAULT_MAP_HIGH;
-    (void)setError(ERR_MAP_HIGH);
-  }
-  else
-  {
-    if(errorCount > 0U)
-    {
-      clearError(ERR_MAP_HIGH);
-      clearError(ERR_MAP_LOW);
-    }
-  }
-}
-
 static inline bool isValidMapSensorReading(uint16_t reading) {
   return (reading < VALID_MAP_MAX) && (reading > VALID_MAP_MIN);  
 }
@@ -299,7 +276,6 @@ static inline void instanteneousMAPReading(map_last_read_t &lastReading)
 
   currentStatus.mapADC = readFilteredMapADC(pinMAP, configPage4.ADCFILTER_MAP, currentStatus.mapADC);
   currentStatus.MAP = mapADCToMAP(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
-  validateMAP();
   
   //Repeat for EMAP if it's enabled
   if(configPage6.useEMAP == true)
@@ -337,7 +313,6 @@ static inline void cycleAverageEndCycle(map_cycle_average_t &cycle_average, map_
 
     currentStatus.mapADC = udiv_32_16(cycle_average.mapAdcRunningTotal, cycle_average.sampleCount);
     currentStatus.MAP = mapADCToMAP(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
-    validateMAP();
 
     //If EMAP is enabled, the process is identical to the above
     if(configPage6.useEMAP == true)
@@ -411,8 +386,6 @@ static inline void cycleMinimumEndCycle(map_cycle_min_t &cycle_min, map_last_rea
   currentStatus.mapADC = cycle_min.mapMinimum;
   currentStatus.MAP = mapADCToMAP(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
 
-  validateMAP();
-
   cycle_min.curRev = currentStatus.startRevolutions; //Reset the current rev count
   cycle_min.mapMinimum = VALID_MAP_MAX; //Reset the latest value so the next reading will always be lower
 }
@@ -468,7 +441,6 @@ static inline void eventAverageEndEvent(map_event_average_t &eventAverage, map_l
 
     currentStatus.mapADC = udiv_32_16(eventAverage.mapAdcRunningTotal, eventAverage.sampleCount);
     currentStatus.MAP = mapADCToMAP(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
-    validateMAP();
   }
   else { 
     instanteneousMAPReading(lastReading); 
