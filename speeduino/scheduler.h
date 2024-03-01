@@ -198,7 +198,7 @@ struct IgnitionSchedule : public Schedule {
 
 void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration);
 
-static inline __attribute__((always_inline)) void setIgnitionSchedule(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration) {
+static inline void setIgnitionSchedule(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration) {
   noInterrupts();
   if(!isRunning(schedule)) { //Check that we're not already part way through a schedule
     _setIgnitionScheduleRunning(schedule, timeout, duration);
@@ -223,7 +223,7 @@ struct FuelSchedule : public Schedule {
 
 void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsigned long duration);
 
-static inline __attribute__((always_inline)) void setFuelSchedule(FuelSchedule &schedule, unsigned long timeout, unsigned long duration) {
+static inline void setFuelSchedule(FuelSchedule &schedule, unsigned long timeout, unsigned long duration) {
   // Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
   if(timeout < MAX_TIMER_PERIOD) {
     noInterrupts();
