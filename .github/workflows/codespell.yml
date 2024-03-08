@@ -26,6 +26,12 @@ jobs:
     - name: identify codespell
       run: codespell --version
 
+    # use latest available dictionaries
+    - name: update dictionary
+      run:    |
+          curl --output-dir ./tools --remote-name https://raw.githubusercontent.com/codespell-project/codespell/master/codespell_lib/data/dictionary.txt
+          curl --output-dir ./tools --remote-name https://raw.githubusercontent.com/codespell-project/codespell/master/codespell_lib/data/dictionary_rare.txt
+
     # If count >0 will trigger a workflow failure, else success
     - name: run codespell
-      run: codespell --ignore-words=./tools/codespell-ignored.txt --count ./speeduino/
+      run: codespell --dictionary=./tools/dictionary.txt --dictionary=./tools/dictionary_rare.txt --ignore-words=./tools/codespell-ignored.txt --count ./speeduino/
