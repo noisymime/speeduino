@@ -9,6 +9,7 @@
 #include "Nissan360/Nissan360.h"
 #include "FordST170/FordST170.h"
 #include "NGC/test_ngc.h"
+#include "ThirtySixMinus21/ThirtySixMinus21.h"
 
 void setup()
 {
@@ -26,6 +27,7 @@ void setup()
     testNissan360();
     testFordST170();
     testNGC();
+    testThirtySixMinus21();
 
     UNITY_END(); // stop unit testing
 }
