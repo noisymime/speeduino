@@ -1,0 +1,1 @@
+void testSuzukiK6A();
