@@ -1329,9 +1329,11 @@ struct config10 {
   byte spark2InputPolarity : 1;
   byte spark2InputPullup : 1;
 
+  //Byte 190
   byte oilPressureProtTime;
 
-  byte unused11_191_191;
+  //Byte 191
+  byte lnchCtrlVss;
 
 #if defined(CORE_AVR)
   };
