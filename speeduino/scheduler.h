@@ -42,15 +42,13 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #define SCHEDULER_H
 
 #include "globals.h"
+#include "scheduledIO.h"
 
 #define USE_IGN_REFRESH
 #define IGNITION_REFRESH_THRESHOLD  30 //Time in uS that the refresh functions will check to ensure there is enough time before changing the end compare
 
-#define DWELL_AVERAGE_ALPHA 30
-#define DWELL_AVERAGE(input) (((long)input * (256 - DWELL_AVERAGE_ALPHA) + ((long)currentStatus.actualDwell * DWELL_AVERAGE_ALPHA))) >> 8
-//#define DWELL_AVERAGE(input) (currentStatus.dwell) //Can be use to disable the above for testing
-
 void initialiseSchedulers(void);
+void startSchedulers(void);
 void beginInjectorPriming(void);
 
 void disablePendingFuelSchedule(byte channel);
@@ -60,155 +58,182 @@ void refreshIgnitionSchedule1(unsigned long timeToEnd);
 
 //The ARM cores use separate functions for their ISRs
 #if defined(ARDUINO_ARCH_STM32) || defined(CORE_TEENSY)
-  void fuelSchedule1Interrupt(void);
-  void fuelSchedule2Interrupt(void);
-  void fuelSchedule3Interrupt(void);
-  void fuelSchedule4Interrupt(void);
+  #define FUEL_INTERRUPT_NAME(index) CONCAT(CONCAT(fuelSchedule, index), Interrupt)
+  void FUEL_INTERRUPT_NAME(1)(void);
+#if (INJ_CHANNELS >= 2)
+  void FUEL_INTERRUPT_NAME(2)(void);
+#endif
+#if (INJ_CHANNELS >= 3)
+  void FUEL_INTERRUPT_NAME(3)(void);
+#endif
+#if (INJ_CHANNELS >= 4)
+  void FUEL_INTERRUPT_NAME(4)(void);
+#endif
 #if (INJ_CHANNELS >= 5)
-  void fuelSchedule5Interrupt(void);
+  void FUEL_INTERRUPT_NAME(5)(void);
 #endif
 #if (INJ_CHANNELS >= 6)
-  void fuelSchedule6Interrupt(void);
+  void FUEL_INTERRUPT_NAME(6)(void);
 #endif
 #if (INJ_CHANNELS >= 7)
-  void fuelSchedule7Interrupt(void);
+  void FUEL_INTERRUPT_NAME(7)(void);
 #endif
 #if (INJ_CHANNELS >= 8)
-  void fuelSchedule8Interrupt(void);
+  void FUEL_INTERRUPT_NAME(8)(void);
 #endif
-#if (IGN_CHANNELS >= 1)
-  void ignitionSchedule1Interrupt(void);
-#endif
+
+  #define IGNITION_INTERRUPT_NAME(index) CONCAT(CONCAT(ignitionSchedule, index), Interrupt)
+  void IGNITION_INTERRUPT_NAME(1)(void);
 #if (IGN_CHANNELS >= 2)
-  void ignitionSchedule2Interrupt(void);
+  void IGNITION_INTERRUPT_NAME(2)(void);
 #endif
 #if (IGN_CHANNELS >= 3)
-  void ignitionSchedule3Interrupt(void);
+  void IGNITION_INTERRUPT_NAME(3)(void);
 #endif
 #if (IGN_CHANNELS >= 4)
-  void ignitionSchedule4Interrupt(void);
+  void IGNITION_INTERRUPT_NAME(4)(void);
 #endif
 #if (IGN_CHANNELS >= 5)
-  void ignitionSchedule5Interrupt(void);
+  void IGNITION_INTERRUPT_NAME(5)(void);
 #endif
 #if (IGN_CHANNELS >= 6)
-  void ignitionSchedule6Interrupt(void);
+  void IGNITION_INTERRUPT_NAME(6)(void);
 #endif
 #if (IGN_CHANNELS >= 7)
-  void ignitionSchedule7Interrupt(void);
+  void IGNITION_INTERRUPT_NAME(7)(void);
 #endif
 #if (IGN_CHANNELS >= 8)
-  void ignitionSchedule8Interrupt(void);
+  void IGNITION_INTERRUPT_NAME(8)(void);
 #endif
 #endif
-/** Schedule statuses.
- * - OFF - Schedule turned off and there is no scheduled plan
- * - PENDING - There's a scheduled plan, but is has not started to run yet
- * - STAGED - (???, Not used)
- * - RUNNING - Schedule is currently running
- */
-enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The statuses that a schedule can have
 
-/** Ignition schedule.
- */
-struct IgnitionSchedule {
+/** \enum ScheduleStatus
+ * @brief The current state of a schedule
+ * */
+enum ScheduleStatus {
+  /** Not running */
+  OFF, 
+  /** The delay phase of the schedule is active */
+  PENDING,
+  /** The schedule action is running */
+  RUNNING,
+  /** The schedule is running, with a next schedule queued up */
+  RUNNING_WITHNEXT,
+}; 
 
+
+/**
+ * @brief A schedule for a single output channel. 
+ * 
+ * @details
+ * @par A schedule consists of 3 independent parts:
+ * - an action that can be started and stopped. E.g. charge ignition coil or injection pulse
+ * - a delay until the action is started
+ * - a duration until the action is stopped
+ * 
+ * I.e.\n 
+ * \code 
+ *   <--------------- Delay ---------------><---- Duration ---->
+ *                                          ^                  ^
+ *                              Action starts                  Action ends
+ * \endcode
+ * 
+ * @par Timers are modelled as registers
+ * Once set, Schedule instances are usually driven externally by a timer
+ * ISR calling moveToNextState()
+ */
+struct Schedule {
   // Deduce the real types of the counter and compare registers.
   // COMPARE_TYPE is NOT the same - it's just an integer type wide enough to
   // store 16-bit counter/compare calculation results.
-  using counter_t = decltype(IGN1_COUNTER);
-  using compare_t = decltype(IGN1_COMPARE);
+  /** @brief The type of a timer counter register (this varies between platforms) */
+  using counter_t = decltype(FUEL1_COUNTER /* <-- Arbitrary choice of macro, assumes all have the same type */);
+  /** @brief The type of a timer compare register (this varies between platforms) */
+  using compare_t = decltype(FUEL1_COMPARE /* <-- Arbitrary choice of macro, assumes all have the same type */);
 
-  IgnitionSchedule( counter_t &counter, compare_t &compare,
-            void (&_pTimerDisable)(), void (&_pTimerEnable)())
-  : counter(counter)
-  , compare(compare)
-  , pTimerDisable(_pTimerDisable)
-  , pTimerEnable(_pTimerEnable)
-  {
-  }
+  /**
+   * @brief Construct a new Schedule object
+   * 
+   * @param counter A <b>reference</b> to the timer counter
+   * @param compare A <b>reference</b> to the timer comparator
+   */
+  Schedule(counter_t &counter, compare_t &compare);
 
-  volatile unsigned long duration;///< Scheduled duration (uS ?)
-  volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
-  void (*pStartCallback)(void);        ///< Start Callback function for schedule
-  void (*pEndCallback)(void);          ///< End Callback function for schedule
+  /**
+   * @brief Scheduled duration (timer ticks) 
+   *
+   * This captures the duration of the *next* interval to be scheduled. I.e.
+   *  * Status==PENDING: this is the duration that will be used when the schedule moves to the RUNNING state 
+   *  * Status==RUNNING_WITHNEXT: this is the duration that will be used after the current schedule finishes and the queued up scheduled starts 
+   */
+  volatile COMPARE_TYPE Duration;   ///< 
+  volatile ScheduleStatus Status;   ///< Schedule status
+  voidVoidCallback pStartCallback;  ///< Start Callback function for schedule
+  voidVoidCallback pEndCallback;    ///< End Callback function for schedule
+
+  volatile COMPARE_TYPE nextStartCompare;    ///< Planned start of next schedule (when current schedule is RUNNING_WITHNEXT)
+  
+  counter_t &_counter;       ///< **Reference** to the counter register. E.g. TCNT3
+  compare_t &_compare;       ///< **Reference**to the compare register. E.g. OCR3A
+};
+
+static inline bool isRunning(const Schedule &schedule) {
+  return schedule.Status==RUNNING || schedule.Status==RUNNING_WITHNEXT;
+}
+
+void _setScheduleNext(Schedule &schedule, uint32_t timeout, uint32_t duration);
+
+void setCallbacks(Schedule &schedule, voidVoidCallback pStartCallback, voidVoidCallback pEndCallback);
+
+
+/** Ignition schedule.
+ */
+struct IgnitionSchedule : public Schedule {
+
+  using Schedule::Schedule;
+
   volatile unsigned long startTime; /**< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino */
-  volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
-  volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
-
-  COMPARE_TYPE nextStartCompare;      ///< Planned start of next schedule (when current schedule is RUNNING)
-  COMPARE_TYPE nextEndCompare;        ///< Planned end of next schedule (when current schedule is RUNNING)
-  volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
   volatile bool endScheduleSetByDecoder = false;
-
-  counter_t &counter;  // Reference to the counter register. E.g. TCNT3
-  compare_t &compare;  // Reference to the compare register. E.g. OCR3A
-  void (&pTimerDisable)();    // Reference to the timer disable function
-  void (&pTimerEnable)();     // Reference to the timer enable function  
 };
 
 void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration);
-void _setIgnitionScheduleNext(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration);
 
-inline __attribute__((always_inline)) void setIgnitionSchedule(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration) {
-  if(schedule.Status != RUNNING) { //Check that we're not already part way through a schedule
+static inline void setIgnitionSchedule(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration) {
+  noInterrupts();
+  if(!isRunning(schedule)) { //Check that we're not already part way through a schedule
     _setIgnitionScheduleRunning(schedule, timeout, duration);
-  }
   // Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
-  else if(timeout < MAX_TIMER_PERIOD){
-    _setIgnitionScheduleNext(schedule, timeout, duration);
+  } else if(timeout < MAX_TIMER_PERIOD){
+    _setScheduleNext(schedule, timeout, duration);
+  } else {
+    // Keep MISRA checker happy
   }
+  interrupts();
 }
 
 /** Fuel injection schedule.
 * Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.
 * They are removed in this struct to save RAM.
 */
-struct FuelSchedule {
+struct FuelSchedule : public Schedule {
 
-  // Deduce the real types of the counter and compare registers.
-  // COMPARE_TYPE is NOT the same - it's just an integer type wide enough to
-  // store 16-bit counter/compare calculation results.
-  using counter_t = decltype(FUEL1_COUNTER);
-  using compare_t = decltype(FUEL1_COMPARE);
+  using Schedule::Schedule;
 
-  FuelSchedule( counter_t &counter, compare_t &compare,
-            void (&_pTimerDisable)(), void (&_pTimerEnable)())
-  : counter(counter)
-  , compare(compare)
-  , pTimerDisable(_pTimerDisable)
-  , pTimerEnable(_pTimerEnable)
-  {
-  }
-
-  volatile unsigned long duration;///< Scheduled duration (uS ?)
-  volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
-  volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
-  volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
-  void (*pStartFunction)(void);
-  void (*pEndFunction)(void);  
-  COMPARE_TYPE nextStartCompare;
-  COMPARE_TYPE nextEndCompare;
-  volatile bool hasNextSchedule = false;
-
-  counter_t &counter;  // Reference to the counter register. E.g. TCNT3
-  compare_t &compare;  // Reference to the compare register. E.g. OCR3A
-  void (&pTimerDisable)();    // Reference to the timer disable function
-  void (&pTimerEnable)();     // Reference to the timer enable function  
 };
 
 void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsigned long duration);
-void _setFuelScheduleNext(FuelSchedule &schedule, unsigned long timeout, unsigned long duration);
 
-inline __attribute__((always_inline)) void setFuelSchedule(FuelSchedule &schedule, unsigned long timeout, unsigned long duration) 
-{
-  if(schedule.Status != RUNNING) 
-  { //Check that we're not already part way through a schedule
-    _setFuelScheduleRunning(schedule, timeout, duration);
-  }
-  else if(timeout < MAX_TIMER_PERIOD) 
-  {
-    _setFuelScheduleNext(schedule, timeout, duration);
+static inline void setFuelSchedule(FuelSchedule &schedule, unsigned long timeout, unsigned long duration) {
+  // Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
+  if(timeout < MAX_TIMER_PERIOD) {
+    noInterrupts();
+    if(!isRunning(schedule)) { //Check that we're not already part way through a schedule
+      _setFuelScheduleRunning(schedule, timeout, duration);
+    }
+    else {
+      _setScheduleNext(schedule, timeout, duration);
+    }
+    interrupts();
   }
 }
 
