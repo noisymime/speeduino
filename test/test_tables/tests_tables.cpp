@@ -2,15 +2,17 @@
 #include <string.h> // memcpy
 #include <unity.h>
 #include <stdio.h>
+#include <avr/pgmspace.h>
 #include "tests_tables.h"
 #include "table3d.h"
+#include "../test_utils.h"
 
 #define _countof(x) (sizeof(x) / sizeof (x[0]))
 
 #if defined(PROGMEM)
-const PROGMEM table3d_value_t values[] = {
+static const table3d_value_t values[] PROGMEM = {
 #else
-const table3d_value_t values[] = {
+static const table3d_value_t values[] = {
 #endif
  //0    1    2   3     4    5    6    7    8    9   10   11   12   13    14   15
 34,  34,  34,  34,  34,  34,  34,  34,  34,  35,  35,  35,  35,  35,  35,  35, 
@@ -64,51 +66,7 @@ void setup_TestTable(void)
       ----------------------------------------------------------------------------------------------------------------
          500 |  700 |  900 | 1200 | 1600 | 2000 | 2500 | 3100 | 3500 | 4100 | 4700 | 5300 | 5900 | 6500 | 6750 | 7000
   */
-
-  //
-  // NOTE: USE OF ITERATORS HERE IS DELIBERATE. IT INCLUDES THEM IN THE UNIT TESTS, giving
-  // them some coverage
-  //
-  {
-    table_axis_iterator itX = testTable.axisX.begin();
-    const table3d_axis_t *pXValue = tempXAxis;
-    while (!itX.at_end())
-    {
-      *itX = *pXValue;
-      ++pXValue;
-      ++itX;
-    }
-  }
-  {
-    table_axis_iterator itY = testTable.axisY.begin();
-    const table3d_axis_t *pYValue = tempYAxis;
-    while (!itY.at_end())
-    {
-      *itY = *pYValue;
-      ++pYValue;
-      ++itY;
-    }
-  }
-
-  {
-    table_value_iterator itZ = testTable.values.begin();
-    const table3d_value_t *pZValue = values;
-    while (!itZ.at_end())
-    {
-      table_row_iterator itRow = *itZ;
-      while (!itRow.at_end())
-      {
-#if defined(PROGMEM)
-        *itRow = pgm_read_byte(pZValue);
-#else
-        *itRow = *pZValue;
-#endif
-        ++pZValue;
-        ++itRow;
-      }
-      ++itZ;
-    }
-  }
+  populateTable(testTable, values, tempXAxis, tempYAxis);
 }
 
 void testTables()

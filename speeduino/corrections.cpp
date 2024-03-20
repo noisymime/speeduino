@@ -31,6 +31,8 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 #include "sensors.h"
 #include "src/PID_v1/PID_v1.h"
 
+#define IGN_IDLE_THRESHOLD 200 //RPM threshold (below CL idle target) for when ign based idle control will engage
+
 long PID_O2, PID_output, PID_AFRTarget;
 /** Instance of the PID object in case that algorithm is used (Always instantiated).
 * Needs to be global as it maintains state outside of each function call.
@@ -353,7 +355,7 @@ uint16_t correctionAccel(void)
               //If CLT is less than taper min temp, apply full modifier on top of accelValue
               if ( currentStatus.coolant <= (int)(configPage2.aeColdTaperMin - CALIBRATION_TEMPERATURE_OFFSET) )
               {
-                uint16_t accelValue_uint = percentage(configPage2.aeColdPct, accelValue);
+                uint16_t accelValue_uint = percentage(configPage2.aeColdPct, (uint16_t)accelValue);
                 accelValue = (int16_t) accelValue_uint;
               }
               //If CLT is between taper min and max, taper the modifier value and apply it on top of accelValue
@@ -361,7 +363,7 @@ uint16_t correctionAccel(void)
               {
                 int16_t taperRange = (int16_t) configPage2.aeColdTaperMax - configPage2.aeColdTaperMin;
                 int16_t taperPercent = (int)((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - configPage2.aeColdTaperMin) * 100) / taperRange;
-                int16_t coldPct = (int16_t) 100 + percentage( (100-taperPercent), (configPage2.aeColdPct-100) );
+                int16_t coldPct = (int16_t) 100 + percentage((uint8_t) (100U-taperPercent), (configPage2.aeColdPct-100U) );
                 uint16_t accelValue_uint = (uint16_t) accelValue * coldPct / 100; //Potential overflow (if AE is large) without using uint16_t (percentage() may overflow)
                 accelValue = (int16_t) accelValue_uint;
               }
@@ -418,7 +420,7 @@ uint16_t correctionAccel(void)
               //If CLT is less than taper min temp, apply full modifier on top of accelValue
               if ( currentStatus.coolant <= (int)(configPage2.aeColdTaperMin - CALIBRATION_TEMPERATURE_OFFSET) )
               {
-                uint16_t accelValue_uint = percentage(configPage2.aeColdPct, accelValue);
+                uint16_t accelValue_uint = percentage(configPage2.aeColdPct, (uint16_t)accelValue);
                 accelValue = (int16_t) accelValue_uint;
               }
               //If CLT is between taper min and max, taper the modifier value and apply it on top of accelValue
@@ -426,7 +428,7 @@ uint16_t correctionAccel(void)
               {
                 int16_t taperRange = (int16_t) configPage2.aeColdTaperMax - configPage2.aeColdTaperMin;
                 int16_t taperPercent = (int)((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - configPage2.aeColdTaperMin) * 100) / taperRange;
-                int16_t coldPct = (int16_t)100 + percentage( (100 - taperPercent), (configPage2.aeColdPct-100) );
+                int16_t coldPct = (int16_t)100 + percentage((uint8_t) (100 - taperPercent), (uint16_t)(configPage2.aeColdPct-100) );
                 uint16_t accelValue_uint = (uint16_t) accelValue * coldPct / 100; //Potential overflow (if AE is large) without using uint16_t
                 accelValue = (int16_t) accelValue_uint;
               }
@@ -986,4 +988,12 @@ uint16_t correctionsDwell(uint16_t dwell)
   }
 
   return tempDwell;
+}
+
+
+bool isFixedTimingOn(void) {
+          // Fixed timing is in effect
+  return  configPage2.fixAngEnable == 1U
+          // Cranking, so the cranking advance angle is in effect
+          || BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK);  
 }

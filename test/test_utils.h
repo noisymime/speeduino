@@ -1,5 +1,6 @@
 
 #pragma once
+#include "table3d.h"
 
 // Unity macro to reduce memory usage (RAM, .bss)
 //
@@ -16,3 +17,6 @@
     strcpy_P(funcName, PSTR(#func)); \
     UnityDefaultTestRun(func, funcName, __LINE__); \
   }
+
+
+void populateTable(table3d16RpmLoad &table, const table3d_value_t values[], const table3d_axis_t xAxis[], const table3d_axis_t yAxis[]);
