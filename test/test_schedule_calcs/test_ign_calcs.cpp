@@ -70,8 +70,6 @@ void test_calc_ign_timeout_360()
     setEngineSpeed(4000, 360);
     
     TEST_ASSERT_EQUAL(15000, revolutionTime);    
-    TEST_ASSERT_EQUAL(786, degreesPerMicro);    
-    TEST_ASSERT_EQUAL(10667, microsPerDegree);
     TEST_ASSERT_EQUAL(96, dwellAngle);
 
     // Expected test values were generated using floating point calculations (in Excel)

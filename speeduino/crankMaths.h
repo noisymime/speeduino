@@ -47,6 +47,13 @@ static inline int16_t injectorLimits(int16_t angle)
 #define MIN_RPM ((MICROS_PER_DEG_1_RPM/(UINT16_MAX/16UL))+1UL)
 
 /**
+ * @brief Set the revolution time, from which some of the degree<-->angle conversions are derived
+ * 
+ * @param revolutionTime The crank revolution time.
+ */
+void setAngleConverterRevolutionTime(uint32_t revolutionTime);
+
+/**
  * @name Converts angular degrees to the time interval that amount of rotation
  * will take at current RPM.
  * 
@@ -56,39 +63,17 @@ static inline int16_t injectorLimits(int16_t angle)
  * @param angle Angle in degrees
  * @return Time interval in uS
  */
-///@{
-/** @brief Converts based on the time one degree of rotation takes 
- * 
- * Inverse of timeToAngleDegPerMicroSec
-*/
 uint32_t angleToTimeMicroSecPerDegree(uint16_t angle);
-
-/** @brief Converts based on the time interval between the 2 most recently detected decoder teeth 
- * 
- * Inverse of timeToAngleIntervalTooth
-*/
-uint32_t angleToTimeIntervalTooth(uint16_t angle);
-///@}
 
 /**
  * @name Converts a time interval in microsecods to the equivalent degrees of angular (crank)
  * rotation at current RPM.
  *
+ * Inverse of angleToTimeMicroSecPerDegree
+ *
  * @param time Time interval in uS
  * @return Angle in degrees
  */
-///@{
-/** @brief Converts based on the the interval on time one degree of rotation takes 
- * 
- * Inverse of angleToTimeMicroSecPerDegree
-*/
 uint16_t timeToAngleDegPerMicroSec(uint32_t time);
-
-/** @brief Converts based on the time interval between the 2 most recently detected decoder teeth 
- * 
- * Inverse of angleToTimeIntervalTooth
-*/
-uint16_t timeToAngleIntervalTooth(uint32_t time);
-///@}
 
 #endif

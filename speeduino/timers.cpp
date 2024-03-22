@@ -320,11 +320,10 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
       currentStatus.ethanolPct = ADC_FILTER(tempEthPct, configPage4.FILTER_FLEX, currentStatus.ethanolPct);
 
       //Continental flex sensor fuel temperature can be read with following formula: (Temperature = (41.25 * pulse width(ms)) - 81.25). 1000μs = -40C and 5000μs = 125C
-      if(flexPulseWidth > 5000) { flexPulseWidth = 5000; }
-      else if(flexPulseWidth < 1000) { flexPulseWidth = 1000; }
-      currentStatus.fuelTemp = div100( (int16_t)(((4224 * (long)flexPulseWidth) >> 10) - 8125) );
+      flexPulseWidth = constrain(flexPulseWidth, 1000UL, 5000UL);
+      int32_t tempX100 = (int32_t)rshift<10>(4224UL * flexPulseWidth) - 8125L; //Split up for MISRA compliance
+      currentStatus.fuelTemp = div100((int16_t)tempX100);     
     }
-
   }
 
   //Turn off any of the pulsed testing outputs if they are active and have been running for long enough

@@ -295,23 +295,6 @@ extern unsigned long elapsedTime;
 extern unsigned long lastCrankAngleCalc;
 extern unsigned long lastVVTtime; //The time between the vvt reference pulse and the last crank pulse
 
-typedef uint32_t UQ24X8_t;
-constexpr uint8_t UQ24X8_Shift = 8U;
-
-/** @brief uS per degree at current RPM in UQ24.8 fixed point */
-extern UQ24X8_t microsPerDegree;
-constexpr uint8_t microsPerDegree_Shift = UQ24X8_Shift;
-
-typedef uint16_t UQ1X15_t;
-constexpr uint8_t UQ1X15_Shift = 15U;
-
-/** @brief Degrees per uS in UQ1.15 fixed point.
- * 
- * Ranges from 8 (0.000246) at MIN_RPM to 3542 (0.108) at MAX_RPM
- */
-extern UQ1X15_t degreesPerMicro;
-constexpr uint8_t degreesPerMicro_Shift = UQ1X15_Shift;
-
 extern uint16_t ignition1EndTooth;
 extern uint16_t ignition2EndTooth;
 extern uint16_t ignition3EndTooth;

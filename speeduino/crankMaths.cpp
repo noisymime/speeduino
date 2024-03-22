@@ -1,6 +1,6 @@
 #include "globals.h"
 #include "crankMaths.h"
-#include "decoders.h"
+#include "bit_shifts.h"
 
 #define SECOND_DERIV_ENABLED                0          
 
@@ -10,51 +10,36 @@ byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
 #endif
 
-uint32_t angleToTimeMicroSecPerDegree(uint16_t angle) {
-  UQ24X8_t micros = (uint32_t)angle * (uint32_t)microsPerDegree;
-  return RSHIFT_ROUND(micros, microsPerDegree_Shift);
+typedef uint32_t UQ24X8_t;
+static constexpr uint8_t UQ24X8_Shift = 8U;
+
+/** @brief uS per degree at current RPM in UQ24.8 fixed point */
+static  UQ24X8_t microsPerDegree;
+static constexpr uint8_t microsPerDegree_Shift = UQ24X8_Shift;
+
+typedef uint16_t UQ1X15_t;
+static constexpr uint8_t UQ1X15_Shift = 15U;
+
+/** @brief Degrees per uS in UQ1.15 fixed point.
+ * 
+ * Ranges from 8 (0.000246) at MIN_RPM to 3542 (0.108) at MAX_RPM
+ */
+static UQ1X15_t degreesPerMicro;
+static constexpr uint8_t degreesPerMicro_Shift = UQ1X15_Shift;
+
+void setAngleConverterRevolutionTime(uint32_t revolutionTime) {
+  microsPerDegree = div360(lshift<microsPerDegree_Shift>(revolutionTime));
+  degreesPerMicro = (uint16_t)UDIV_ROUND_CLOSEST(lshift<degreesPerMicro_Shift>(UINT32_C(360)), revolutionTime, uint32_t);
 }
 
-uint32_t angleToTimeIntervalTooth(uint16_t angle) {
-  noInterrupts();
-  if(BIT_CHECK(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT))
-  {
-    unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime);
-    uint16_t tempTriggerToothAngle = triggerToothAngle; // triggerToothAngle is set by interrupts
-    interrupts();
-    
-    return (toothTime * (uint32_t)angle) / tempTriggerToothAngle;
-  }
-  //Safety check. This can occur if the last tooth seen was outside the normal pattern etc
-  else { 
-    interrupts();
-    return angleToTimeMicroSecPerDegree(angle); 
-  }
+uint32_t angleToTimeMicroSecPerDegree(uint16_t angle) {
+  UQ24X8_t micros = (uint32_t)angle * (uint32_t)microsPerDegree;
+  return rshift_round<microsPerDegree_Shift>(micros);
 }
 
 uint16_t timeToAngleDegPerMicroSec(uint32_t time) {
     uint32_t degFixed = time * (uint32_t)degreesPerMicro;
-    return RSHIFT_ROUND(degFixed, degreesPerMicro_Shift);
-}
-
-
-uint16_t timeToAngleIntervalTooth(uint32_t time)
-{
-    noInterrupts();
-    //Still uses a last interval method (ie retrospective), but bases the interval on the gap between the 2 most recent teeth rather than the last full revolution
-    if(BIT_CHECK(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT))
-    {
-      unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime);
-      uint16_t tempTriggerToothAngle = triggerToothAngle; // triggerToothAngle is set by interrupts
-      interrupts();
-
-      return (unsigned long)(time * (uint32_t)tempTriggerToothAngle) / toothTime;
-    }
-    else { 
-      interrupts();
-      //Safety check. This can occur if the last tooth seen was outside the normal pattern etc
-      return timeToAngleDegPerMicroSec(time);
-    }
+    return rshift_round<degreesPerMicro_Shift>(degFixed);
 }
 
 #if SECOND_DERIV_ENABLED!=0
@@ -92,7 +77,7 @@ void doCrankSpeedCalcs(void)
           uint32_t toothDeltaT = toothHistory[toothHistoryIndex];
           //long timeToLastTooth = micros() - toothLastToothTime;
 
-          rpmDelta = (toothDeltaV << 10) / (6 * toothDeltaT);
+          rpmDelta = lshift<10>(toothDeltaV) / (6 * toothDeltaT);
         }
 
           timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpmDelta).quot; //This gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low resolution triggers
