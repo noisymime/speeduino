@@ -9,16 +9,19 @@
 
 /// @defgroup group-opt-shift Optimised bitwise shifts
 ///
-/// @brief As of AVR-GCC 13.2.0, the code produced for 32-bit shifts is very poor. The templates 
-/// here implement optimised shifting. The assembler was generated using clang 17.0.1 cross 
-/// compiling: -O3 --target=avr -mmcu=atmega2560.
-/// 
-/// Average 35% increase in shift performance: see unit tests
+/// @brief As of AVR-GCC 13.2.0, the code produced for 32-bit shifts with a compile time shift distance is very poor.
+/// The templates here implement optimised shifting. Average 35% increase in shift performance on AtMega2560: see unit tests.
 ///
-/// If there is no overload for a certain shift, that's because GCC did produce decent ASM
+/// Usage:
+/// @code
+///      rpmDelta = lshift<10>(toothDeltaV) / (6 * toothDeltaT);
+/// @endcode
+///
+/// If there is no overload for a certain shift, that's because GCC produced decent ASM
 /// in that case.
 /// 
-/// @see https://godbolt.org/z/71cPnMYqs
+/// @note Code is usable on all architectures, but the optimization only applies to AVR-GCC.
+/// Other compilers will see a standard bitwise shift.
 /// @{
     
 // Flag if we should turn on optimized shifts
@@ -31,11 +34,11 @@
 #endif
 
 /**
- * @brief Bitwise left shift - generic case 
+ * @brief Bitwise left shift - generic, unoptimized, case 
  * 
  * @tparam b number of bits to shift by
  * @param a value to shift
- * @return uint32_t 
+ * @return uint32_t a<<b
  */
 template <uint8_t b> 
 static inline uint32_t lshift(uint32_t a) { 
@@ -53,6 +56,13 @@ static inline uint32_t lshift(uint32_t a) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
 
+/// @{
+/// @brief uint32_t bitwise left shift optimised for the specified shift distance  
+/// 
+/// @note The assembler was generated using clang 17.0.1 cross compiling: -O3 --target=avr -mmcu=atmega2560. See https://godbolt.org/z/71cPnMYqs
+/// 
+/// @param a value to shift
+/// @return uint32_t a<<b
 template <>
 uint32_t lshift<4U>(uint32_t a)
 {
@@ -322,13 +332,14 @@ uint32_t lshift<15U>(uint32_t a)
 
     return a;
 }
+///@}
 
 #pragma GCC diagnostic pop
 
 #endif
 
 /**
- * @brief Bitwise right shift - generic case 
+ * @brief Bitwise right shift - generic, unoptimized, case 
  * 
  * @tparam b number of bits to shift by
  * @param a value to shift
@@ -349,6 +360,13 @@ static inline uint32_t rshift(uint32_t a) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
 
+/// @{
+/// @brief uint32_t bitwise right shift optimised for the specified shift distance  
+/// 
+/// @note The assembler was generated using clang 17.0.1 cross compiling: -O3 --target=avr -mmcu=atmega2560. See https://godbolt.org/z/71cPnMYqs
+/// 
+/// @param a value to shift
+/// @return uint32_t a>>b
 template <>
 uint32_t rshift<3U>(uint32_t a)
 {
@@ -642,6 +660,8 @@ uint32_t rshift<15U>(uint32_t a)
 
     return a;
 }
+
+///@}
 
 #pragma GCC diagnostic pop
 
