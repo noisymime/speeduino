@@ -106,17 +106,20 @@ static inline uint32_t pwApplyAFRMultiplier(uint32_t intermediate) {
   return intermediate;
 }
 
-static inline uint8_t getPwBitShift(uint16_t corrections) {
-  //If corrections are huge, use less bitshift to avoid overflow. Sacrifices a bit more accuracy (basically only during very cold temp cranking)
-  if (corrections > 1023U) { return 5U; }
-  if (corrections > 511U ) { return 6U; }
-  return 7U;
+template <uint8_t bitShift>
+static inline uint32_t pwApplyCorrections(uint32_t intermediate, uint16_t corrections) {
+  uint16_t iCorrections = div100((uint16_t)(corrections << bitShift));
+  return (intermediate * (uint32_t)iCorrections) >> bitShift;
 }
 
 static inline uint32_t pwApplyCorrections(uint32_t intermediate, uint16_t corrections) {
-  uint8_t bitShift = getPwBitShift(corrections); 
-  uint16_t iCorrections = div100((uint16_t)(corrections << bitShift));
-  return (intermediate * (uint32_t)iCorrections) >> bitShift;
+  if (corrections > 1023U) {
+    return pwApplyCorrections<5U>(intermediate, corrections);
+  }
+  if (corrections > 511U) {
+    return pwApplyCorrections<6U>(intermediate, corrections);
+  }
+  return pwApplyCorrections<7U>(intermediate, corrections);  
 }
 
 static inline uint32_t pwComputeInitial(uint16_t REQ_FUEL, uint8_t VE) {
