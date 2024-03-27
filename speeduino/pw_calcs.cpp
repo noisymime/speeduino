@@ -233,6 +233,12 @@ pulseWidths computePulseWidths(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint
   return applyStagingToPw(computePrimaryPulseWidth(REQ_FUEL, VE, MAP, corrections, injOpenTimeUS), calculatePWLimit(), injOpenTimeUS);
 }
 
-pulseWidths computePulseWidths(uint8_t VE, uint16_t MAP, uint16_t corrections) {
+// Suppress "always_inline function might not be inlinable" warning
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wattributes"
+
+pulseWidths __attribute__((flatten, always_inline)) computePulseWidths(uint8_t VE, uint16_t MAP, uint16_t corrections) {
   return computePulseWidths(req_fuel_uS, VE, MAP, corrections);
 }
+
+#pragma GCC diagnostic pop
