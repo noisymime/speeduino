@@ -685,10 +685,8 @@ static void test_corrections_bat_mode_wholePw(void) {
   configPage2.battVCorMode = BATTV_COR_MODE_WHOLE;
   currentStatus.battery10 = 75;
   configPage2.injOpen = 10;
-  inj_opentime_uS = configPage2.injOpen * 100U;
 
   TEST_ASSERT_EQUAL(108U, correctionBatVoltage() );
-  TEST_ASSERT_EQUAL(configPage2.injOpen * 100U, inj_opentime_uS );
 }
 
 static void test_corrections_bat(void)

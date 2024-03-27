@@ -8,21 +8,6 @@
 
 #define PW_ALLOWED_ERROR  30
 
-void testPW(void)
-{
-  SET_UNITY_FILENAME() {
-    RUN_TEST_P(test_PW_No_Multiply);
-    RUN_TEST_P(test_PW_MAP_Multiply);
-    RUN_TEST_P(test_PW_MAP_Multiply_Compatibility);
-    RUN_TEST_P(test_PW_AFR_Multiply);
-    RUN_TEST_P(test_PW_Large_Correction);
-    RUN_TEST_P(test_PW_Very_Large_Correction);
-    RUN_TEST_P(test_PW_4Cyl_PW0);
-    RUN_TEST_P(test_PW_Limit_Long_Revolution);
-    RUN_TEST_P(test_PW_Limit_90pct);
-  }
-}
-
 static int16_t REQ_FUEL;
 static byte VE;
 static long MAP;
@@ -45,24 +30,144 @@ static void test_PW_setCommon_NoStage(void)
   currentStatus.nitrous_status = NITROUS_OFF;
 
   configPage2.injOpen = 10;
+  configPage2.battVCorMode = BATTV_COR_MODE_WHOLE;
   currentStatus.batCorrection = 100;
   
   initialisePWCalcs();
 }
 
-extern pulseWidths computePulseWidths(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections);
+static constexpr uint16_t NO_MULTIPLY_EXPECTED = 2557U;
 
-void test_PW_No_Multiply()
-{
-  test_PW_setCommon_NoStage();
-
+static void test_setup_noMultiply(void) {
   configPage2.multiplyMAP = 0;
   configPage2.includeAFR = 0;
   configPage2.incorporateAFR = 0;
   configPage2.aeApplyMode = 0;
+}
+
+extern pulseWidths computePulseWidths(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections);
+
+static void test_PW_batt_correction(void) {
+  // Same as test_PW_No_Multiply, but we apply battery correction to open time
+  test_PW_setCommon_NoStage();
+  test_setup_noMultiply();
+
+  configPage2.battVCorMode = BATTV_COR_MODE_OPENTIME;
+  currentStatus.batCorrection = 50U;
+  uint16_t expectedOffset = (configPage2.injOpen*(100-currentStatus.batCorrection));
 
   pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
-  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2557, result.primary);
+  TEST_ASSERT_GREATER_THAN(PW_ALLOWED_ERROR, expectedOffset);
+  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, NO_MULTIPLY_EXPECTED - expectedOffset, result.primary);
+  TEST_ASSERT_EQUAL(0, result.secondary);
+}
+
+static void test_PW_ae_adder(void) {
+  // Same as test_PW_No_Multiply, but we add in acceleration enrichment
+  test_PW_setCommon_NoStage();
+  test_setup_noMultiply();
+
+  BIT_SET(currentStatus.engine, BIT_ENGINE_ACC);
+  configPage2.aeApplyMode = AE_MODE_ADDER;
+  currentStatus.AEamount = 105U;
+  uint16_t expectedOffset = (REQ_FUEL*(currentStatus.AEamount-100U))/100;
+
+  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
+  TEST_ASSERT_GREATER_THAN(PW_ALLOWED_ERROR, expectedOffset);
+  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, NO_MULTIPLY_EXPECTED + expectedOffset, result.primary);
+  TEST_ASSERT_EQUAL(0, result.secondary);
+}
+
+static void test_setup_nitrous_stage1(void) {
+  configPage10.n2o_stage1_minRPM = 20; // RPM/100
+  configPage10.n2o_stage1_maxRPM = 30; // RPM/100
+  configPage10.n2o_stage1_adderMin = 11; // milliseconds
+  configPage10.n2o_stage1_adderMax = 3; // milliseconds
+}
+
+static void test_PW_nitrous_stage1(void) {
+  // Same as test_PW_No_Multiply, but we add in nitrous
+  test_PW_setCommon_NoStage();
+  test_setup_noMultiply();
+
+  currentStatus.nitrous_status = NITROUS_STAGE1;
+  currentStatus.RPM = 2350;
+  test_setup_nitrous_stage1();
+  uint16_t expectedOffset = 820; // uS (3*100)+(1.0-(2350-(20*100))/((30-20)*100))*((11-3)*100)
+
+  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
+  TEST_ASSERT_GREATER_THAN(PW_ALLOWED_ERROR, expectedOffset);
+  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, NO_MULTIPLY_EXPECTED + expectedOffset, result.primary);
+  TEST_ASSERT_EQUAL(0, result.secondary);
+}
+
+static void test_setup_nitrous_stage2(void) {
+  configPage10.n2o_stage2_minRPM = 25; // RPM/100
+  configPage10.n2o_stage2_maxRPM = 30; // RPM/100
+  configPage10.n2o_stage2_adderMin = 7; // milliseconds
+  configPage10.n2o_stage2_adderMax = 1; // milliseconds
+}
+
+static void test_PW_nitrous_stage2(void) {
+  // Same as test_PW_No_Multiply, but we add in nitrous
+  test_PW_setCommon_NoStage();
+  test_setup_noMultiply();
+
+  currentStatus.nitrous_status = NITROUS_STAGE2;
+  currentStatus.RPM = 2650;
+  test_setup_nitrous_stage2();
+  uint16_t expectedOffset = 520; // uS (1*100)+(1.0-(2650-(25*100))/((30-25)*100))*((7-1)*100)
+
+  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
+  TEST_ASSERT_GREATER_THAN(PW_ALLOWED_ERROR, expectedOffset);
+  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, NO_MULTIPLY_EXPECTED + expectedOffset, result.primary);
+  TEST_ASSERT_EQUAL(0, result.secondary);
+}
+
+static void test_PW_nitrous_stageboth(void) {
+  // Same as test_PW_No_Multiply, but we add in nitrous
+  test_PW_setCommon_NoStage();
+  test_setup_noMultiply();
+
+  currentStatus.nitrous_status = NITROUS_BOTH;
+  currentStatus.RPM = 2650;
+  test_setup_nitrous_stage2();
+  uint16_t expectedOffset = 520+580; // uS
+
+  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
+  TEST_ASSERT_GREATER_THAN(PW_ALLOWED_ERROR, expectedOffset);
+  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, NO_MULTIPLY_EXPECTED + expectedOffset, result.primary);
+  TEST_ASSERT_EQUAL(0, result.secondary);
+}
+
+void testPW(void)
+{
+  SET_UNITY_FILENAME() {
+
+  RUN_TEST_P(test_PW_No_Multiply);
+  RUN_TEST_P(test_PW_MAP_Multiply);
+  RUN_TEST_P(test_PW_MAP_Multiply_Compatibility);
+  RUN_TEST_P(test_PW_AFR_Multiply);
+  RUN_TEST_P(test_PW_Large_Correction);
+  RUN_TEST_P(test_PW_Very_Large_Correction);
+  RUN_TEST_P(test_PW_4Cyl_PW0);
+  RUN_TEST_P(test_PW_Limit_Long_Revolution);
+  RUN_TEST_P(test_PW_Limit_90pct);
+  RUN_TEST_P(test_PW_batt_correction);
+  RUN_TEST_P(test_PW_ae_adder);
+  RUN_TEST_P(test_PW_nitrous_stage1);
+  RUN_TEST_P(test_PW_nitrous_stage2);
+  RUN_TEST_P(test_PW_nitrous_stageboth);
+  }
+}
+
+void test_PW_No_Multiply()
+{
+  test_PW_setCommon_NoStage();
+  test_setup_noMultiply();
+
+  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
+  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, NO_MULTIPLY_EXPECTED, result.primary);
   TEST_ASSERT_EQUAL(0, result.secondary);
 }
 
