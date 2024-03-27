@@ -89,7 +89,7 @@ static void test_PW_nitrous_stage1(void) {
   test_setup_noMultiply();
 
   currentStatus.nitrous_status = NITROUS_STAGE1;
-  currentStatus.RPM = 2350;
+  currentStatus.RPMdiv100 = 24;
   test_setup_nitrous_stage1();
   uint16_t expectedOffset = 820; // uS (3*100)+(1.0-(2350-(20*100))/((30-20)*100))*((11-3)*100)
 
@@ -112,7 +112,7 @@ static void test_PW_nitrous_stage2(void) {
   test_setup_noMultiply();
 
   currentStatus.nitrous_status = NITROUS_STAGE2;
-  currentStatus.RPM = 2650;
+  currentStatus.RPMdiv100 = 27;
   test_setup_nitrous_stage2();
   uint16_t expectedOffset = 520; // uS (1*100)+(1.0-(2650-(25*100))/((30-25)*100))*((7-1)*100)
 
@@ -128,7 +128,7 @@ static void test_PW_nitrous_stageboth(void) {
   test_setup_noMultiply();
 
   currentStatus.nitrous_status = NITROUS_BOTH;
-  currentStatus.RPM = 2650;
+  currentStatus.RPMdiv100 = 27;
   test_setup_nitrous_stage2();
   uint16_t expectedOffset = 520+580; // uS
 
