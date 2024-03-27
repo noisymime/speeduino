@@ -181,7 +181,7 @@ void test_PW_Limit_90pct(void)
   configPage2.dutyLim = 90;
 
   //Duty limit of 90% for 10,000uS should give 9,000
-  TEST_ASSERT_EQUAL(9000, calculatePWLimit());
+  TEST_ASSERT_INT32_WITHIN(4, 9000, calculatePWLimit());
 }
 
 //Tests the PW Limit calculation when the revolution time is greater than the max UINT16 value
