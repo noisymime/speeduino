@@ -200,16 +200,16 @@ static inline uint32_t _percentageApprox(uint16_t percent, uint32_t value) {
  * ^       | ^             | <c>percentageApprox(79, 2371)</c> -> 1870
  */
 static inline uint32_t percentageApprox(uint16_t percent, uint32_t value) {
-    if (percent>1023) {
+    if (percent>1023U) {
         return _percentageApprox<5U>(percent, value);
     }
-    if (percent>511) {
+    if (percent>511U) {
         return _percentageApprox<6U>(percent, value);
     }
-    if (percent>255) {
+    if (percent>255U) {
         return _percentageApprox<7U>(percent, value);
     }
-    if (percent>127) {
+    if (percent>127U) {
         return _percentageApprox<8U>(percent, value);
     }
     return _percentageApprox<9U>(percent, value);
