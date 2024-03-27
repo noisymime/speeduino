@@ -107,19 +107,11 @@ static inline uint32_t pwApplyAFRMultiplier(uint32_t intermediate) {
 }
 
 static inline uint32_t pwApplyCorrections(uint32_t intermediate, uint16_t corrections) {
-  if (corrections < 512 ) { 
-    intermediate = rshift<7U>(intermediate * div100(lshift<7U>(corrections))); 
-  } else if (corrections < 1024 ) { 
-    intermediate = rshift<6U>(intermediate * div100(lshift<6U>(corrections)));
-  } else {
-    intermediate = rshift<5U>(intermediate * div100(lshift<5U>(corrections)));
-  }  
-  return intermediate;
+  return percentageApprox(corrections, intermediate); 
 }
 
 static inline uint32_t pwComputeInitial(uint16_t REQ_FUEL, uint8_t VE) {
-  uint16_t iVE = div100((uint16_t)((uint16_t)VE << UINT16_C(7)));
-  return ((uint32_t)REQ_FUEL * (uint32_t)iVE) >> 7UL; //Need to use an intermediate value to avoid overflowing the long
+  return percentageApprox(VE, REQ_FUEL); 
 }
 
 
@@ -140,7 +132,7 @@ static inline uint16_t computePrimaryPulseWidth(uint16_t REQ_FUEL, uint8_t VE, u
       //AE Adds % of req_fuel
       if ( configPage2.aeApplyMode == AE_MODE_ADDER )
       {
-        intermediate += div100( (uint32_t)REQ_FUEL * (currentStatus.AEamount - 100U) );
+        intermediate += percentage(currentStatus.AEamount - 100U, REQ_FUEL);
       }
     }
   }
@@ -153,7 +145,7 @@ static inline
 #endif
 uint16_t calculatePWLimit()
 {
-  uint32_t tempLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
+  uint32_t tempLimit = percentageApprox(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
   //Handle multiple squirts per rev
   if (configPage2.strokes == FOUR_STROKE) { tempLimit = tempLimit * 2; }
 
@@ -178,7 +170,7 @@ uint16_t calculatePWLimit()
       break;
   }
   // Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
-  return (uint16_t)(tempLimit>UINT16_MAX ? UINT16_MAX : tempLimit);
+  return (uint16_t)min(tempLimit, (uint32_t)UINT16_MAX);
 }
 
 static inline pulseWidths applyStagingToPw(uint16_t primaryPW, uint16_t pwLimit, uint16_t injOpenTimeUS) {

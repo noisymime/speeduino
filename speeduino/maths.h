@@ -170,12 +170,56 @@ static inline uint32_t div360(uint32_t n) {
 #endif
 }
 
+
+/// @cond
+// Helper function, private to percentageApprox - do not use directly.
+template <uint8_t bitShift>
+static inline uint32_t _percentageApprox(uint16_t percent, uint32_t value) {
+  uint16_t iPercent = div100((uint16_t)(percent << bitShift));
+  return rshift<bitShift>(value * (uint32_t)iPercent);
+}
+/// @endcond
+
+/**
+ * @brief Integer based percentage calculation: faster, but less accurate, than percentage()
+ * 
+ * Recommended use case is when dealing with percentages >50%.
+ * 
+ * @param percent The percent to apply to value
+ * @param value The value to operate on
+ *
+ * @note Performance unit test shows a 25% speed improvement over percentage. 
+ * However, accuracy decreases as the percentage decreases, compared to percentage():
+ * Percent | Maximum Error | Example
+ * ------- | :-----------: | :----------------------------------
+ * 1%-6%   | 9%            | <c>percentage(4, 563)</c>         -> 23
+ * ^       | ^             | <c>percentageApprox(4, 563)</c>   -> 21
+ * 7%-40%  | 1%            | <c>percentage(10, 1806)</c>       -> 181
+ * ^       | ^             | <c>percentageApprox(10, 1806)</c> -> 179
+ * 41%+    | <0.3%         | <c>percentage(79, 2371)</c>       -> 1873
+ * ^       | ^             | <c>percentageApprox(79, 2371)</c> -> 1870
+ */
+static inline uint32_t percentageApprox(uint16_t percent, uint32_t value) {
+    if (percent>1023) {
+        return _percentageApprox<5U>(percent, value);
+    }
+    if (percent>511) {
+        return _percentageApprox<6U>(percent, value);
+    }
+    if (percent>255) {
+        return _percentageApprox<7U>(percent, value);
+    }
+    if (percent>127) {
+        return _percentageApprox<8U>(percent, value);
+    }
+    return _percentageApprox<9U>(percent, value);
+}
+
 /**
  * @brief Integer based percentage calculation.
  * 
- * @param percent The percent to calculate ([0, 100])
+ * @param percent The percent to apply to value
  * @param value The value to operate on
- * @return uint32_t 
  */
 static inline uint32_t percentage(uint16_t percent, uint32_t value) 
 {

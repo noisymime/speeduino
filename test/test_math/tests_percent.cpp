@@ -61,19 +61,37 @@ void test_maths_halfpercent_U16(void)
   test_halfPercentage(125, percentOf); 
 }
 
+static void test_percentApprox(uint8_t percent, uint16_t value) {
+  uint8_t delta = ((uint32_t)percent*value)/100; // 1% allowable delta
+  assert_rounded_div((uint32_t)percent*value, 100, percentageApprox(percent, value), delta);
+}
+
+static void test_maths_percentApprox(void)
+{
+  uint16_t percentOf = 33333;
+  test_percentApprox(0, percentOf);
+  test_percentApprox(33, percentOf);
+  test_percentApprox(50, percentOf);
+  test_percentApprox(66, percentOf);
+  test_percentApprox(75, percentOf);
+  test_percentApprox(100, percentOf);
+  test_percentApprox(125, percentOf);
+}
+
+// These are shared by all percentage perf tests for consistency
+static constexpr int16_t iters = 4;
+static constexpr uint16_t start_percent = 3;
+static constexpr uint16_t end_percent = 2047;
+static constexpr uint16_t percent_step = 3;
+static constexpr uint16_t percentOf = 57357;
+
 void test_maths_halfPercentage_perf(void)
 {
 #if defined(ARDUINO_ARCH_AVR)
-    constexpr int16_t iters = 4;
-    constexpr uint8_t start_index = 3;
-    constexpr uint8_t end_index = 99;
-    constexpr uint8_t step = 3;
-    constexpr uint16_t percentOf = 57357;
-
-    auto nativeTest = [] (uint8_t index, uint32_t &checkSum) { checkSum += ((uint32_t)percentOf * index) / 200U; };
-    auto optimizedTest = [] (uint8_t index, uint32_t &checkSum) { checkSum += halfPercentage(index, percentOf); };
+    auto nativeTest = [] (uint16_t index, uint32_t &checkSum) { checkSum += ((uint32_t)percentOf * index) / 200U; };
+    auto optimizedTest = [] (uint16_t index, uint32_t &checkSum) { checkSum += halfPercentage(index, percentOf); };
     TEST_MESSAGE("halfPercentage ");
-    auto comparison = compare_executiontime<uint8_t, uint32_t>(iters, start_index, end_index, step, nativeTest, optimizedTest);
+    auto comparison = compare_executiontime<uint16_t, uint32_t>(iters, start_percent, end_percent, percent_step, nativeTest, optimizedTest);
     
     // The checksums will be different due to rounding. This is only
     // here to force the compiler to run the loops above
@@ -87,16 +105,27 @@ void test_maths_halfPercentage_perf(void)
 void test_maths_percentage_perf(void)
 {
 #if defined(ARDUINO_ARCH_AVR)
-    constexpr uint16_t iters = 4;
-    constexpr uint8_t start_index = 3;
-    constexpr uint8_t end_index = 99;
-    constexpr uint8_t step = 3;
-    constexpr uint16_t percentOf = 57357;
-
-    auto nativeTest = [] (uint8_t index, uint32_t &checkSum) { checkSum += ((uint32_t)percentOf * index) / 100U; };
-    auto optimizedTest = [] (uint8_t index, uint32_t &checkSum) { checkSum += percentage(index, percentOf); };
+    auto nativeTest = [] (uint16_t index, uint32_t &checkSum) { checkSum += ((uint32_t)percentOf * index) / 100U; };
+    auto optimizedTest = [] (uint16_t index, uint32_t &checkSum) { checkSum += percentage(index, percentOf); };
     TEST_MESSAGE("Percentage ");
-    auto comparison = compare_executiontime<uint8_t, uint32_t>(iters, start_index, end_index, step, nativeTest, optimizedTest);
+    auto comparison = compare_executiontime<uint16_t, uint32_t>(iters, start_percent, end_percent, percent_step, nativeTest, optimizedTest);
+    
+    // The checksums will be different due to rounding. This is only
+    // here to force the compiler to run the loops above
+    TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison.timeA.result, comparison.timeB.result);
+
+    TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
+#endif
+}
+
+
+void test_maths_percentageApprox_perf(void)
+{
+#if defined(ARDUINO_ARCH_AVR)
+    auto nativeTest = [] (uint16_t index, uint32_t &checkSum) { checkSum += ((uint32_t)percentOf * index) / 100U; };
+    auto optimizedTest = [] (uint16_t index, uint32_t &checkSum) { checkSum += percentageApprox(index, percentOf); };
+    TEST_MESSAGE("percentageApprox ");
+    auto comparison = compare_executiontime<uint16_t, uint32_t>(iters, start_percent, end_percent, percent_step, nativeTest, optimizedTest);
     
     // The checksums will be different due to rounding. This is only
     // here to force the compiler to run the loops above
@@ -116,5 +145,7 @@ void testPercent()
   RUN_TEST(test_maths_halfpercent_U16);
   RUN_TEST(test_maths_halfPercentage_perf);
   RUN_TEST(test_maths_percentage_perf);
+  RUN_TEST(test_maths_percentageApprox_perf);
+  RUN_TEST(test_maths_percentApprox);
   }
 }
