@@ -24,11 +24,8 @@
     #define EEPROM_LIB_H <EEPROM.h>
     typedef int eeprom_address_t;
   #endif
-  #ifdef PLATFORMIO
-    #define RTC_LIB_H <TimeLib.h>
-  #else
-    #define RTC_LIB_H <Time.h>
-  #endif
+  #define RTC_LIB_H <TimeLib.h>
+  
   void initBoard(void);
   uint16_t freeRam(void);
   void doSystemReset(void);
