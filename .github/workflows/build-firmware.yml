@@ -2,9 +2,10 @@ name: Build Firmware
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, '*-fixes' ]
   pull_request:
     branches: [ master ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -13,6 +14,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+
     - name: Cache pip
       uses: actions/cache@v4
       with:
@@ -20,6 +22,7 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
+
     - name: Cache PlatformIO
       uses: actions/cache@v4
       with:
@@ -44,7 +47,7 @@ jobs:
       run: platformio run -e black_F407VE -e BlackPill_F401CC -e BlackPill_F411CE_USB
 
     - name: Upload to Speeduino server
-      if: github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
+      if: github.event_name != 'pull_request' && github.repository_owner == 'noisymime' && github.ref_name == 'master'
       env:
         WEB_PWD: ${{ secrets.WEB_PWD }}
       run: |
@@ -54,7 +57,7 @@ jobs:
         curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/teensy36/firmware.hex" "https://speeduino.com:2078/teensy36/master-teensy36.hex"
         curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/teensy41/firmware.hex" "https://speeduino.com:2078/teensy41/master-teensy41.hex"
         curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/black_F407VE/firmware.bin" "https://speeduino.com:2078/stm32f407/master-stm32f407.bin"
-        curl --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
+        curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
 
     - name: Discord Notification (Build Failed)
       uses: rjstone/discord-webhook-notify@v1
