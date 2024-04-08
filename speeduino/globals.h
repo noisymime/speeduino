@@ -1046,7 +1046,7 @@ struct config6 {
 
   byte iacCLValues[10]; //Closed loop target RPM value
   byte iacOLStepVal[10]; //Open loop step values for stepper motors
-  byte iacOLPWMVal[10]; //Open loop duty values for PMWM valves
+  byte iacOLPWMVal[10]; //Open loop duty values for PWM valves
   byte iacBins[10]; //Temperature Bins for the above 3 curves
   byte iacCrankSteps[4]; //Steps to use when cranking (Stepper motor)
   byte iacCrankDuty[4]; //Duty cycle to use on PWM valves when cranking
@@ -1437,12 +1437,13 @@ struct config15 {
   byte airConUnused4 : 2;
   byte airConIdleUpRPMAdder;
   byte airConPwmFanMinDuty;
-
+  //Bytes 98-105
   int8_t rollingProtRPMDelta[4]; // Signed RPM value representing how much below the RPM limit. Divided by 10
   byte rollingProtCutPercent[4];
-  
-  //Bytes 106-255
-  byte Unused15_106_255[150];
+  //Bytes 106-114
+  byte iacOLPWMIATVal [9]; //Open loop IAT duty values for PWM valves
+  //Bytes 115-255
+  byte Unused15_98_255[141];
 
 #if defined(CORE_AVR)
   };
