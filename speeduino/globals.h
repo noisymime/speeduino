@@ -334,6 +334,8 @@
 
 #define OPEN_LOOP_BOOST     0
 #define CLOSED_LOOP_BOOST   1
+#define BOOST_LOAD_MAP      0
+#define BOOST_LOAD_TPS      1
 
 #define SOFT_LIMIT_FIXED        0
 #define SOFT_LIMIT_RELATIVE     1
@@ -991,7 +993,8 @@ struct config6 {
   byte egoTemp;     ///< The temperature above which closed loop is enabled
   byte egoCount;    ///< The number of ignition cycles per (ego AFR ?) step
   byte vvtMode : 2; ///< Valid VVT modes are 'on/off', 'open loop' and 'closed loop'
-  byte vvtLoadSource : 2; ///< Load source for VVT (TPS or MAP)
+  byte vvtLoadSource : 1; ///< Load source for VVT (TPS or MAP)
+  byte boostLoadSource : 1; ///< Load source for Boost Control (TPS or MAP)
   byte vvtPWMdir : 1; ///< VVT direction (normal or reverse)
   byte vvtCLUseHold : 1; //Whether or not to use a hold duty cycle (Most cases are Yes)
   byte vvtCLAlterFuelTiming : 1;

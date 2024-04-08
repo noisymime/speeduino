@@ -687,7 +687,12 @@ void boostControl(void)
     {
       //Open loop
       if ( (configPage9.boostByGearEnabled > 0) && (configPage2.vssMode > 1) ){ boostByGear(); }
-      else{ currentStatus.boostDuty = get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM) * 2 * 100; }
+      else{ 
+        if(configPage6.boostLoadSource == BOOST_LOAD_TPS) {
+        currentStatus.boostDuty = get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM) * 2 * 100; 
+        } else {currentStatus.boostDuty = get3DTableValue(&boostTable, currentStatus.MAP, currentStatus.RPM) * 2 * 100;
+        }
+      }
 
       if(currentStatus.boostDuty > 10000) { currentStatus.boostDuty = 10000; } //Safety check
       if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
