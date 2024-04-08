@@ -44,7 +44,7 @@ void initMC33810(void)
 
     SPI.begin();
     //These are the SPI settings per the datasheet
-	  SPI.beginTransaction(SPISettings(6000000, MSBFIRST, SPI_MODE0)); 
+	SPI.beginTransaction(SPISettings(6000000, MSBFIRST, SPI_MODE0)); 
 
     //Set the ignition outputs to GPGD mode
     /*
@@ -54,6 +54,23 @@ void initMC33810(void)
     */
     //uint16_t cmd = 0b000111110000;
     uint16_t cmd = 0b0001111100000000;
+    //IC1
+    MC33810_1_ACTIVE();
+    SPI.transfer16(cmd);
+    MC33810_1_INACTIVE();
+    //IC2
+    MC33810_2_ACTIVE();
+    SPI.transfer16(cmd);
+    MC33810_2_INACTIVE();
+
+    //Disable the Open Load pull-down current sync (See page 31 of MC33810 DS)
+    /*
+    0010 = LSD Fault Command
+    1000 = LSD Fault operation is Shutdown (Default)
+    1111 = Open load detection fault when active (Default)
+    0000 = Disable open load detection when off (Changed from 1111 to 0000)
+    */
+    cmd = 0b0010100011110000;
     //IC1
     MC33810_1_ACTIVE();
     SPI.transfer16(cmd);
