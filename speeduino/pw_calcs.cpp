@@ -51,10 +51,13 @@ void calculateRequiredFuel(InjectorLayout injLayout) {
   if ((configPage2.strokes == FOUR_STROKE) && ((injLayout!= INJ_SEQUENTIAL) || (configPage2.nCylinders > INJ_CHANNELS)))
   {
     //Default is 1 squirt per revolution, so we halve the given req-fuel figure (Which would be over 2 revolutions)
-    req_fuel_uS = req_fuel_uS / 2U; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
+    //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle.
+    //If we're doing more than 1 squirt per cycle then we need to split the amount accordingly.
+    //(Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the
+    //stroke to make the single squirt on)
+    req_fuel_uS = req_fuel_uS / 2U; 
   }
 }
-
 
 static inline uint16_t calcNitrousStagePulseWidth(uint8_t minRPM, uint8_t maxRPM, uint8_t adderMin, uint8_t adderMax)
 {

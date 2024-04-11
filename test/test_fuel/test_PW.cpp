@@ -140,6 +140,32 @@ static void test_PW_nitrous_stageboth(void) {
   TEST_ASSERT_EQUAL(0, result.secondary);
 }
 
+extern uint16_t req_fuel_uS;
+
+static void test_pw_calculateRequiredFuel_2stroke(void) {
+  test_PW_setCommon_NoStage();
+  test_setup_noMultiply();
+
+  configPage2.reqFuel = 11; // ms*10?
+  configPage2.strokes = TWO_STROKE;
+  calculateRequiredFuel(INJ_PAIRED);
+  TEST_ASSERT_EQUAL(configPage2.reqFuel*100U, req_fuel_uS);
+  calculateRequiredFuel(INJ_SEQUENTIAL);
+  TEST_ASSERT_EQUAL(configPage2.reqFuel*100U, req_fuel_uS);
+}
+
+static void test_pw_calculateRequiredFuel_4stroke(void) {
+  test_PW_setCommon_NoStage();
+  test_setup_noMultiply();
+
+  configPage2.reqFuel = 11; // ms*10?
+  configPage2.strokes = FOUR_STROKE;
+  calculateRequiredFuel(INJ_PAIRED);
+  TEST_ASSERT_EQUAL((configPage2.reqFuel*100U)/2U, req_fuel_uS);
+  calculateRequiredFuel(INJ_SEQUENTIAL);
+  TEST_ASSERT_EQUAL(configPage2.reqFuel*100U, req_fuel_uS);
+}
+
 void testPW(void)
 {
   SET_UNITY_FILENAME() {
@@ -158,6 +184,8 @@ void testPW(void)
   RUN_TEST_P(test_PW_nitrous_stage1);
   RUN_TEST_P(test_PW_nitrous_stage2);
   RUN_TEST_P(test_PW_nitrous_stageboth);
+  RUN_TEST_P(test_pw_calculateRequiredFuel_2stroke);
+  RUN_TEST_P(test_pw_calculateRequiredFuel_4stroke);
   }
 }
 
