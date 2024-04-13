@@ -9,16 +9,15 @@
 void testPW(void)
 {
   SET_UNITY_FILENAME() {
-
-  RUN_TEST(test_PW_No_Multiply);
-  RUN_TEST(test_PW_MAP_Multiply);
-  RUN_TEST(test_PW_MAP_Multiply_Compatibility);
-  RUN_TEST(test_PW_AFR_Multiply);
-  RUN_TEST(test_PW_Large_Correction);
-  RUN_TEST(test_PW_Very_Large_Correction);
-  RUN_TEST(test_PW_4Cyl_PW0);
-  RUN_TEST(test_PW_Limit_Long_Revolution);
-  RUN_TEST(test_PW_Limit_90pct);
+    RUN_TEST_P(test_PW_No_Multiply);
+    RUN_TEST_P(test_PW_MAP_Multiply);
+    RUN_TEST_P(test_PW_MAP_Multiply_Compatibility);
+    RUN_TEST_P(test_PW_AFR_Multiply);
+    RUN_TEST_P(test_PW_Large_Correction);
+    RUN_TEST_P(test_PW_Very_Large_Correction);
+    RUN_TEST_P(test_PW_4Cyl_PW0);
+    RUN_TEST_P(test_PW_Limit_Long_Revolution);
+    RUN_TEST_P(test_PW_Limit_90pct);
   }
 }
 

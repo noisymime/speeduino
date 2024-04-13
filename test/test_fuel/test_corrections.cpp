@@ -5,6 +5,7 @@
 #include "../test_utils.h"
 #include "init.h"
 #include "sensors.h"
+#include "../test_utils.h"
 
 void test_corrections_MAE(void);
 
@@ -19,14 +20,14 @@ void testCorrections()
   test_corrections_cranking();
   test_corrections_ASE();
   /*
-  RUN_TEST(test_corrections_floodclear); //Not written yet
-  RUN_TEST(test_corrections_closedloop); //Not written yet
-  RUN_TEST(test_corrections_flex); //Not written yet
-  RUN_TEST(test_corrections_bat); //Not written yet
-  RUN_TEST(test_corrections_iatdensity); //Not written yet
-  RUN_TEST(test_corrections_baro); //Not written yet
-  RUN_TEST(test_corrections_launch); //Not written yet
-  RUN_TEST(test_corrections_dfco); //Not written yet
+  RUN_TEST_P(test_corrections_floodclear); //Not written yet
+  RUN_TEST_P(test_corrections_closedloop); //Not written yet
+  RUN_TEST_P(test_corrections_flex); //Not written yet
+  RUN_TEST_P(test_corrections_bat); //Not written yet
+  RUN_TEST_P(test_corrections_iatdensity); //Not written yet
+  RUN_TEST_P(test_corrections_baro); //Not written yet
+  RUN_TEST_P(test_corrections_launch); //Not written yet
+  RUN_TEST_P(test_corrections_dfco); //Not written yet
   */
   }
 }
@@ -90,10 +91,10 @@ void test_corrections_WUE_active_value(void)
 
 void test_corrections_WUE(void)
 {
-  RUN_TEST(test_corrections_WUE_active);
-  RUN_TEST(test_corrections_WUE_inactive);
-  RUN_TEST(test_corrections_WUE_active_value);
-  RUN_TEST(test_corrections_WUE_inactive_value);
+  RUN_TEST_P(test_corrections_WUE_active);
+  RUN_TEST_P(test_corrections_WUE_inactive);
+  RUN_TEST_P(test_corrections_WUE_active_value);
+  RUN_TEST_P(test_corrections_WUE_inactive_value);
 }
 
 extern uint16_t correctionCranking(void);
@@ -212,10 +213,10 @@ static void test_corrections_cranking_taper_withase(void) {
 
 void test_corrections_cranking(void)
 {
-  RUN_TEST(test_corrections_cranking_inactive);
-  RUN_TEST(test_corrections_cranking_cranking);
-  RUN_TEST(test_corrections_cranking_taper_noase);
-  RUN_TEST(test_corrections_cranking_taper_withase);
+  RUN_TEST_P(test_corrections_cranking_inactive);
+  RUN_TEST_P(test_corrections_cranking_cranking);
+  RUN_TEST_P(test_corrections_cranking_taper_noase);
+  RUN_TEST_P(test_corrections_cranking_taper_withase);
 }
 
 extern uint8_t correctionASE(void);
@@ -296,9 +297,9 @@ static void test_corrections_ASE_taper(void) {
 
 void test_corrections_ASE(void)
 {
-  RUN_TEST(test_corrections_ASE_inactive_cranking);
-  RUN_TEST(test_corrections_ASE_initial);
-  RUN_TEST(test_corrections_ASE_taper);
+  RUN_TEST_P(test_corrections_ASE_inactive_cranking);
+  RUN_TEST_P(test_corrections_ASE_initial);
+  RUN_TEST_P(test_corrections_ASE_taper);
 }
 
 void test_corrections_floodclear(void)
@@ -446,13 +447,13 @@ void test_corrections_dfco_taper_ign()
 
 void test_corrections_dfco()
 {
-  RUN_TEST(test_corrections_dfco_on);
-  RUN_TEST(test_corrections_dfco_off_RPM);
-  RUN_TEST(test_corrections_dfco_off_TPS);
-  RUN_TEST(test_corrections_dfco_off_delay);
-  RUN_TEST(test_corrections_dfco_taper);
-  RUN_TEST(test_corrections_dfco_taper_fuel);
-  RUN_TEST(test_corrections_dfco_taper_ign);
+  RUN_TEST_P(test_corrections_dfco_on);
+  RUN_TEST_P(test_corrections_dfco_off_RPM);
+  RUN_TEST_P(test_corrections_dfco_off_TPS);
+  RUN_TEST_P(test_corrections_dfco_off_delay);
+  RUN_TEST_P(test_corrections_dfco_taper);
+  RUN_TEST_P(test_corrections_dfco_taper_fuel);
+  RUN_TEST_P(test_corrections_dfco_taper_ign);
 }
 
 //**********************************************************************************************************************
@@ -619,13 +620,12 @@ void test_corrections_TAE_50pc_warmup_taper()
 
 void test_corrections_TAE()
 {
-  RUN_TEST(test_corrections_TAE_negative_tpsdot);
-  RUN_TEST(test_corrections_TAE_no_rpm_taper);
-  RUN_TEST(test_corrections_TAE_50pc_rpm_taper);
-  RUN_TEST(test_corrections_TAE_110pc_rpm_taper);
-  RUN_TEST(test_corrections_TAE_under_threshold);
-  RUN_TEST(test_corrections_TAE_50pc_warmup_taper);	
-  RUN_TEST(test_corrections_TAE_50pc_warmup_taper);
+  RUN_TEST_P(test_corrections_TAE_negative_tpsdot);
+  RUN_TEST_P(test_corrections_TAE_no_rpm_taper);
+  RUN_TEST_P(test_corrections_TAE_50pc_rpm_taper);
+  RUN_TEST_P(test_corrections_TAE_110pc_rpm_taper);
+  RUN_TEST_P(test_corrections_TAE_under_threshold);
+  RUN_TEST_P(test_corrections_TAE_50pc_warmup_taper);
 }
 
 
@@ -798,10 +798,10 @@ void test_corrections_MAE_50pc_warmup_taper()
 
 void test_corrections_MAE()
 {
-  RUN_TEST(test_corrections_MAE_negative_tpsdot);
-  RUN_TEST(test_corrections_MAE_no_rpm_taper);
-  RUN_TEST(test_corrections_MAE_50pc_rpm_taper);
-  RUN_TEST(test_corrections_MAE_110pc_rpm_taper);
-  RUN_TEST(test_corrections_MAE_under_threshold);
-  RUN_TEST(test_corrections_MAE_50pc_warmup_taper);
+  RUN_TEST_P(test_corrections_MAE_negative_tpsdot);
+  RUN_TEST_P(test_corrections_MAE_no_rpm_taper);
+  RUN_TEST_P(test_corrections_MAE_50pc_rpm_taper);
+  RUN_TEST_P(test_corrections_MAE_110pc_rpm_taper);
+  RUN_TEST_P(test_corrections_MAE_under_threshold);
+  RUN_TEST_P(test_corrections_MAE_50pc_warmup_taper);
 }
