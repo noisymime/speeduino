@@ -23,10 +23,9 @@ void testCorrections()
   test_corrections_floodclear();
   test_corrections_bat();
   test_corrections_launch();
+  test_corrections_flex();
   /*
   RUN_TEST_P(test_corrections_closedloop); //Not written yet
-  RUN_TEST_P(test_corrections_flex); //Not written yet
-  RUN_TEST_P(); //Not written yet
   */
   }
 }
@@ -353,9 +352,79 @@ void test_corrections_closedloop(void)
 {
 
 }
+
+uint8_t correctionFlex(void);
+
+static void setupFlexFuelTable(void) {
+  configPage10.flexFuelBins[0] = 0;
+  configPage10.flexFuelAdj[0] = 0;
+  configPage10.flexFuelBins[1] = 10;
+  configPage10.flexFuelAdj[1] = 20;
+  configPage10.flexFuelBins[2] = 30;
+  configPage10.flexFuelAdj[2] = 40;
+  configPage10.flexFuelBins[3] = 50;
+  configPage10.flexFuelAdj[3] = 80;
+  configPage10.flexFuelBins[4] = 60;
+  configPage10.flexFuelAdj[4] = 120;
+  configPage10.flexFuelBins[5] = 70;
+  configPage10.flexFuelAdj[5] = 150;
+}
+
+static void test_corrections_flex_flex_off(void) {
+  initialiseAll();
+  setupFlexFuelTable();
+  configPage2.flexEnabled = false;
+  currentStatus.ethanolPct = 65;
+  TEST_ASSERT_EQUAL(100U, correctionFlex() );
+}
+
+static void test_corrections_flex_flex_on(void) {
+  initialiseAll();
+  setupFlexFuelTable();
+  configPage2.flexEnabled = true;
+  currentStatus.ethanolPct = 65;
+  TEST_ASSERT_EQUAL(135U, correctionFlex() );
+}
+
+uint8_t correctionFuelTemp(void);
+
+static void setupFuelTempTable(void) {
+  configPage10.fuelTempBins[0] = 0;
+  configPage10.fuelTempValues[0] = 0;
+  configPage10.fuelTempBins[1] = 10;
+  configPage10.fuelTempValues[1] = 20;
+  configPage10.fuelTempBins[2] = 30;
+  configPage10.fuelTempValues[2] = 40;
+  configPage10.fuelTempBins[3] = 50;
+  configPage10.fuelTempValues[3] = 80;
+  configPage10.fuelTempBins[4] = 60;
+  configPage10.fuelTempValues[4] = 120;
+  configPage10.fuelTempBins[5] = 70;
+  configPage10.fuelTempValues[5] = 150;  
+}
+
+static void test_corrections_fueltemp_off(void) {
+  initialiseAll();
+  setupFuelTempTable();
+  configPage2.flexEnabled = false;
+  currentStatus.fuelTemp = 65 - CALIBRATION_TEMPERATURE_OFFSET;
+  TEST_ASSERT_EQUAL(100U, correctionFuelTemp() );
+}
+
+static void test_corrections_fueltemp_on(void) {
+  initialiseAll();
+  setupFuelTempTable();
+  configPage2.flexEnabled = true;
+  currentStatus.fuelTemp = 65 - CALIBRATION_TEMPERATURE_OFFSET;
+  TEST_ASSERT_EQUAL(135U, correctionFuelTemp() );
+}
+
 void test_corrections_flex(void)
 {
-
+  RUN_TEST_P(test_corrections_flex_flex_off);
+  RUN_TEST_P(test_corrections_flex_flex_on);
+  RUN_TEST_P(test_corrections_fueltemp_off);
+  RUN_TEST_P(test_corrections_fueltemp_on);
 }
 
 uint8_t correctionBatVoltage(void);
