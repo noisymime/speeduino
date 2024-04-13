@@ -8,29 +8,9 @@
 #include "speeduino.h"
 #include "../test_utils.h"
 
-void test_corrections_MAE(void);
+extern byte correctionWUE(void);
 
-void testCorrections()
-{
-  SET_UNITY_FILENAME() {
-
-  test_corrections_WUE();
-  test_corrections_dfco();
-  test_corrections_TAE(); //TPS based accel enrichment corrections
-  test_corrections_MAE(); //MAP based accel enrichment corrections
-  test_corrections_cranking();
-  test_corrections_ASE();
-  test_corrections_floodclear();
-  test_corrections_bat();
-  test_corrections_launch();
-  test_corrections_flex();
-  /*
-  RUN_TEST_P(test_corrections_closedloop); //Not written yet
-  */
-  }
-}
-
-void test_corrections_WUE_active(void)
+static void test_corrections_WUE_active(void)
 {
   initialiseAll();
 
@@ -41,7 +21,7 @@ void test_corrections_WUE_active(void)
   TEST_ASSERT_BIT_HIGH(BIT_ENGINE_WARMUP, currentStatus.engine);
 }
 
-void test_corrections_WUE_inactive(void)
+static void test_corrections_WUE_inactive(void)
 {
   initialiseAll();
 
@@ -52,7 +32,7 @@ void test_corrections_WUE_inactive(void)
   TEST_ASSERT_BIT_LOW(BIT_ENGINE_WARMUP, currentStatus.engine);
 }
 
-void test_corrections_WUE_inactive_value(void)
+static void test_corrections_WUE_inactive_value(void)
 {
   initialiseAll();
 
@@ -67,7 +47,7 @@ void test_corrections_WUE_inactive_value(void)
   TEST_ASSERT_EQUAL(123, correctionWUE() );
 }
 
-void test_corrections_WUE_active_value(void)
+static void test_corrections_WUE_active_value(void)
 {
   initialiseAll();
 
@@ -95,7 +75,7 @@ void test_corrections_WUE_active_value(void)
   TEST_ASSERT_EQUAL(125, correctionWUE() );
 }
 
-void test_corrections_WUE(void)
+static void test_corrections_WUE(void)
 {
   RUN_TEST_P(test_corrections_WUE_active);
   RUN_TEST_P(test_corrections_WUE_inactive);
@@ -218,7 +198,7 @@ static void test_corrections_cranking_taper_withase(void) {
   TEST_ASSERT_EQUAL(100U, correctionCranking());
 } 
 
-void test_corrections_cranking(void)
+static void test_corrections_cranking(void)
 {
   RUN_TEST_P(test_corrections_cranking_inactive);
   RUN_TEST_P(test_corrections_cranking_cranking);
@@ -302,7 +282,7 @@ static void test_corrections_ASE_taper(void) {
   TEST_ASSERT_EQUAL(100U, correctionASE());  
 }
 
-void test_corrections_ASE(void)
+static void test_corrections_ASE(void)
 {
   RUN_TEST_P(test_corrections_ASE_inactive_cranking);
   RUN_TEST_P(test_corrections_ASE_initial);
@@ -341,14 +321,14 @@ static void test_corrections_floodclear_crank_above_threshold_active(void) {
   TEST_ASSERT_EQUAL(0U, correctionFloodClear() );
 }
 
-void test_corrections_floodclear(void)
+static void test_corrections_floodclear(void)
 {
   RUN_TEST_P(test_corrections_floodclear_no_crank_inactive);
   RUN_TEST_P(test_corrections_floodclear_crank_below_threshold_inactive);
   RUN_TEST_P(test_corrections_floodclear_crank_above_threshold_active);
 }
 
-void test_corrections_closedloop(void)
+static void test_corrections_closedloop(void)
 {
 
 }
@@ -419,7 +399,7 @@ static void test_corrections_fueltemp_on(void) {
   TEST_ASSERT_EQUAL(135U, correctionFuelTemp() );
 }
 
-void test_corrections_flex(void)
+static void test_corrections_flex(void)
 {
   RUN_TEST_P(test_corrections_flex_flex_off);
   RUN_TEST_P(test_corrections_flex_flex_on);
@@ -458,7 +438,7 @@ static void test_corrections_bat_mode_wholePw(void) {
   TEST_ASSERT_EQUAL(configPage2.injOpen * 100U, inj_opentime_uS );
 }
 
-void test_corrections_bat(void)
+static void test_corrections_bat(void)
 {
   RUN_TEST_P(test_corrections_bat_mode_wholePw);
 }
@@ -505,7 +485,7 @@ static void test_corrections_launch_both(void) {
   TEST_ASSERT_EQUAL(125U, correctionLaunch() );
 }
 
-void test_corrections_launch(void)
+static void test_corrections_launch(void)
 {
   RUN_TEST_P(test_corrections_launch_inactive);
   RUN_TEST_P(test_corrections_launch_hard);
@@ -513,7 +493,10 @@ void test_corrections_launch(void)
   RUN_TEST_P(test_corrections_launch_both);
 }
 
-void setup_DFCO_on()
+extern bool correctionDFCO(void);
+extern uint8_t dfcoDelay;
+
+static void setup_DFCO_on()
 {
   //Sets all the required conditions to have the DFCO be active
   configPage2.dfcoEnabled = 1; //Ensure DFCO option is turned on
@@ -531,14 +514,14 @@ void setup_DFCO_on()
   dfcoDelay = 20;
 }
 //**********************************************************************************************************************
-void test_corrections_dfco_on(void)
+static void test_corrections_dfco_on(void)
 {
   //Test under ideal conditions that DFCO goes active
   setup_DFCO_on();
 
   TEST_ASSERT_TRUE(correctionDFCO());
 }
-void test_corrections_dfco_off_RPM()
+static void test_corrections_dfco_off_RPM()
 {
   //Test that DFCO comes on and then goes off when the RPM drops below threshold
   setup_DFCO_on();
@@ -547,7 +530,7 @@ void test_corrections_dfco_off_RPM()
   currentStatus.RPM = 1000; //Set the current simulated RPM below the threshold + hyster
   TEST_ASSERT_FALSE(correctionDFCO()); //Test DFCO is now off
 }
-void test_corrections_dfco_off_TPS()
+static void test_corrections_dfco_off_TPS()
 {
   //Test that DFCO comes on and then goes off when the TPS goes above the required threshold (ie not off throttle)
   setup_DFCO_on();
@@ -556,7 +539,7 @@ void test_corrections_dfco_off_TPS()
   currentStatus.TPS = 10; //Set the current simulated TPS to be above the threshold
   TEST_ASSERT_FALSE(correctionDFCO()); //Test DFCO is now off
 }
-void test_corrections_dfco_off_delay()
+static void test_corrections_dfco_off_delay()
 {
   //Test that DFCO comes will not activate if there has not been a long enough delay
   //The steup function below simulates a 2 second delay
@@ -567,7 +550,7 @@ void test_corrections_dfco_off_delay()
 
   TEST_ASSERT_FALSE(correctionDFCO()); //Make sure DFCO does not come on
 }
-void setup_DFCO_taper_on()
+static void setup_DFCO_taper_on()
 {
   //Test that DFCO comes will not activate if there has not been a long enough delay
   //The steup function below simulates a 2 second delay
@@ -582,7 +565,11 @@ void setup_DFCO_taper_on()
   //Set the threshold to be 2.5 seconds, above the simulated delay of 2s
   configPage2.dfcoDelay = 250;
 }
-void test_corrections_dfco_taper()
+
+extern byte correctionDFCOfuel(void);
+extern uint8_t dfcoTaper;
+
+static void test_corrections_dfco_taper()
 {
   setup_DFCO_taper_on();
 
@@ -590,7 +577,7 @@ void test_corrections_dfco_taper()
   correctionDFCOfuel();
   TEST_ASSERT_EQUAL(20, dfcoTaper); //Check if value was reset to setting
 }
-void test_corrections_dfco_taper_fuel()
+static void test_corrections_dfco_taper_fuel()
 {
   setup_DFCO_taper_on();
 
@@ -609,7 +596,10 @@ void test_corrections_dfco_taper_fuel()
   configPage9.dfcoTaperEnable = 0; //Disable
   TEST_ASSERT_EQUAL(0, correctionDFCOfuel());
 }
-void test_corrections_dfco_taper_ign()
+
+extern int8_t correctionDFCOignition(int8_t advance);
+
+static void test_corrections_dfco_taper_ign()
 {
   setup_DFCO_taper_on();
 
@@ -627,7 +617,7 @@ void test_corrections_dfco_taper_ign()
   TEST_ASSERT_EQUAL(20, correctionDFCOignition(20));
 }
 
-void test_corrections_dfco()
+static void test_corrections_dfco()
 {
   RUN_TEST_P(test_corrections_dfco_on);
   RUN_TEST_P(test_corrections_dfco_off_RPM);
@@ -640,7 +630,7 @@ void test_corrections_dfco()
 
 //**********************************************************************************************************************
 //Setup a basic TAE enrichment curve, threshold etc that are common to all tests. Specifica values maybe updated in each individual test
-void test_corrections_TAE_setup()
+static void test_corrections_TAE_setup()
 {
   configPage2.aeMode = AE_MODE_TPS; //Set AE to TPS
 
@@ -671,7 +661,9 @@ void test_corrections_TAE_setup()
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_DCC); //Make sure AE is turned off
 }
 
-void test_corrections_TAE_no_rpm_taper()
+extern uint16_t correctionAccel(void);
+
+static void test_corrections_TAE_no_rpm_taper()
 {
   test_corrections_TAE_setup();
 
@@ -691,7 +683,7 @@ void test_corrections_TAE_no_rpm_taper()
 	TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC)); //Confirm AE is flagged on
 }
 
-void test_corrections_TAE_negative_tpsdot()
+static void test_corrections_TAE_negative_tpsdot()
 {
   test_corrections_TAE_setup();
 
@@ -712,7 +704,7 @@ void test_corrections_TAE_negative_tpsdot()
 	TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC)); //Confirm AE is flagged on
 }
 
-void test_corrections_TAE_50pc_rpm_taper()
+static void test_corrections_TAE_50pc_rpm_taper()
 {
   test_corrections_TAE_setup();
 
@@ -732,7 +724,7 @@ void test_corrections_TAE_50pc_rpm_taper()
 	TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC)); //Confirm AE is flagged on
 }
 
-void test_corrections_TAE_110pc_rpm_taper()
+static void test_corrections_TAE_110pc_rpm_taper()
 {
   test_corrections_TAE_setup();
 
@@ -752,7 +744,7 @@ void test_corrections_TAE_110pc_rpm_taper()
 	TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC)); //Confirm AE is flagged on
 }
 
-void test_corrections_TAE_under_threshold()
+static void test_corrections_TAE_under_threshold()
 {
   test_corrections_TAE_setup();
 
@@ -773,7 +765,7 @@ void test_corrections_TAE_under_threshold()
 	TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC)); //Confirm AE is flagged on
 }
 
-void test_corrections_TAE_50pc_warmup_taper()
+static void test_corrections_TAE_50pc_warmup_taper()
 {
   test_corrections_TAE_setup();
 
@@ -800,7 +792,7 @@ void test_corrections_TAE_50pc_warmup_taper()
 	TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC)); //Confirm AE is flagged on
 }
 
-void test_corrections_TAE()
+static void test_corrections_TAE()
 {
   RUN_TEST_P(test_corrections_TAE_negative_tpsdot);
   RUN_TEST_P(test_corrections_TAE_no_rpm_taper);
@@ -813,7 +805,7 @@ void test_corrections_TAE()
 
 //**********************************************************************************************************************
 //Setup a basic MAE enrichment curve, threshold etc that are common to all tests. Specifica values maybe updated in each individual test
-void test_corrections_MAE_setup()
+static void test_corrections_MAE_setup()
 {
   configPage2.aeMode = AE_MODE_MAP; //Set AE to TPS
 
@@ -844,7 +836,7 @@ void test_corrections_MAE_setup()
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_DCC); //Make sure AE is turned off
 }
 
-void test_corrections_MAE_negative_tpsdot()
+static void test_corrections_MAE_negative_tpsdot()
 {
   test_corrections_MAE_setup();
 
@@ -867,7 +859,7 @@ void test_corrections_MAE_negative_tpsdot()
 	TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC)); //Confirm AE is flagged on
 }
 
-void test_corrections_MAE_no_rpm_taper()
+static void test_corrections_MAE_no_rpm_taper()
 {
   test_corrections_MAE_setup();
 
@@ -887,7 +879,7 @@ void test_corrections_MAE_no_rpm_taper()
 	TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC)); //Confirm AE is flagged on
 }
 
-void test_corrections_MAE_50pc_rpm_taper()
+static void test_corrections_MAE_50pc_rpm_taper()
 {
   test_corrections_MAE_setup();
 
@@ -908,7 +900,7 @@ void test_corrections_MAE_50pc_rpm_taper()
 	TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC)); //Confirm AE is flagged on
 }
 
-void test_corrections_MAE_110pc_rpm_taper()
+static void test_corrections_MAE_110pc_rpm_taper()
 {
   test_corrections_MAE_setup();
 
@@ -929,7 +921,7 @@ void test_corrections_MAE_110pc_rpm_taper()
 	TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC)); //Confirm AE is flagged on
 }
 
-void test_corrections_MAE_under_threshold()
+static void test_corrections_MAE_under_threshold()
 {
   test_corrections_MAE_setup();
 
@@ -951,7 +943,7 @@ void test_corrections_MAE_under_threshold()
 	TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC)); //Confirm AE is flagged off
 }
 
-void test_corrections_MAE_50pc_warmup_taper()
+static void test_corrections_MAE_50pc_warmup_taper()
 {
   test_corrections_MAE_setup();
 
@@ -978,7 +970,7 @@ void test_corrections_MAE_50pc_warmup_taper()
 	TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC)); //Confirm AE is flagged on
 }
 
-void test_corrections_MAE()
+static void test_corrections_MAE()
 {
   RUN_TEST_P(test_corrections_MAE_negative_tpsdot);
   RUN_TEST_P(test_corrections_MAE_no_rpm_taper);
@@ -986,4 +978,21 @@ void test_corrections_MAE()
   RUN_TEST_P(test_corrections_MAE_110pc_rpm_taper);
   RUN_TEST_P(test_corrections_MAE_under_threshold);
   RUN_TEST_P(test_corrections_MAE_50pc_warmup_taper);
+}
+
+void testCorrections()
+{
+  SET_UNITY_FILENAME() {
+    test_corrections_WUE();
+    test_corrections_dfco();
+    test_corrections_TAE(); //TPS based accel enrichment corrections
+    test_corrections_MAE(); //MAP based accel enrichment corrections
+    test_corrections_cranking();
+    test_corrections_ASE();
+    test_corrections_floodclear();
+    test_corrections_bat();
+    test_corrections_launch();
+    test_corrections_flex();
+    test_corrections_closedloop();
+  }
 }
