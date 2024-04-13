@@ -4,6 +4,9 @@
 #include "test_corrections.h"
 #include "../test_utils.h"
 #include "init.h"
+#include "sensors.h"
+
+void test_corrections_MAE(void);
 
 void testCorrections()
 {
@@ -12,6 +15,7 @@ void testCorrections()
   test_corrections_WUE();
   test_corrections_dfco();
   test_corrections_TAE(); //TPS based accel enrichment corrections
+  test_corrections_MAE(); //MAP based accel enrichment corrections
   test_corrections_cranking();
   test_corrections_ASE();
   /*
@@ -450,6 +454,7 @@ void test_corrections_dfco()
   RUN_TEST(test_corrections_dfco_taper_fuel);
   RUN_TEST(test_corrections_dfco_taper_ign);
 }
+
 //**********************************************************************************************************************
 //Setup a basic TAE enrichment curve, threshold etc that are common to all tests. Specifica values maybe updated in each individual test
 void test_corrections_TAE_setup()
@@ -500,6 +505,28 @@ void test_corrections_TAE_no_rpm_taper()
   TEST_ASSERT_EQUAL(750, currentStatus.tpsDOT); //DOT is 750%/s (25 * 30)
   TEST_ASSERT_EQUAL((100+132), accelValue);
 	TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC)); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC)); //Confirm AE is flagged on
+}
+
+void test_corrections_TAE_negative_tpsdot()
+{
+  test_corrections_TAE_setup();
+
+  //Disable the taper
+  currentStatus.RPM = 2000;
+  configPage2.aeTaperMin = 50; //5000
+  configPage2.aeTaperMax = 60; //6000
+  configPage2.decelAmount = 50;
+
+  currentStatus.TPSlast = 50;
+  currentStatus.TPS = 0;
+
+  uint16_t accelValue = correctionAccel(); //Run the AE calcs
+
+  TEST_ASSERT_EQUAL(-750, currentStatus.tpsDOT); //DOT is 750%/s (25 * 30)
+  TEST_ASSERT_EQUAL(configPage2.decelAmount, accelValue);
+	TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC)); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC)); //Confirm AE is flagged on
 }
 
 void test_corrections_TAE_50pc_rpm_taper()
@@ -519,6 +546,7 @@ void test_corrections_TAE_50pc_rpm_taper()
   TEST_ASSERT_EQUAL(750, currentStatus.tpsDOT); //DOT is 750%/s (25 * 30)
   TEST_ASSERT_EQUAL((100+66), accelValue);
 	TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC)); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC)); //Confirm AE is flagged on
 }
 
 void test_corrections_TAE_110pc_rpm_taper()
@@ -538,6 +566,7 @@ void test_corrections_TAE_110pc_rpm_taper()
   TEST_ASSERT_EQUAL(750, currentStatus.tpsDOT); //DOT is 750%/s (25 * 30)
   TEST_ASSERT_EQUAL(100, accelValue); //Should be no AE as we're above the RPM taper end point
 	TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC)); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC)); //Confirm AE is flagged on
 }
 
 void test_corrections_TAE_under_threshold()
@@ -558,6 +587,7 @@ void test_corrections_TAE_under_threshold()
   TEST_ASSERT_EQUAL(90, currentStatus.tpsDOT); //DOT is 90%/s (3% * 30)
   TEST_ASSERT_EQUAL(100, accelValue); //Should be no AE as we're above the RPM taper end point
 	TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC)); //Confirm AE is flagged off
+	TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC)); //Confirm AE is flagged on
 }
 
 void test_corrections_TAE_50pc_warmup_taper()
@@ -584,14 +614,194 @@ void test_corrections_TAE_50pc_warmup_taper()
   TEST_ASSERT_EQUAL(750, currentStatus.tpsDOT); //DOT is 750%/s (25 * 30)
   TEST_ASSERT_EQUAL((100+165), accelValue); //Total AE should be 132 + (50% * 50%) = 132 * 1.25 = 165
 	TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC)); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC)); //Confirm AE is flagged on
 }
 
 void test_corrections_TAE()
 {
+  RUN_TEST(test_corrections_TAE_negative_tpsdot);
   RUN_TEST(test_corrections_TAE_no_rpm_taper);
   RUN_TEST(test_corrections_TAE_50pc_rpm_taper);
   RUN_TEST(test_corrections_TAE_110pc_rpm_taper);
   RUN_TEST(test_corrections_TAE_under_threshold);
   RUN_TEST(test_corrections_TAE_50pc_warmup_taper);	
   RUN_TEST(test_corrections_TAE_50pc_warmup_taper);
+}
+
+
+//**********************************************************************************************************************
+//Setup a basic MAE enrichment curve, threshold etc that are common to all tests. Specifica values maybe updated in each individual test
+void test_corrections_MAE_setup()
+{
+  configPage2.aeMode = AE_MODE_MAP; //Set AE to TPS
+
+  configPage4.maeRates[0] = 70;
+  configPage4.maeRates[1] = 103; 
+  configPage4.maeRates[2] = 124;
+  configPage4.maeRates[3] = 136; 
+
+  //Note: These values are divided by 10
+  configPage4.maeBins[0] = 0;
+  configPage4.maeBins[1] = 15; 
+  configPage4.maeBins[2] = 19;
+  configPage4.maeBins[3] = 50; 
+  
+  configPage2.maeThresh = 0;
+  configPage2.maeMinChange = 0;
+
+  //Divided by 100
+  configPage2.aeTaperMin = 10; //1000
+  configPage2.aeTaperMax = 50; //5000
+	
+	//Set the coolant to be above the warmup AE taper
+	configPage2.aeColdTaperMax = 60;
+	configPage2.aeColdTaperMin = 0;
+	currentStatus.coolant = (int)(configPage2.aeColdTaperMax - CALIBRATION_TEMPERATURE_OFFSET) + 1;
+
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); //Make sure AE is turned off
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_DCC); //Make sure AE is turned off
+}
+
+void test_corrections_MAE_negative_tpsdot()
+{
+  test_corrections_MAE_setup();
+
+  //Disable the taper
+  currentStatus.RPM = 2000;
+  configPage2.aeTaperMin = 50; //5000
+  configPage2.aeTaperMax = 60; //6000
+  configPage2.decelAmount = 50;
+
+  MAPlast_time = UINT16_MAX*2UL;
+  MAP_time = MAPlast_time + 25000UL; 
+  MAPlast = 50;
+  currentStatus.MAP = 40;
+
+  uint16_t accelValue = correctionAccel(); //Run the AE calcs
+
+  TEST_ASSERT_EQUAL(-400, currentStatus.mapDOT);
+  TEST_ASSERT_EQUAL(configPage2.decelAmount, accelValue);
+	TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC)); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC)); //Confirm AE is flagged on
+}
+
+void test_corrections_MAE_no_rpm_taper()
+{
+  test_corrections_MAE_setup();
+
+  //Disable the taper
+  configPage2.aeTaperMin = 50; //5000
+  configPage2.aeTaperMax = 60; //6000
+
+  MAPlast_time = UINT16_MAX*2UL;
+  MAP_time = MAPlast_time + 25000UL; 
+  MAPlast = 40;
+  currentStatus.MAP = 50;
+
+  uint16_t accelValue = correctionAccel(); //Run the AE calcs
+
+  TEST_ASSERT_EQUAL(400, currentStatus.mapDOT);
+  TEST_ASSERT_EQUAL((100+132), accelValue);
+	TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC)); //Confirm AE is flagged on
+}
+
+void test_corrections_MAE_50pc_rpm_taper()
+{
+  test_corrections_MAE_setup();
+
+  //RPM is 50% of the way through the taper range
+  currentStatus.RPM = 3000;
+  configPage2.aeTaperMin = 10; //1000
+  configPage2.aeTaperMax = 50; //5000
+
+  MAPlast_time = UINT16_MAX*2UL;
+  MAP_time = MAPlast_time + 25000UL; 
+  MAPlast = 40;
+  currentStatus.MAP = 50;
+
+  uint16_t accelValue = correctionAccel(); //Run the AE calcs
+
+  TEST_ASSERT_EQUAL(400, currentStatus.mapDOT);
+  TEST_ASSERT_EQUAL((100+66), accelValue);
+	TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC)); //Confirm AE is flagged on
+}
+
+void test_corrections_MAE_110pc_rpm_taper()
+{
+  test_corrections_MAE_setup();
+
+  //RPM is 110% of the way through the taper range, which should result in no additional AE
+  currentStatus.RPM = 5400;
+  configPage2.aeTaperMin = 10; //1000
+  configPage2.aeTaperMax = 50; //5000
+
+  MAPlast_time = UINT16_MAX*2UL;
+  MAP_time = MAPlast_time + 25000UL; 
+  MAPlast = 40;
+  currentStatus.MAP = 50;
+
+  uint16_t accelValue = correctionAccel(); //Run the AE calcs
+
+  TEST_ASSERT_EQUAL(400, currentStatus.mapDOT);
+  TEST_ASSERT_EQUAL(100, accelValue); //Should be no AE as we're above the RPM taper end point
+	TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC)); //Confirm AE is flagged on
+}
+
+void test_corrections_MAE_under_threshold()
+{
+  test_corrections_MAE_setup();
+
+  //RPM is 50% of the way through the taper range, but TPS value will be below threshold
+  currentStatus.RPM = 3000;
+  configPage2.aeTaperMin = 10; //1000
+  configPage2.aeTaperMax = 50; //5000
+
+  MAPlast_time = UINT16_MAX*2UL;
+  MAP_time = MAPlast_time + 25000UL; 
+  MAPlast = 0;
+  currentStatus.MAP = 6; 
+	configPage2.maeThresh = 241; //Above the reading of 240%/s
+
+  uint16_t accelValue = correctionAccel(); //Run the AE calcs
+
+  TEST_ASSERT_EQUAL(240, currentStatus.mapDOT);
+  TEST_ASSERT_EQUAL(100, accelValue); //Should be no AE as we're above the RPM taper end point
+	TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC)); //Confirm AE is flagged off
+}
+
+void test_corrections_MAE_50pc_warmup_taper()
+{
+  test_corrections_MAE_setup();
+
+  //Disable the RPM taper
+  configPage2.aeTaperMin = 50; //5000
+  configPage2.aeTaperMax = 60; //6000
+
+  MAPlast_time = UINT16_MAX*2UL;
+  MAP_time = MAPlast_time + 25000UL; 
+  MAPlast = 40;
+  currentStatus.MAP = 50;
+
+	//Set a cold % of 50% increase
+	configPage2.aeColdPct = 150;
+	configPage2.aeColdTaperMax = 60 + CALIBRATION_TEMPERATURE_OFFSET;
+	configPage2.aeColdTaperMin = 0 + CALIBRATION_TEMPERATURE_OFFSET;
+	//Set the coolant to be 50% of the way through the warmup range
+	currentStatus.coolant = 30;
+
+  uint16_t accelValue = correctionAccel(); //Run the AE calcs
+
+  TEST_ASSERT_EQUAL(400, currentStatus.mapDOT);
+  TEST_ASSERT_EQUAL((100+165), accelValue); 
+	TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC)); //Confirm AE is flagged on
+}
+
+void test_corrections_MAE()
+{
+  RUN_TEST(test_corrections_MAE_negative_tpsdot);
+  RUN_TEST(test_corrections_MAE_no_rpm_taper);
+  RUN_TEST(test_corrections_MAE_50pc_rpm_taper);
+  RUN_TEST(test_corrections_MAE_110pc_rpm_taper);
+  RUN_TEST(test_corrections_MAE_under_threshold);
+  RUN_TEST(test_corrections_MAE_50pc_warmup_taper);
 }
