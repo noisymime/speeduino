@@ -13,8 +13,8 @@ void testCorrections()
   test_corrections_dfco();
   test_corrections_TAE(); //TPS based accel enrichment corrections
   test_corrections_cranking();
+  test_corrections_ASE();
   /*
-  RUN_TEST(test_corrections_ASE); //Not written yet
   RUN_TEST(test_corrections_floodclear); //Not written yet
   RUN_TEST(test_corrections_closedloop); //Not written yet
   RUN_TEST(test_corrections_flex); //Not written yet
@@ -214,10 +214,89 @@ void test_corrections_cranking(void)
   RUN_TEST(test_corrections_cranking_taper_withase);
 }
 
+extern uint8_t correctionASE(void);
+
+static void test_corrections_ASE_inactive_cranking(void)
+{
+  initialiseAll();
+  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+
+  // Taper finished
+  TEST_ASSERT_EQUAL(100U, correctionASE());
+  TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE));
+}
+
+static inline void setup_correctionASE(void) {
+  initialiseAll();
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ) ;
+  constexpr int16_t COOLANT_INITIAL = 150 - CALIBRATION_TEMPERATURE_OFFSET; 
+  currentStatus.coolant = COOLANT_INITIAL;
+  currentStatus.ASEValue = 0U;
+  currentStatus.runSecs = 3;
+
+  configPage2.aseCount[0] = 10;
+  configPage2.aseBins[0] = COOLANT_INITIAL - 10U + CALIBRATION_TEMPERATURE_OFFSET;
+  configPage2.aseCount[1] = 8;
+  configPage2.aseBins[1] = COOLANT_INITIAL + 10U + CALIBRATION_TEMPERATURE_OFFSET;
+  configPage2.aseCount[0] = 6;
+  configPage2.aseBins[0] = COOLANT_INITIAL + 20U + CALIBRATION_TEMPERATURE_OFFSET;
+  configPage2.aseCount[0] = 4;
+  configPage2.aseBins[0] = COOLANT_INITIAL + 30U + CALIBRATION_TEMPERATURE_OFFSET;;
+
+  configPage2.asePct[0] = 20U;
+  configPage2.aseBins[0] = COOLANT_INITIAL - 10U + CALIBRATION_TEMPERATURE_OFFSET;
+  configPage2.asePct[1] = 30U;
+  configPage2.aseBins[1] = COOLANT_INITIAL + 10U + CALIBRATION_TEMPERATURE_OFFSET;
+  configPage2.asePct[2] = 40U;
+  configPage2.aseBins[2] = COOLANT_INITIAL + 20U + CALIBRATION_TEMPERATURE_OFFSET;
+  configPage2.asePct[3] = 50U;
+  configPage2.aseBins[3] = COOLANT_INITIAL + 30U + CALIBRATION_TEMPERATURE_OFFSET;  
+}
+
+static void test_corrections_ASE_initial(void)
+{
+  setup_correctionASE();
+
+  // Should be half way between the 2 table values.
+  TEST_ASSERT_EQUAL(125, correctionASE());
+  TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE));
+}
+
+static void test_corrections_ASE_taper(void) {
+  setup_correctionASE();
+  // Switch to ASE taper
+  configPage2.aseTaperTime = 12U;
+  currentStatus.runSecs = 9;
+
+  // Advance taper to halfway
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  for (uint8_t index=0; index<configPage2.aseTaperTime/2U; ++index) {
+    (void)correctionASE();
+  }
+
+  // Should be half way between the interpolated table value and 100%.
+  TEST_ASSERT_EQUAL(113, correctionASE());
+  TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE));
+  
+  // Final taper step
+  for (uint8_t index=configPage2.aseTaperTime/2U; index<configPage2.aseTaperTime-2U; ++index) {
+    (void)correctionASE();
+  }
+  TEST_ASSERT_EQUAL(103U, correctionASE() );
+
+  // Taper finished
+  TEST_ASSERT_EQUAL(100U, correctionASE());  
+  TEST_ASSERT_EQUAL(100U, correctionASE());  
+}
+
 void test_corrections_ASE(void)
 {
-
+  RUN_TEST(test_corrections_ASE_inactive_cranking);
+  RUN_TEST(test_corrections_ASE_initial);
+  RUN_TEST(test_corrections_ASE_taper);
 }
+
 void test_corrections_floodclear(void)
 {
 
