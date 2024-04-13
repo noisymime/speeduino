@@ -5,6 +5,7 @@
 #include "../test_utils.h"
 #include "init.h"
 #include "sensors.h"
+#include "speeduino.h"
 #include "../test_utils.h"
 
 void test_corrections_MAE(void);
@@ -20,10 +21,10 @@ void testCorrections()
   test_corrections_cranking();
   test_corrections_ASE();
   test_corrections_floodclear();
+  test_corrections_bat();
   /*
   RUN_TEST_P(test_corrections_closedloop); //Not written yet
   RUN_TEST_P(test_corrections_flex); //Not written yet
-  RUN_TEST_P(test_corrections_bat); //Not written yet
   RUN_TEST_P(test_corrections_iatdensity); //Not written yet
   RUN_TEST_P(test_corrections_baro); //Not written yet
   RUN_TEST_P(test_corrections_launch); //Not written yet
@@ -343,10 +344,43 @@ void test_corrections_flex(void)
 {
 
 }
+
+uint8_t correctionBatVoltage(void);
+
+static void setup_battery_correction(void) {
+  initialiseAll();
+
+  configPage6.voltageCorrectionBins[0]      = 60;
+  configPage6.injVoltageCorrectionValues[0] = 115;
+  configPage6.voltageCorrectionBins[1]      = 70;
+  configPage6.injVoltageCorrectionValues[1] = 110;
+  configPage6.voltageCorrectionBins[2]      = 80;
+  configPage6.injVoltageCorrectionValues[2] = 105;
+  configPage6.voltageCorrectionBins[3]      = 90;
+  configPage6.injVoltageCorrectionValues[3] = 100;
+  configPage6.voltageCorrectionBins[4]      = 100;
+  configPage6.injVoltageCorrectionValues[4] = 95;
+  configPage6.voltageCorrectionBins[5]      = 110;
+  configPage6.injVoltageCorrectionValues[5] = 90;
+}
+
+static void test_corrections_bat_mode_wholePw(void) {
+  setup_battery_correction();
+
+  configPage2.battVCorMode = BATTV_COR_MODE_WHOLE;
+  currentStatus.battery10 = 75;
+  configPage2.injOpen = 10;
+  inj_opentime_uS = configPage2.injOpen * 100U;
+
+  TEST_ASSERT_EQUAL(108U, correctionBatVoltage() );
+  TEST_ASSERT_EQUAL(configPage2.injOpen * 100U, inj_opentime_uS );
+}
+
 void test_corrections_bat(void)
 {
-
+  RUN_TEST_P(test_corrections_bat_mode_wholePw);
 }
+
 void test_corrections_iatdensity(void)
 {
 
