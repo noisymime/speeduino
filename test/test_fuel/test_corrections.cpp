@@ -22,13 +22,11 @@ void testCorrections()
   test_corrections_ASE();
   test_corrections_floodclear();
   test_corrections_bat();
+  test_corrections_launch();
   /*
   RUN_TEST_P(test_corrections_closedloop); //Not written yet
   RUN_TEST_P(test_corrections_flex); //Not written yet
-  RUN_TEST_P(test_corrections_iatdensity); //Not written yet
-  RUN_TEST_P(test_corrections_baro); //Not written yet
-  RUN_TEST_P(test_corrections_launch); //Not written yet
-  RUN_TEST_P(test_corrections_dfco); //Not written yet
+  RUN_TEST_P(); //Not written yet
   */
   }
 }
@@ -381,17 +379,54 @@ void test_corrections_bat(void)
   RUN_TEST_P(test_corrections_bat_mode_wholePw);
 }
 
-void test_corrections_iatdensity(void)
-{
+uint8_t correctionLaunch(void);
 
-}
-void test_corrections_baro(void)
-{
+static void test_corrections_launch_inactive(void) {
+  initialiseAll();
 
+  currentStatus.launchingHard = false;
+  currentStatus.launchingSoft = false;
+  configPage6.lnchFuelAdd = 25;
+
+  TEST_ASSERT_EQUAL(100U, correctionLaunch() );
 }
+
+static void test_corrections_launch_hard(void) {
+  initialiseAll();
+
+  currentStatus.launchingHard = true;
+  currentStatus.launchingSoft = false;
+  configPage6.lnchFuelAdd = 25;
+
+  TEST_ASSERT_EQUAL(125U, correctionLaunch() );
+}
+
+static void test_corrections_launch_soft(void) {
+  initialiseAll();
+
+  currentStatus.launchingHard = false;
+  currentStatus.launchingSoft = true;
+  configPage6.lnchFuelAdd = 25;
+
+  TEST_ASSERT_EQUAL(125U, correctionLaunch() );
+}
+
+static void test_corrections_launch_both(void) {
+  initialiseAll();
+
+  currentStatus.launchingHard = true;
+  currentStatus.launchingSoft = true;
+  configPage6.lnchFuelAdd = 25;
+
+  TEST_ASSERT_EQUAL(125U, correctionLaunch() );
+}
+
 void test_corrections_launch(void)
 {
-
+  RUN_TEST_P(test_corrections_launch_inactive);
+  RUN_TEST_P(test_corrections_launch_hard);
+  RUN_TEST_P(test_corrections_launch_soft);
+  RUN_TEST_P(test_corrections_launch_both);
 }
 
 void setup_DFCO_on()
