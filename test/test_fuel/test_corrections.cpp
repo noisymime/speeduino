@@ -1,9 +1,9 @@
-#include <globals.h>
-#include <corrections.h>
 #include <unity.h>
+#include "globals.h"
+#include "corrections.h"
 #include "test_corrections.h"
 #include "../test_utils.h"
-
+#include "init.h"
 
 void testCorrections()
 {
@@ -12,8 +12,8 @@ void testCorrections()
   test_corrections_WUE();
   test_corrections_dfco();
   test_corrections_TAE(); //TPS based accel enrichment corrections
+  test_corrections_cranking();
   /*
-  RUN_TEST(test_corrections_cranking); //Not written yet
   RUN_TEST(test_corrections_ASE); //Not written yet
   RUN_TEST(test_corrections_floodclear); //Not written yet
   RUN_TEST(test_corrections_closedloop); //Not written yet
@@ -91,10 +91,129 @@ void test_corrections_WUE(void)
   RUN_TEST(test_corrections_WUE_active_value);
   RUN_TEST(test_corrections_WUE_inactive_value);
 }
+
+extern uint16_t correctionCranking(void);
+
+static void test_corrections_cranking_inactive(void) {
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE);
+  configPage10.crankingEnrichTaper = 0U;
+
+  TEST_ASSERT_EQUAL(100, correctionCranking() );
+} 
+
+static void test_corrections_cranking_cranking(void) {
+  initialiseAll();
+  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE);
+  configPage10.crankingEnrichTaper = 0U;
+  currentStatus.coolant = 150 - CALIBRATION_TEMPERATURE_OFFSET;
+
+  configPage10.crankingEnrichValues[0] = 120U / 5U;
+  configPage10.crankingEnrichBins[0] = currentStatus.coolant - 10U + CALIBRATION_TEMPERATURE_OFFSET;
+  configPage10.crankingEnrichValues[1] = 130U / 5U;
+  configPage10.crankingEnrichBins[1] = currentStatus.coolant + 10U + CALIBRATION_TEMPERATURE_OFFSET;
+  configPage10.crankingEnrichValues[2] = 140U / 5U;
+  configPage10.crankingEnrichBins[2] = currentStatus.coolant + 20U + CALIBRATION_TEMPERATURE_OFFSET;
+  configPage10.crankingEnrichValues[3] = 150U / 5U;
+  configPage10.crankingEnrichBins[3] = currentStatus.coolant + 30U + CALIBRATION_TEMPERATURE_OFFSET;
+
+  // Should be half way between the 2 table values.
+  TEST_ASSERT_EQUAL(125, correctionCranking() );
+} 
+
+static void test_corrections_cranking_taper_noase(void) {
+  initialiseAll();
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE);
+  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  configPage10.crankingEnrichTaper = 100U;
+  currentStatus.ASEValue = 100U;
+  
+  currentStatus.coolant = 150 - CALIBRATION_TEMPERATURE_OFFSET;
+  configPage10.crankingEnrichValues[0] = 120U / 5U;
+  configPage10.crankingEnrichBins[0] = currentStatus.coolant - 10U + CALIBRATION_TEMPERATURE_OFFSET;
+  configPage10.crankingEnrichValues[1] = 130U / 5U;
+  configPage10.crankingEnrichBins[1] = currentStatus.coolant + 10U + CALIBRATION_TEMPERATURE_OFFSET;
+  configPage10.crankingEnrichValues[2] = 140U / 5U;
+  configPage10.crankingEnrichBins[2] = currentStatus.coolant + 20U + CALIBRATION_TEMPERATURE_OFFSET;
+  configPage10.crankingEnrichValues[3] = 150U / 5U;
+  configPage10.crankingEnrichBins[3] = currentStatus.coolant + 30U + CALIBRATION_TEMPERATURE_OFFSET;
+
+  // Reset taper
+  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+  (void)correctionCranking();
+
+  // Advance taper to halfway
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  for (uint8_t index=0; index<configPage10.crankingEnrichTaper/2U; ++index) {
+    (void)correctionCranking();
+  }
+
+  // Should be half way between the interpolated table value and 100%.
+  TEST_ASSERT_EQUAL(113U, correctionCranking() );
+  
+  // Final taper step
+  for (uint8_t index=configPage10.crankingEnrichTaper/2U; index<configPage10.crankingEnrichTaper-2U; ++index) {
+    (void)correctionCranking();
+  }
+  TEST_ASSERT_EQUAL(101U, correctionCranking() );
+
+  // Taper finished
+  TEST_ASSERT_EQUAL(100U, correctionCranking());
+  TEST_ASSERT_EQUAL(100U, correctionCranking());
+} 
+
+
+static void test_corrections_cranking_taper_withase(void) {
+  initialiseAll();
+  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  configPage10.crankingEnrichTaper = 100U;
+  
+  currentStatus.coolant = 150 - CALIBRATION_TEMPERATURE_OFFSET;
+  configPage10.crankingEnrichValues[0] = 120U / 5U;
+  configPage10.crankingEnrichBins[0] = currentStatus.coolant - 10U + CALIBRATION_TEMPERATURE_OFFSET;
+  configPage10.crankingEnrichValues[1] = 130U / 5U;
+  configPage10.crankingEnrichBins[1] = currentStatus.coolant + 10U + CALIBRATION_TEMPERATURE_OFFSET;
+  configPage10.crankingEnrichValues[2] = 140U / 5U;
+  configPage10.crankingEnrichBins[2] = currentStatus.coolant + 20U + CALIBRATION_TEMPERATURE_OFFSET;
+  configPage10.crankingEnrichValues[3] = 150U / 5U;
+  configPage10.crankingEnrichBins[3] = currentStatus.coolant + 30U + CALIBRATION_TEMPERATURE_OFFSET;
+
+  BIT_SET(currentStatus.engine, BIT_ENGINE_ASE);
+  currentStatus.ASEValue = 50U;
+
+  // Reset taper
+  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+  (void)correctionCranking();
+
+  // Advance taper to halfway
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  for (uint8_t index=0; index<configPage10.crankingEnrichTaper/2U; ++index) {
+    (void)correctionCranking();
+  }
+
+  // Should be half way between the interpolated table value and 100%.
+  TEST_ASSERT_EQUAL(175U, correctionCranking() );
+  
+  // Final taper step
+  for (uint8_t index=configPage10.crankingEnrichTaper/2U; index<configPage10.crankingEnrichTaper-2U; ++index) {
+    (void)correctionCranking();
+  }
+  TEST_ASSERT_EQUAL(102U, correctionCranking() );
+
+  // Taper finished
+  TEST_ASSERT_EQUAL(100U, correctionCranking());
+  TEST_ASSERT_EQUAL(100U, correctionCranking());
+} 
+
 void test_corrections_cranking(void)
 {
-
+  RUN_TEST(test_corrections_cranking_inactive);
+  RUN_TEST(test_corrections_cranking_cranking);
+  RUN_TEST(test_corrections_cranking_taper_noase);
+  RUN_TEST(test_corrections_cranking_taper_withase);
 }
+
 void test_corrections_ASE(void)
 {
 
@@ -391,7 +510,5 @@ void test_corrections_TAE()
 	BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); //Flag must be cleared between tests
   RUN_TEST(test_corrections_TAE_under_threshold);
 	BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); //Flag must be cleared between tests
-  RUN_TEST(test_corrections_TAE_50pc_warmup_taper);
-	
-	
+  RUN_TEST(test_corrections_TAE_50pc_warmup_taper);	
 }
