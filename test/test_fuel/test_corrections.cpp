@@ -328,9 +328,294 @@ static void test_corrections_floodclear(void)
   RUN_TEST_P(test_corrections_floodclear_crank_above_threshold_active);
 }
 
+uint8_t correctionAFRClosedLoop(void);
+
+static void setup_valid_ego_cycle(void) {
+  AFRnextCycle = 4196;
+  ignitionCount = AFRnextCycle + (configPage6.egoCount/2U); 
+}
+
+static void setup_ego_simple(void) {
+  initialiseAll();
+
+  configPage6.egoType = EGO_TYPE_NARROW;
+  configPage6.egoAlgorithm = EGO_ALGORITHM_SIMPLE;
+  configPage6.egoLimit = 30U;
+
+  configPage6.ego_sdelay = 10;
+  currentStatus.runSecs = configPage6.ego_sdelay + 2U;
+
+  configPage6.egoTemp = 150U;
+  currentStatus.coolant = (configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET) + 1U; 
+
+  configPage6.egoRPM = 30U;
+  currentStatus.RPM = configPage6.egoRPM*100U + 1U;
+
+  configPage6.egoTPSMax = 33;
+  currentStatus.TPS = configPage6.egoTPSMax - 1U;
+
+  configPage6.ego_max = 150U;
+  configPage6.ego_min = 50U;
+  currentStatus.O2 = configPage6.ego_min + ((configPage6.ego_max-configPage6.ego_min)/2U);
+
+  configPage9.egoMAPMax = 100U;
+  configPage9.egoMAPMin = 50U;
+  currentStatus.MAP = (configPage9.egoMAPMin + ((configPage9.egoMAPMax-configPage9.egoMAPMin)/2U))*2U;
+  
+  currentStatus.afrTarget = currentStatus.O2;
+  currentStatus.egoCorrection = 100U;
+  
+  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_DFCO);
+
+  configPage6.egoCount = 100U;
+  setup_valid_ego_cycle();
+}
+
+static void test_corrections_closedloop_off_nosensor(void) {
+  setup_ego_simple();
+  currentStatus.O2 = currentStatus.afrTarget + 1U;
+  configPage6.egoType = EGO_TYPE_OFF;
+  TEST_ASSERT_EQUAL(100U, correctionAFRClosedLoop());
+}
+
+static void test_corrections_closedloop_off_dfco(void) {
+  setup_ego_simple();
+  currentStatus.O2 = currentStatus.afrTarget + 1U;
+  BIT_SET(currentStatus.status1, BIT_STATUS1_DFCO);
+  TEST_ASSERT_EQUAL(100U, correctionAFRClosedLoop());
+}
+
+static void test_corrections_closedloop_off_no_algorithm(void) {
+  setup_ego_simple();
+  currentStatus.O2 = currentStatus.afrTarget + 1U;
+  configPage6.egoAlgorithm = EGO_ALGORITHM_NONE;
+  TEST_ASSERT_EQUAL(100U, correctionAFRClosedLoop());
+
+  setup_ego_simple();
+  currentStatus.O2 = currentStatus.afrTarget + 1U;
+  configPage6.egoAlgorithm = EGO_ALGORITHM_INVALID1;
+  TEST_ASSERT_EQUAL(100U, correctionAFRClosedLoop());
+}
+
+static void test_corrections_closedloop_off_invalidconditions_coolant(void) {
+  setup_ego_simple();
+  currentStatus.O2 = currentStatus.afrTarget + 1U;
+  currentStatus.coolant = (configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET) - 1U; 
+  TEST_ASSERT_EQUAL(100U, correctionAFRClosedLoop());
+}
+
+static void test_corrections_closedloop_off_invalidconditions_rpm(void) {
+  setup_ego_simple();
+  currentStatus.O2 = currentStatus.afrTarget + 1U;
+  currentStatus.RPM = (configPage6.egoRPM*100U) - 1U;
+  TEST_ASSERT_EQUAL(100U, correctionAFRClosedLoop());
+}
+
+static void test_corrections_closedloop_off_invalidconditions_tps(void) {
+  setup_ego_simple();
+  currentStatus.O2 = currentStatus.afrTarget + 1U;
+  currentStatus.TPS = configPage6.egoTPSMax + 1U;
+  TEST_ASSERT_EQUAL(100U, correctionAFRClosedLoop());
+}
+
+static void test_corrections_closedloop_off_invalidconditions_o2(void) {
+  setup_ego_simple();
+  currentStatus.O2 = configPage6.ego_min - 1U;
+  TEST_ASSERT_EQUAL(100U, correctionAFRClosedLoop());
+
+  setup_ego_simple();
+  currentStatus.O2 = configPage6.ego_max + 1U;
+  TEST_ASSERT_EQUAL(100U, correctionAFRClosedLoop());
+}
+
+static void test_corrections_closedloop_off_invalidconditions_map(void) {
+  setup_ego_simple();
+  currentStatus.O2 = currentStatus.afrTarget + 1U;
+  currentStatus.MAP = (configPage9.egoMAPMin*2U) - 1U;
+  TEST_ASSERT_EQUAL(100U, correctionAFRClosedLoop());
+
+  setup_ego_simple();
+  currentStatus.O2 = currentStatus.afrTarget + 1U;
+  currentStatus.MAP = (configPage9.egoMAPMax*2U) + 1U;
+  TEST_ASSERT_EQUAL(100U, correctionAFRClosedLoop());
+}
+
+static void test_corrections_closedloop_outsidecycle(void) {
+  setup_ego_simple();
+  currentStatus.O2 = currentStatus.afrTarget + 1U;
+  currentStatus.egoCorrection = 173U;
+  ignitionCount = AFRnextCycle - (configPage6.egoCount/2U); 
+  TEST_ASSERT_EQUAL(currentStatus.egoCorrection, correctionAFRClosedLoop());
+}
+
+static void test_corrections_closedloop_cycle_countrollover(void) {
+  setup_ego_simple();
+  currentStatus.O2 = currentStatus.afrTarget + 1U;
+  currentStatus.egoCorrection = 101U;
+  ignitionCount = AFRnextCycle - (configPage6.egoCount*2U); 
+  TEST_ASSERT_EQUAL(currentStatus.egoCorrection+1U, correctionAFRClosedLoop());
+}
+
+static void test_corrections_closedloop_simple_nocorrection(void) {
+  setup_ego_simple();
+  currentStatus.egoCorrection = 101U;
+  currentStatus.O2 = currentStatus.afrTarget;
+  TEST_ASSERT_EQUAL(currentStatus.egoCorrection, correctionAFRClosedLoop());
+}
+
+static void test_corrections_closedloop_simple_lean(void) {
+  setup_ego_simple();
+  currentStatus.O2 = currentStatus.afrTarget + 1U;
+  TEST_ASSERT_EQUAL(currentStatus.egoCorrection+1U, correctionAFRClosedLoop());
+}
+
+static void test_corrections_closedloop_simple_lean_maxcorrection(void) {
+  setup_ego_simple();
+
+  currentStatus.O2 = configPage6.ego_max-1U;
+
+  for (uint8_t index=0; index<configPage6.egoLimit; ++index) {
+    setup_valid_ego_cycle();
+    currentStatus.egoCorrection = 100U + index;
+    TEST_ASSERT_EQUAL(currentStatus.egoCorrection+1U, correctionAFRClosedLoop());
+  }
+  setup_valid_ego_cycle();
+  TEST_ASSERT_EQUAL(100U+configPage6.egoLimit, correctionAFRClosedLoop());
+  setup_valid_ego_cycle();
+  TEST_ASSERT_EQUAL(100U+configPage6.egoLimit, correctionAFRClosedLoop());
+  setup_valid_ego_cycle();
+  TEST_ASSERT_EQUAL(100U+configPage6.egoLimit, correctionAFRClosedLoop());  
+}
+
+static void test_corrections_closedloop_simple_rich(void) {
+  setup_ego_simple();
+  currentStatus.O2 = currentStatus.afrTarget - 1U;
+  TEST_ASSERT_EQUAL(currentStatus.egoCorrection-1U, correctionAFRClosedLoop());
+}
+
+static void test_rich_max_correction(void) {
+  currentStatus.O2 = configPage6.ego_min+1U;
+
+  uint8_t correction = 100U; 
+  uint8_t counter = 0;
+  while (correction>(100U-configPage6.egoLimit)) {
+    setup_valid_ego_cycle();
+    currentStatus.egoCorrection = 100U - counter;
+    correction = correctionAFRClosedLoop();
+    TEST_ASSERT_LESS_THAN(100U, correction);
+    ++counter;
+  }
+  setup_valid_ego_cycle();
+  TEST_ASSERT_EQUAL(100U-configPage6.egoLimit, correctionAFRClosedLoop());
+  setup_valid_ego_cycle();
+  TEST_ASSERT_EQUAL(100U-configPage6.egoLimit, correctionAFRClosedLoop());
+  setup_valid_ego_cycle();
+  TEST_ASSERT_EQUAL(100U-configPage6.egoLimit, correctionAFRClosedLoop());  
+}
+
+static void test_corrections_closedloop_simple_rich_maxcorrection(void) {
+  setup_ego_simple();
+
+  test_rich_max_correction();
+}
+
+static void setup_ego_pid(void) {
+  setup_ego_simple();
+  configPage6.egoType = EGO_TYPE_WIDE;
+  configPage6.egoAlgorithm = EGO_ALGORITHM_PID;  
+  configPage6.egoKP = 50U;
+  configPage6.egoKI = 20U;
+  configPage6.egoKD = 10U;
+
+  // Initial PID controller setup
+  correctionAFRClosedLoop();
+  setup_valid_ego_cycle();
+}
+
+// PID is time based and may need multiple cycles to move
+static uint8_t run_pid(uint8_t cycles, uint8_t delayMillis) {
+  for (uint8_t index=0; index<cycles-1U; ++index) {
+    setup_valid_ego_cycle();
+    // Serial.print(currentStatus.O2); Serial.print(" ");
+    // Serial.print(currentStatus.afrTarget); Serial.print(" ");
+    // Serial.println(correctionAFRClosedLoop());
+    (void)correctionAFRClosedLoop();
+    delay(delayMillis);
+  }
+  setup_valid_ego_cycle();
+  return correctionAFRClosedLoop();
+}
+
+static void test_corrections_closedloop_pid_nocorrection(void) {
+  setup_ego_pid();
+  currentStatus.O2 = currentStatus.afrTarget;
+  TEST_ASSERT_EQUAL(100U, run_pid(10, 10));
+}
+
+static void test_corrections_closedloop_pid_lean(void) {
+  setup_ego_pid();
+  currentStatus.O2 = configPage6.ego_max-1U;
+
+  TEST_ASSERT_GREATER_THAN(100U, run_pid(10, 10));
+}
+
+static void test_corrections_closedloop_pid_lean_maxcorrection(void) {
+  setup_ego_pid();
+
+  currentStatus.O2 = configPage6.ego_max-1U;
+
+  TEST_ASSERT_EQUAL(100U+configPage6.egoLimit, run_pid(40, 10));
+  setup_valid_ego_cycle();
+  TEST_ASSERT_EQUAL(100U+configPage6.egoLimit, correctionAFRClosedLoop());
+  setup_valid_ego_cycle();
+  TEST_ASSERT_EQUAL(100U+configPage6.egoLimit, correctionAFRClosedLoop());
+  setup_valid_ego_cycle();
+  TEST_ASSERT_EQUAL(100U+configPage6.egoLimit, correctionAFRClosedLoop());
+}
+
+
+static void test_corrections_closedloop_pid_rich(void) {
+  setup_ego_pid();
+  currentStatus.O2 = configPage6.ego_min+1U;
+  TEST_ASSERT_LESS_THAN(100U, run_pid(10, 10));
+}
+
+static void test_corrections_closedloop_pid_rich_maxcorrection(void) {
+  setup_ego_pid();
+
+  currentStatus.O2 = configPage6.ego_min+1U;
+
+  TEST_ASSERT_EQUAL(100U-configPage6.egoLimit, run_pid(40, 10));
+  setup_valid_ego_cycle();
+  TEST_ASSERT_EQUAL(100U-configPage6.egoLimit, correctionAFRClosedLoop());
+  setup_valid_ego_cycle();
+  TEST_ASSERT_EQUAL(100U-configPage6.egoLimit, correctionAFRClosedLoop());
+  setup_valid_ego_cycle();
+  TEST_ASSERT_EQUAL(100U-configPage6.egoLimit, correctionAFRClosedLoop());
+}
+
 static void test_corrections_closedloop(void)
 {
-
+  RUN_TEST_P(test_corrections_closedloop_off_nosensor);
+  RUN_TEST_P(test_corrections_closedloop_off_dfco);
+  RUN_TEST_P(test_corrections_closedloop_off_no_algorithm);
+  RUN_TEST_P(test_corrections_closedloop_off_invalidconditions_coolant);
+  RUN_TEST_P(test_corrections_closedloop_off_invalidconditions_rpm);
+  RUN_TEST_P(test_corrections_closedloop_off_invalidconditions_tps);
+  RUN_TEST_P(test_corrections_closedloop_off_invalidconditions_map);
+  RUN_TEST_P(test_corrections_closedloop_off_invalidconditions_o2);
+  RUN_TEST_P(test_corrections_closedloop_outsidecycle);
+  RUN_TEST_P(test_corrections_closedloop_cycle_countrollover);
+  RUN_TEST_P(test_corrections_closedloop_simple_nocorrection);
+  RUN_TEST_P(test_corrections_closedloop_simple_lean);
+  RUN_TEST_P(test_corrections_closedloop_simple_lean_maxcorrection);
+  RUN_TEST_P(test_corrections_closedloop_simple_rich);
+  RUN_TEST_P(test_corrections_closedloop_simple_rich_maxcorrection);
+  RUN_TEST_P(test_corrections_closedloop_pid_nocorrection);
+  RUN_TEST_P(test_corrections_closedloop_pid_lean);
+  RUN_TEST_P(test_corrections_closedloop_pid_lean_maxcorrection);
+  RUN_TEST_P(test_corrections_closedloop_pid_rich);
+  RUN_TEST_P(test_corrections_closedloop_pid_rich_maxcorrection);
 }
 
 uint8_t correctionFlex(void);

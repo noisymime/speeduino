@@ -276,8 +276,10 @@
 #define EVEN_FIRE           0
 #define ODD_FIRE            1
 
-#define EGO_ALGORITHM_SIMPLE  0
-#define EGO_ALGORITHM_PID     2
+#define EGO_ALGORITHM_SIMPLE   0U
+#define EGO_ALGORITHM_INVALID1 1U
+#define EGO_ALGORITHM_PID      2U
+#define EGO_ALGORITHM_NONE     3U
 
 #define STAGING_MODE_TABLE  0
 #define STAGING_MODE_AUTO   1
