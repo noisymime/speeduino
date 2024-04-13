@@ -9,6 +9,7 @@ All functions in the gamma file return
 
 void initialiseCorrections(void);
 uint16_t correctionsFuel(void);
+uint8_t calculateAfrTarget(table3d16RpmLoad &afrLookUpTable, const statuses &current, const config2 &page2, const config6 &page6);
 byte correctionWUE(void); //Warmup enrichment
 uint16_t correctionCranking(void); //Cranking enrichment
 byte correctionASE(void); //After Start Enrichment
@@ -23,7 +24,6 @@ byte correctionBaro(void); //Barometric pressure correction
 byte correctionLaunch(void); //Launch control correction
 byte correctionDFCOfuel(void); //DFCO taper correction
 bool correctionDFCO(void); //Decelleration fuel cutoff
-
 
 int8_t correctionsIgn(int8_t advance);
 int8_t correctionFixedTiming(int8_t advance);

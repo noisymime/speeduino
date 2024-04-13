@@ -980,6 +980,109 @@ static void test_corrections_MAE()
   RUN_TEST_P(test_corrections_MAE_50pc_warmup_taper);
 }
 
+static void setup_afrtarget(table3d16RpmLoad &afrLookUpTable,
+                            statuses &current,
+                            config2 &page2,
+                            config6 &page6) {
+  TEST_DATA_P table3d_value_t values[] = {
+    //0    1    2   3     4    5    6    7    8    9   10   11   12   13    14   15
+    34,  34,  34,  34,  34,  34,  34,  34,  34,  35,  35,  35,  35,  35,  35,  35, 
+    34,  35,  36,  37,  39,  41,  42,  43,  43,  44,  44,  44,  44,  44,  44,  44, 
+    35,  36,  38,  41,  44,  46,  47,  48,  48,  49,  49,  49,  49,  49,  49,  49, 
+    36,  39,  42,  46,  50,  51,  52,  53,  53,  53,  53,  53,  53,  53,  53,  53, 
+    38,  43,  48,  52,  55,  56,  57,  58,  58,  58,  58,  58,  58,  58,  58,  58, 
+    42,  49,  54,  58,  61,  62,  62,  63,  63,  63,  63,  63,  63,  63,  63,  63, 
+    48,  56,  60,  64,  66,  66,  68,  68,  68,  68,  68,  68,  68,  68,  68,  68, 
+    54,  62,  66,  69,  71,  71,  72,  72,  72,  72,  72,  72,  72,  72,  72,  72, 
+    61,  69,  72,  74,  76,  76,  77,  77,  77,  77,  77,  77,  77,  77,  77,  77, 
+    68,  75,  78,  79,  81,  81,  81,  82,  82,  82,  82,  82,  82,  82,  82,  82, 
+    74,  80,  83,  84,  85,  86,  86,  86,  87,  87,  87,  87,  87,  87,  87,  87, 
+    81,  86,  88,  89,  90,  91,  91,  91,  91,  91,  91,  91,  91,  91,  91,  91, 
+    93,  96,  98,  99,  99,  100, 100, 101, 101, 101, 101, 101, 101, 101, 101, 101, 
+    98,  101, 103, 103, 104, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 
+    104, 106, 107, 108, 109, 109, 110, 110, 110, 110, 110, 110, 110, 110, 110, 110, 
+    109, 111, 112, 113, 114, 114, 114, 115, 115, 115, 114, 114, 114, 114, 114, 114, 
+    };
+  TEST_DATA_P table3d_axis_t xAxis[] = {500, 700, 900, 1200, 1600, 2000, 2500, 3100, 3500, 4100, 4700, 5300, 5900, 6500, 6750, 7000};
+  TEST_DATA_P table3d_axis_t yAxis[] = { 16, 26, 30, 36, 40, 46, 50, 56, 60, 66, 70, 76, 86, 90, 96, 100};  
+  populate_table_P(afrLookUpTable, xAxis, yAxis, values);
+
+  memset(&page2, 0, sizeof(page2));
+  page2.incorporateAFR = true;
+
+  memset(&page6, 0, sizeof(page6));
+  page6.egoType = EGO_TYPE_NARROW;
+  page6.ego_sdelay = 10;
+
+  memset(&current, 0, sizeof(current));
+  current.runSecs = page6.ego_sdelay + 2U;
+  current.fuelLoad = 60;
+  current.RPM = 3100;
+  current.O2 = 75U;
+}
+
+
+static void test_corrections_afrtarget_no_compute(void) {
+  table3d16RpmLoad afrLookUpTable;
+  statuses current;
+  config2 page2;
+  config6 page6;
+  setup_afrtarget(afrLookUpTable, current, page2, page6);
+
+  page2.incorporateAFR = false;
+  page6.egoType = EGO_TYPE_OFF;
+  current.afrTarget = 111;
+
+  TEST_ASSERT_EQUAL(current.afrTarget, calculateAfrTarget(afrLookUpTable, current, page2, page6));
+}
+
+static void test_corrections_afrtarget_no_compute_egodelay(void) {
+  table3d16RpmLoad afrLookUpTable;
+  statuses current;
+  config2 page2;
+  config6 page6;
+  setup_afrtarget(afrLookUpTable, current, page2, page6);
+
+  page2.incorporateAFR = false;
+  current.runSecs = page6.ego_sdelay - 2U;
+  current.afrTarget = current.O2/2U;
+
+  TEST_ASSERT_EQUAL(current.O2, calculateAfrTarget(afrLookUpTable, current, page2, page6));
+}
+
+static void test_corrections_afrtarget_incorporteafr(void) {
+  table3d16RpmLoad afrLookUpTable;
+  statuses current;
+  config2 page2;
+  config6 page6;
+  setup_afrtarget(afrLookUpTable, current, page2, page6);
+
+  page2.incorporateAFR = true;
+  page6.egoType = EGO_TYPE_OFF;
+
+  TEST_ASSERT_EQUAL(77U, calculateAfrTarget(afrLookUpTable, current, page2, page6));
+}
+
+static void test_corrections_afrtarget_ego(void) {
+  table3d16RpmLoad afrLookUpTable;
+  statuses current;
+  config2 page2;
+  config6 page6;
+  setup_afrtarget(afrLookUpTable, current, page2, page6);
+
+  page2.incorporateAFR = false;
+  page6.egoType = EGO_TYPE_NARROW;
+
+  TEST_ASSERT_EQUAL(77U, calculateAfrTarget(afrLookUpTable, current, page2, page6));
+}
+
+static void test_corrections_afrtarget(void) {
+  RUN_TEST_P(test_corrections_afrtarget_no_compute);
+  RUN_TEST_P(test_corrections_afrtarget_no_compute_egodelay);
+  RUN_TEST_P(test_corrections_afrtarget_incorporteafr);
+  RUN_TEST_P(test_corrections_afrtarget_ego);
+}
+
 void testCorrections()
 {
   SET_UNITY_FILENAME() {
@@ -993,6 +1096,7 @@ void testCorrections()
     test_corrections_bat();
     test_corrections_launch();
     test_corrections_flex();
+    test_corrections_afrtarget();
     test_corrections_closedloop();
   }
 }

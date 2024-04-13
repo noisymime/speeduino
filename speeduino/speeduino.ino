@@ -434,6 +434,7 @@ void loop(void)
 
       //Begin the fuel calculation
       //Calculate an injector pulsewidth from the VE
+      currentStatus.afrTarget = calculateAfrTarget(afrTable, currentStatus, configPage2, configPage6);
       currentStatus.corrections = correctionsFuel();
 
       currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
