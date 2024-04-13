@@ -915,6 +915,12 @@ static void test_corrections_dfco()
 
 //**********************************************************************************************************************
 //Setup a basic TAE enrichment curve, threshold etc that are common to all tests. Specifica values maybe updated in each individual test
+
+static void reset_AE(void) {
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_DCC);
+}
+
 static void test_corrections_TAE_setup()
 {
   configPage2.aeMode = AE_MODE_TPS; //Set AE to TPS
@@ -942,8 +948,7 @@ static void test_corrections_TAE_setup()
 	configPage2.aeColdTaperMin = 0;
 	currentStatus.coolant = (int)(configPage2.aeColdTaperMax - CALIBRATION_TEMPERATURE_OFFSET) + 1;
 
-  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); //Make sure AE is turned off
-  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_DCC); //Make sure AE is turned off
+  reset_AE();
 }
 
 extern uint16_t correctionAccel(void);
@@ -1368,6 +1373,133 @@ static void test_corrections_afrtarget(void) {
   RUN_TEST_P(test_corrections_afrtarget_ego);
 }
 
+extern byte correctionIATDensity(void);
+
+#if !defined(_countof)
+#define _countof(x) (sizeof(x) / sizeof (x[0]))
+#endif
+ 
+extern byte correctionBaro(void);
+
+static void test_corrections_correctionsFuel_ae_modes(void) {
+  test_corrections_TAE_setup();
+  populate_2dtable(&injectorVCorrectionTable, 100, 100);
+  populate_2dtable(&baroFuelTable, 100, 100);
+  populate_2dtable(&IATDensityCorrectionTable, 100, 100);
+
+  //Disable the taper
+  currentStatus.RPM = 2000;
+  configPage2.aeTaperMin = 50; //5000
+  configPage2.aeTaperMax = 60; //6000
+  configPage2.decelAmount = 33U;
+
+  currentStatus.TPSlast = 0;
+  currentStatus.TPS = 50; //25% actual value
+  currentStatus.coolant = 212;
+  currentStatus.runSecs = 255; 
+  currentStatus.battery10 = 90;  
+  currentStatus.IAT = 100;
+  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_DFCO);
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+
+  configPage2.battVCorMode = BATTV_COR_MODE_WHOLE;
+  configPage2.dfcoEnabled = 0;
+
+  configPage4.dfcoRPM = 100;
+  configPage4.wueBins[9] = 100;
+  configPage2.wueValues[9] = 100; //Use a value other than 100 here to ensure we are using the non-default value
+  WUETable.cacheTime = currentStatus.secl - 1;
+
+  configPage4.floodClear = 100;
+
+  configPage6.egoType = 0;
+  configPage6.egoAlgorithm = EGO_ALGORITHM_SIMPLE;
+
+  TEST_ASSERT_EQUAL_MESSAGE(100, correctionWUE(), "correctionWUE");
+  TEST_ASSERT_EQUAL_MESSAGE(100, correctionASE(), "correctionASE");
+  TEST_ASSERT_EQUAL_MESSAGE(100, correctionCranking(), "correctionCranking");
+  // TEST_ASSERT_EQUAL_MESSAGE(232, correctionAccel(), "correctionAccel");
+  TEST_ASSERT_EQUAL_MESSAGE(100, correctionFloodClear(), "correctionFloodClear");
+  TEST_ASSERT_EQUAL_MESSAGE(100, correctionAFRClosedLoop(), "correctionAFRClosedLoop");
+  TEST_ASSERT_EQUAL_MESSAGE(100, correctionBatVoltage(), "correctionBatVoltage");
+  TEST_ASSERT_EQUAL_MESSAGE(100, correctionIATDensity(), "correctionIATDensity");
+  TEST_ASSERT_EQUAL_MESSAGE(100, correctionBaro(), "correctionBaro");
+  TEST_ASSERT_EQUAL_MESSAGE(100, correctionFlex(), "correctionFlex");
+  TEST_ASSERT_EQUAL_MESSAGE(100, correctionFuelTemp(), "correctionFuelTemp");
+  TEST_ASSERT_FALSE(correctionDFCO());
+  TEST_ASSERT_EQUAL_MESSAGE(100, correctionDFCOfuel(), "correctionDFCOfuel");
+
+  // Acceeleration
+  configPage2.aeApplyMode = AE_MODE_MULTIPLIER;
+  currentStatus.TPSlast = 0;
+  currentStatus.TPS = 50; //25% actual value
+  reset_AE();
+  TEST_ASSERT_EQUAL(232U, correctionsFuel());
+
+  configPage2.aeApplyMode = AE_MODE_ADDER;
+  currentStatus.TPSlast = 0;
+  currentStatus.TPS = 50;
+  reset_AE();
+  TEST_ASSERT_EQUAL(100U, correctionsFuel());
+
+  // Deceeleration
+  configPage2.aeApplyMode = AE_MODE_MULTIPLIER;
+  currentStatus.TPSlast = 50;
+  currentStatus.TPS = 45; 
+  reset_AE();
+  TEST_ASSERT_EQUAL(configPage2.decelAmount, correctionsFuel());
+  TEST_ASSERT_LESS_THAN(0U, currentStatus.tpsDOT); 
+
+  configPage2.aeApplyMode = AE_MODE_ADDER;
+  currentStatus.TPSlast = 50;
+  currentStatus.TPS = 45;
+  reset_AE();
+  TEST_ASSERT_EQUAL(configPage2.decelAmount, correctionsFuel());
+  TEST_ASSERT_LESS_THAN(0U, currentStatus.tpsDOT); 
+}
+
+static void test_corrections_correctionsFuel_clip_limit(void) {
+  initialiseAll();
+  populate_2dtable(&injectorVCorrectionTable, 255, 100);
+  populate_2dtable(&baroFuelTable, 255, 100);
+  populate_2dtable(&IATDensityCorrectionTable, 255, 100);
+  populate_2dtable(&flexFuelTable, 255, 100);
+
+  configPage2.flexEnabled = 1;
+  configPage2.battVCorMode = BATTV_COR_MODE_WHOLE;
+  configPage2.dfcoEnabled = 0;
+  currentStatus.coolant = 212;
+  currentStatus.runSecs = 255; 
+  currentStatus.battery10 = 100;  
+  currentStatus.IAT = 100 - CALIBRATION_TEMPERATURE_OFFSET;
+  currentStatus.baro = 100;
+  currentStatus.ethanolPct = 100;
+
+  configPage4.wueBins[9] = 100;
+  configPage2.wueValues[9] = 100; //Use a value other than 100 here to ensure we are using the non-default value
+
+  TEST_ASSERT_EQUAL_MESSAGE(100, correctionWUE(), "correctionWUE");
+  TEST_ASSERT_EQUAL_MESSAGE(100, correctionASE(), "correctionASE");
+  TEST_ASSERT_EQUAL_MESSAGE(100, correctionCranking(), "correctionCranking");
+  TEST_ASSERT_EQUAL_MESSAGE(100, correctionAccel(), "correctionAccel");
+  TEST_ASSERT_EQUAL_MESSAGE(100, correctionFloodClear(), "correctionFloodClear");
+  TEST_ASSERT_EQUAL_MESSAGE(100, correctionAFRClosedLoop(), "correctionAFRClosedLoop");
+  TEST_ASSERT_EQUAL_MESSAGE(255, correctionBatVoltage(), "correctionBatVoltage");
+  TEST_ASSERT_EQUAL_MESSAGE(255, correctionIATDensity(), "correctionIATDensity");
+  TEST_ASSERT_EQUAL_MESSAGE(255, correctionBaro(), "correctionBaro");
+  TEST_ASSERT_EQUAL_MESSAGE(255, correctionFlex(), "correctionFlex");
+  TEST_ASSERT_EQUAL_MESSAGE(135, correctionFuelTemp(), "correctionFuelTemp");
+  TEST_ASSERT_FALSE(correctionDFCO());
+  TEST_ASSERT_EQUAL_MESSAGE(100, correctionDFCOfuel(), "correctionDFCOfuel");
+
+  TEST_ASSERT_EQUAL(1500U, correctionsFuel());
+}
+
+static void test_corrections_correctionsFuel(void) {
+  RUN_TEST_P(test_corrections_correctionsFuel_ae_modes);
+  RUN_TEST_P(test_corrections_correctionsFuel_clip_limit);
+}
+
 void testCorrections()
 {
   SET_UNITY_FILENAME() {
@@ -1383,5 +1515,6 @@ void testCorrections()
     test_corrections_flex();
     test_corrections_afrtarget();
     test_corrections_closedloop();
+    test_corrections_correctionsFuel();
   }
 }
