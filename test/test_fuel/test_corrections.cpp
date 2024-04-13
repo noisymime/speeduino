@@ -19,8 +19,8 @@ void testCorrections()
   test_corrections_MAE(); //MAP based accel enrichment corrections
   test_corrections_cranking();
   test_corrections_ASE();
+  test_corrections_floodclear();
   /*
-  RUN_TEST_P(test_corrections_floodclear); //Not written yet
   RUN_TEST_P(test_corrections_closedloop); //Not written yet
   RUN_TEST_P(test_corrections_flex); //Not written yet
   RUN_TEST_P(test_corrections_bat); //Not written yet
@@ -302,10 +302,39 @@ void test_corrections_ASE(void)
   RUN_TEST_P(test_corrections_ASE_taper);
 }
 
+uint8_t correctionFloodClear(void);
+
+static void test_corrections_floodclear_no_crank_inactive(void) {
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  configPage4.floodClear = 90;
+  currentStatus.TPS = configPage4.floodClear + 10;
+
+  TEST_ASSERT_EQUAL(100U, correctionFloodClear() );
+}
+
+static void test_corrections_floodclear_crank_below_threshold_inactive(void) {
+  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+  configPage4.floodClear = 90;
+  currentStatus.TPS = configPage4.floodClear - 10;
+
+  TEST_ASSERT_EQUAL(100U, correctionFloodClear() );
+}
+
+static void test_corrections_floodclear_crank_above_threshold_active(void) {
+  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+  configPage4.floodClear = 90;
+  currentStatus.TPS = configPage4.floodClear + 10;
+
+  TEST_ASSERT_EQUAL(0U, correctionFloodClear() );
+}
+
 void test_corrections_floodclear(void)
 {
-
+  RUN_TEST_P(test_corrections_floodclear_no_crank_inactive);
+  RUN_TEST_P(test_corrections_floodclear_crank_below_threshold_inactive);
+  RUN_TEST_P(test_corrections_floodclear_crank_above_threshold_active);
 }
+
 void test_corrections_closedloop(void)
 {
 
