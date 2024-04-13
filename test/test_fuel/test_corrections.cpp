@@ -485,6 +485,8 @@ void test_corrections_TAE_setup()
 
 void test_corrections_TAE_no_rpm_taper()
 {
+  test_corrections_TAE_setup();
+
   //Disable the taper
   currentStatus.RPM = 2000;
   configPage2.aeTaperMin = 50; //5000
@@ -502,6 +504,8 @@ void test_corrections_TAE_no_rpm_taper()
 
 void test_corrections_TAE_50pc_rpm_taper()
 {
+  test_corrections_TAE_setup();
+
   //RPM is 50% of the way through the taper range
   currentStatus.RPM = 3000;
   configPage2.aeTaperMin = 10; //1000
@@ -519,6 +523,8 @@ void test_corrections_TAE_50pc_rpm_taper()
 
 void test_corrections_TAE_110pc_rpm_taper()
 {
+  test_corrections_TAE_setup();
+
   //RPM is 110% of the way through the taper range, which should result in no additional AE
   currentStatus.RPM = 5400;
   configPage2.aeTaperMin = 10; //1000
@@ -536,6 +542,8 @@ void test_corrections_TAE_110pc_rpm_taper()
 
 void test_corrections_TAE_under_threshold()
 {
+  test_corrections_TAE_setup();
+
   //RPM is 50% of the way through the taper range, but TPS value will be below threshold
   currentStatus.RPM = 3000;
   configPage2.aeTaperMin = 10; //1000
@@ -554,6 +562,8 @@ void test_corrections_TAE_under_threshold()
 
 void test_corrections_TAE_50pc_warmup_taper()
 {
+  test_corrections_TAE_setup();
+
   //Disable the RPM taper
   currentStatus.RPM = 2000;
   configPage2.aeTaperMin = 50; //5000
@@ -578,16 +588,10 @@ void test_corrections_TAE_50pc_warmup_taper()
 
 void test_corrections_TAE()
 {
-  test_corrections_TAE_setup();
-
-
   RUN_TEST(test_corrections_TAE_no_rpm_taper);
-	BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); //Flag must be cleared between tests
   RUN_TEST(test_corrections_TAE_50pc_rpm_taper);
-	BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); //Flag must be cleared between tests
   RUN_TEST(test_corrections_TAE_110pc_rpm_taper);
-	BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); //Flag must be cleared between tests
   RUN_TEST(test_corrections_TAE_under_threshold);
-	BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); //Flag must be cleared between tests
   RUN_TEST(test_corrections_TAE_50pc_warmup_taper);	
+  RUN_TEST(test_corrections_TAE_50pc_warmup_taper);
 }
