@@ -3,6 +3,7 @@
 #include <unity.h>
 #include "test_staging.h"
 #include "../test_utils.h"
+#include "init.h"
 
 void testStaging(void)
 {
@@ -18,6 +19,8 @@ void testStaging(void)
 
 void test_Staging_setCommon()
 {
+  initialiseAll();
+  
   configPage2.nCylinders = 4;
   currentStatus.RPM = 3000;
   currentStatus.fuelLoad = 50;

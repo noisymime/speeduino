@@ -33,28 +33,34 @@ void testCorrections()
 
 void test_corrections_WUE_active(void)
 {
+  initialiseAll();
+
   //Check for WUE being active
   currentStatus.coolant = 0;
-  ((uint8_t*)WUETable.axisX)[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET; //Set a WUE end value of 120
+  configPage4.wueBins[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET; //Set a WUE end value of 120
   correctionWUE();
   TEST_ASSERT_BIT_HIGH(BIT_ENGINE_WARMUP, currentStatus.engine);
 }
 
 void test_corrections_WUE_inactive(void)
 {
+  initialiseAll();
+
   //Check for WUE being inactive due to the temp being too high
   currentStatus.coolant = 200;
-  ((uint8_t*)WUETable.axisX)[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET; //Set a WUE end value of 120
+  configPage4.wueBins[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET; //Set a WUE end value of 120
   correctionWUE();
   TEST_ASSERT_BIT_LOW(BIT_ENGINE_WARMUP, currentStatus.engine);
 }
 
 void test_corrections_WUE_inactive_value(void)
 {
+  initialiseAll();
+
   //Check for WUE being set to the final row of the WUE curve if the coolant is above the max WUE temp
   currentStatus.coolant = 200;
-  ((uint8_t*)WUETable.axisX)[9] = 100;
-  ((uint8_t*)WUETable.values)[9] = 123; //Use a value other than 100 here to ensure we are using the non-default value
+  configPage4.wueBins[9] = 100;
+  configPage2.wueValues[9] = 123; //Use a value other than 100 here to ensure we are using the non-default value
 
   //Force invalidate the cache
   WUETable.cacheTime = currentStatus.secl - 1;
@@ -64,22 +70,24 @@ void test_corrections_WUE_inactive_value(void)
 
 void test_corrections_WUE_active_value(void)
 {
+  initialiseAll();
+
   //Check for WUE being made active and returning a correct interpolated value
   currentStatus.coolant = 80;
   //Set some fake values in the table axis. Target value will fall between points 6 and 7
-  ((uint8_t*)WUETable.axisX)[0] = 0;
-  ((uint8_t*)WUETable.axisX)[1] = 0;
-  ((uint8_t*)WUETable.axisX)[2] = 0;
-  ((uint8_t*)WUETable.axisX)[3] = 0;
-  ((uint8_t*)WUETable.axisX)[4] = 0;
-  ((uint8_t*)WUETable.axisX)[5] = 0;
-  ((uint8_t*)WUETable.axisX)[6] = 70 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)WUETable.axisX)[7] = 90 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)WUETable.axisX)[8] = 100 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)WUETable.axisX)[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
+  configPage4.wueBins[0] = 0;
+  configPage4.wueBins[1] = 0;
+  configPage4.wueBins[2] = 0;
+  configPage4.wueBins[3] = 0;
+  configPage4.wueBins[4] = 0;
+  configPage4.wueBins[5] = 0;
+  configPage4.wueBins[6] = 70 + CALIBRATION_TEMPERATURE_OFFSET;
+  configPage4.wueBins[7] = 90 + CALIBRATION_TEMPERATURE_OFFSET;
+  configPage4.wueBins[8] = 100 + CALIBRATION_TEMPERATURE_OFFSET;
+  configPage4.wueBins[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
 
-  ((uint8_t*)WUETable.values)[6] = 120;
-  ((uint8_t*)WUETable.values)[7] = 130;
+  configPage2.wueValues[6] = 120;
+  configPage2.wueValues[7] = 130;
 
   //Force invalidate the cache
   WUETable.cacheTime = currentStatus.secl - 1;
@@ -99,6 +107,7 @@ void test_corrections_WUE(void)
 extern uint16_t correctionCranking(void);
 
 static void test_corrections_cranking_inactive(void) {
+  initialiseAll();
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE);
   configPage10.crankingEnrichTaper = 0U;
@@ -304,6 +313,8 @@ void test_corrections_ASE(void)
 uint8_t correctionFloodClear(void);
 
 static void test_corrections_floodclear_no_crank_inactive(void) {
+  initialiseAll();
+
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
   configPage4.floodClear = 90;
   currentStatus.TPS = configPage4.floodClear + 10;
@@ -312,6 +323,8 @@ static void test_corrections_floodclear_no_crank_inactive(void) {
 }
 
 static void test_corrections_floodclear_crank_below_threshold_inactive(void) {
+  initialiseAll();
+
   BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
   configPage4.floodClear = 90;
   currentStatus.TPS = configPage4.floodClear - 10;
@@ -320,6 +333,8 @@ static void test_corrections_floodclear_crank_below_threshold_inactive(void) {
 }
 
 static void test_corrections_floodclear_crank_above_threshold_active(void) {
+  initialiseAll();
+
   BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
   configPage4.floodClear = 90;
   currentStatus.TPS = configPage4.floodClear + 10;

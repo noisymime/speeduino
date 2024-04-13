@@ -19,7 +19,6 @@ void setup()
 
     UNITY_BEGIN();    // IMPORTANT LINE!
 
-    initialiseAll(); //Run the main initialise function
     testCorrections();
     testPW();
     testStaging();
