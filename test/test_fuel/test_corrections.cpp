@@ -10,13 +10,27 @@
 
 extern byte correctionWUE(void);
 
+static void setup_wue_table(void) {
+  //Set some fake values in the table axis. Target value will fall between points 6 and 7
+  TEST_DATA_P uint8_t bins[] = { 
+    0, 0, 0, 0, 0, 0,
+    70 + CALIBRATION_TEMPERATURE_OFFSET,
+    90 + CALIBRATION_TEMPERATURE_OFFSET,
+    100 + CALIBRATION_TEMPERATURE_OFFSET,
+    120 + CALIBRATION_TEMPERATURE_OFFSET
+  };
+  TEST_DATA_P uint8_t values[] = { 0, 0, 0, 0, 0, 0, 120, 130, 130, 130 };
+  populate_2dtable_P(&WUETable, values, bins);
+}
+
 static void test_corrections_WUE_active(void)
 {
   initialiseAll();
+  setup_wue_table();
 
   //Check for WUE being active
   currentStatus.coolant = 0;
-  configPage4.wueBins[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET; //Set a WUE end value of 120
+
   correctionWUE();
   TEST_ASSERT_BIT_HIGH(BIT_ENGINE_WARMUP, currentStatus.engine);
 }
@@ -24,10 +38,10 @@ static void test_corrections_WUE_active(void)
 static void test_corrections_WUE_inactive(void)
 {
   initialiseAll();
+  setup_wue_table();
 
   //Check for WUE being inactive due to the temp being too high
   currentStatus.coolant = 200;
-  configPage4.wueBins[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET; //Set a WUE end value of 120
   correctionWUE();
   TEST_ASSERT_BIT_LOW(BIT_ENGINE_WARMUP, currentStatus.engine);
 }
@@ -35,14 +49,12 @@ static void test_corrections_WUE_inactive(void)
 static void test_corrections_WUE_inactive_value(void)
 {
   initialiseAll();
-
-  //Check for WUE being set to the final row of the WUE curve if the coolant is above the max WUE temp
-  currentStatus.coolant = 200;
+  setup_wue_table();
   configPage4.wueBins[9] = 100;
   configPage2.wueValues[9] = 123; //Use a value other than 100 here to ensure we are using the non-default value
 
-  //Force invalidate the cache
-  WUETable.cacheTime = currentStatus.secl - 1;
+  //Check for WUE being set to the final row of the WUE curve if the coolant is above the max WUE temp
+  currentStatus.coolant = 200;
   
   TEST_ASSERT_EQUAL(123, correctionWUE() );
 }
@@ -53,20 +65,8 @@ static void test_corrections_WUE_active_value(void)
 
   //Check for WUE being made active and returning a correct interpolated value
   currentStatus.coolant = 80;
-  //Set some fake values in the table axis. Target value will fall between points 6 and 7
-  configPage4.wueBins[0] = 0;
-  configPage4.wueBins[1] = 0;
-  configPage4.wueBins[2] = 0;
-  configPage4.wueBins[3] = 0;
-  configPage4.wueBins[4] = 0;
-  configPage4.wueBins[5] = 0;
-  configPage4.wueBins[6] = 70 + CALIBRATION_TEMPERATURE_OFFSET;
-  configPage4.wueBins[7] = 90 + CALIBRATION_TEMPERATURE_OFFSET;
-  configPage4.wueBins[8] = 100 + CALIBRATION_TEMPERATURE_OFFSET;
-  configPage4.wueBins[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
 
-  configPage2.wueValues[6] = 120;
-  configPage2.wueValues[7] = 130;
+  setup_wue_table();
 
   //Force invalidate the cache
   WUETable.cacheTime = currentStatus.secl - 1;
@@ -85,6 +85,17 @@ static void test_corrections_WUE(void)
 
 extern uint16_t correctionCranking(void);
 
+static void setup_correctionCranking_table(void) {
+  uint8_t values[] = { 120U / 5U, 130U / 5U, 140U / 5U, 150U / 5U };
+  uint8_t bins[] = { 
+    (uint8_t)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - 10U),
+    (uint8_t)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET + 10U),
+    (uint8_t)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET + 20U),
+    (uint8_t)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET + 30U)
+  };
+  populate_2dtable(&crankingEnrichTable, values, bins);
+}
+
 static void test_corrections_cranking_inactive(void) {
   initialiseAll();
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
@@ -96,19 +107,12 @@ static void test_corrections_cranking_inactive(void) {
 
 static void test_corrections_cranking_cranking(void) {
   initialiseAll();
+
   BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE);
   configPage10.crankingEnrichTaper = 0U;
   currentStatus.coolant = 150 - CALIBRATION_TEMPERATURE_OFFSET;
-
-  configPage10.crankingEnrichValues[0] = 120U / 5U;
-  configPage10.crankingEnrichBins[0] = currentStatus.coolant - 10U + CALIBRATION_TEMPERATURE_OFFSET;
-  configPage10.crankingEnrichValues[1] = 130U / 5U;
-  configPage10.crankingEnrichBins[1] = currentStatus.coolant + 10U + CALIBRATION_TEMPERATURE_OFFSET;
-  configPage10.crankingEnrichValues[2] = 140U / 5U;
-  configPage10.crankingEnrichBins[2] = currentStatus.coolant + 20U + CALIBRATION_TEMPERATURE_OFFSET;
-  configPage10.crankingEnrichValues[3] = 150U / 5U;
-  configPage10.crankingEnrichBins[3] = currentStatus.coolant + 30U + CALIBRATION_TEMPERATURE_OFFSET;
+  setup_correctionCranking_table();
 
   // Should be half way between the 2 table values.
   TEST_ASSERT_EQUAL(125, correctionCranking() );
@@ -122,14 +126,7 @@ static void test_corrections_cranking_taper_noase(void) {
   currentStatus.ASEValue = 100U;
   
   currentStatus.coolant = 150 - CALIBRATION_TEMPERATURE_OFFSET;
-  configPage10.crankingEnrichValues[0] = 120U / 5U;
-  configPage10.crankingEnrichBins[0] = currentStatus.coolant - 10U + CALIBRATION_TEMPERATURE_OFFSET;
-  configPage10.crankingEnrichValues[1] = 130U / 5U;
-  configPage10.crankingEnrichBins[1] = currentStatus.coolant + 10U + CALIBRATION_TEMPERATURE_OFFSET;
-  configPage10.crankingEnrichValues[2] = 140U / 5U;
-  configPage10.crankingEnrichBins[2] = currentStatus.coolant + 20U + CALIBRATION_TEMPERATURE_OFFSET;
-  configPage10.crankingEnrichValues[3] = 150U / 5U;
-  configPage10.crankingEnrichBins[3] = currentStatus.coolant + 30U + CALIBRATION_TEMPERATURE_OFFSET;
+  setup_correctionCranking_table();
 
   // Reset taper
   BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
@@ -162,14 +159,7 @@ static void test_corrections_cranking_taper_withase(void) {
   configPage10.crankingEnrichTaper = 100U;
   
   currentStatus.coolant = 150 - CALIBRATION_TEMPERATURE_OFFSET;
-  configPage10.crankingEnrichValues[0] = 120U / 5U;
-  configPage10.crankingEnrichBins[0] = currentStatus.coolant - 10U + CALIBRATION_TEMPERATURE_OFFSET;
-  configPage10.crankingEnrichValues[1] = 130U / 5U;
-  configPage10.crankingEnrichBins[1] = currentStatus.coolant + 10U + CALIBRATION_TEMPERATURE_OFFSET;
-  configPage10.crankingEnrichValues[2] = 140U / 5U;
-  configPage10.crankingEnrichBins[2] = currentStatus.coolant + 20U + CALIBRATION_TEMPERATURE_OFFSET;
-  configPage10.crankingEnrichValues[3] = 150U / 5U;
-  configPage10.crankingEnrichBins[3] = currentStatus.coolant + 30U + CALIBRATION_TEMPERATURE_OFFSET;
+  setup_correctionCranking_table();
 
   BIT_SET(currentStatus.engine, BIT_ENGINE_ASE);
   currentStatus.ASEValue = 50U;
@@ -227,23 +217,27 @@ static inline void setup_correctionASE(void) {
   currentStatus.ASEValue = 0U;
   currentStatus.runSecs = 3;
 
-  configPage2.aseCount[0] = 10;
-  configPage2.aseBins[0] = COOLANT_INITIAL - 10U + CALIBRATION_TEMPERATURE_OFFSET;
-  configPage2.aseCount[1] = 8;
-  configPage2.aseBins[1] = COOLANT_INITIAL + 10U + CALIBRATION_TEMPERATURE_OFFSET;
-  configPage2.aseCount[0] = 6;
-  configPage2.aseBins[0] = COOLANT_INITIAL + 20U + CALIBRATION_TEMPERATURE_OFFSET;
-  configPage2.aseCount[0] = 4;
-  configPage2.aseBins[0] = COOLANT_INITIAL + 30U + CALIBRATION_TEMPERATURE_OFFSET;;
+  {
+    TEST_DATA_P uint8_t values[] = { 10, 8, 6, 4 };
+    TEST_DATA_P uint8_t bins[] = { 
+      (uint8_t)(COOLANT_INITIAL + CALIBRATION_TEMPERATURE_OFFSET - 10U),
+      (uint8_t)(COOLANT_INITIAL + CALIBRATION_TEMPERATURE_OFFSET + 10U),
+      (uint8_t)(COOLANT_INITIAL + CALIBRATION_TEMPERATURE_OFFSET + 20U),
+      (uint8_t)(COOLANT_INITIAL + CALIBRATION_TEMPERATURE_OFFSET + 30U)
+    };
+    populate_2dtable_P(&ASECountTable, values, bins);
+  }
 
-  configPage2.asePct[0] = 20U;
-  configPage2.aseBins[0] = COOLANT_INITIAL - 10U + CALIBRATION_TEMPERATURE_OFFSET;
-  configPage2.asePct[1] = 30U;
-  configPage2.aseBins[1] = COOLANT_INITIAL + 10U + CALIBRATION_TEMPERATURE_OFFSET;
-  configPage2.asePct[2] = 40U;
-  configPage2.aseBins[2] = COOLANT_INITIAL + 20U + CALIBRATION_TEMPERATURE_OFFSET;
-  configPage2.asePct[3] = 50U;
-  configPage2.aseBins[3] = COOLANT_INITIAL + 30U + CALIBRATION_TEMPERATURE_OFFSET;  
+  {
+    TEST_DATA_P uint8_t values[] = { 20, 30, 40, 50 };
+    TEST_DATA_P uint8_t bins[] = { 
+      (uint8_t)(COOLANT_INITIAL + CALIBRATION_TEMPERATURE_OFFSET - 10U),
+      (uint8_t)(COOLANT_INITIAL + CALIBRATION_TEMPERATURE_OFFSET + 10U),
+      (uint8_t)(COOLANT_INITIAL + CALIBRATION_TEMPERATURE_OFFSET + 20U),
+      (uint8_t)(COOLANT_INITIAL + CALIBRATION_TEMPERATURE_OFFSET + 30U)
+    };
+    populate_2dtable_P(&ASETable, values, bins);
+  } 
 }
 
 static void test_corrections_ASE_initial(void)
@@ -621,18 +615,9 @@ static void test_corrections_closedloop(void)
 uint8_t correctionFlex(void);
 
 static void setupFlexFuelTable(void) {
-  configPage10.flexFuelBins[0] = 0;
-  configPage10.flexFuelAdj[0] = 0;
-  configPage10.flexFuelBins[1] = 10;
-  configPage10.flexFuelAdj[1] = 20;
-  configPage10.flexFuelBins[2] = 30;
-  configPage10.flexFuelAdj[2] = 40;
-  configPage10.flexFuelBins[3] = 50;
-  configPage10.flexFuelAdj[3] = 80;
-  configPage10.flexFuelBins[4] = 60;
-  configPage10.flexFuelAdj[4] = 120;
-  configPage10.flexFuelBins[5] = 70;
-  configPage10.flexFuelAdj[5] = 150;
+  TEST_DATA_P uint8_t bins[] = { 0, 10, 30, 50, 60, 70 };
+  TEST_DATA_P uint8_t values[] = { 0, 20, 40, 80, 120, 150 };
+  populate_2dtable_P(&flexFuelTable, values, bins);  
 }
 
 static void test_corrections_flex_flex_off(void) {
@@ -654,18 +639,9 @@ static void test_corrections_flex_flex_on(void) {
 uint8_t correctionFuelTemp(void);
 
 static void setupFuelTempTable(void) {
-  configPage10.fuelTempBins[0] = 0;
-  configPage10.fuelTempValues[0] = 0;
-  configPage10.fuelTempBins[1] = 10;
-  configPage10.fuelTempValues[1] = 20;
-  configPage10.fuelTempBins[2] = 30;
-  configPage10.fuelTempValues[2] = 40;
-  configPage10.fuelTempBins[3] = 50;
-  configPage10.fuelTempValues[3] = 80;
-  configPage10.fuelTempBins[4] = 60;
-  configPage10.fuelTempValues[4] = 120;
-  configPage10.fuelTempBins[5] = 70;
-  configPage10.fuelTempValues[5] = 150;  
+  TEST_DATA_P uint8_t bins[] = { 0, 10, 30, 50, 60, 70 };
+  TEST_DATA_P uint8_t values[] = { 0, 20, 40, 80, 120, 150 };
+  populate_2dtable_P(&fuelTempTable, values, bins);   
 }
 
 static void test_corrections_fueltemp_off(void) {
@@ -697,18 +673,9 @@ uint8_t correctionBatVoltage(void);
 static void setup_battery_correction(void) {
   initialiseAll();
 
-  configPage6.voltageCorrectionBins[0]      = 60;
-  configPage6.injVoltageCorrectionValues[0] = 115;
-  configPage6.voltageCorrectionBins[1]      = 70;
-  configPage6.injVoltageCorrectionValues[1] = 110;
-  configPage6.voltageCorrectionBins[2]      = 80;
-  configPage6.injVoltageCorrectionValues[2] = 105;
-  configPage6.voltageCorrectionBins[3]      = 90;
-  configPage6.injVoltageCorrectionValues[3] = 100;
-  configPage6.voltageCorrectionBins[4]      = 100;
-  configPage6.injVoltageCorrectionValues[4] = 95;
-  configPage6.voltageCorrectionBins[5]      = 110;
-  configPage6.injVoltageCorrectionValues[5] = 90;
+  TEST_DATA_P uint8_t bins[] = { 60, 70, 80, 90, 100, 110 };
+  TEST_DATA_P uint8_t values[] = { 115, 110, 105, 100, 95, 90 };
+  populate_2dtable_P(&injectorVCorrectionTable, values, bins);   
 }
 
 static void test_corrections_bat_mode_wholePw(void) {
@@ -925,16 +892,9 @@ static void test_corrections_TAE_setup()
 {
   configPage2.aeMode = AE_MODE_TPS; //Set AE to TPS
 
-  configPage4.taeValues[0] = 70;
-  configPage4.taeValues[1] = 103; 
-  configPage4.taeValues[2] = 124;
-  configPage4.taeValues[3] = 136; 
-
-  //Note: These values are divided by 10
-  configPage4.taeBins[0] = 0;
-  configPage4.taeBins[1] = 8; 
-  configPage4.taeBins[2] = 22;
-  configPage4.taeBins[3] = 97; 
+  TEST_DATA_P uint8_t bins[] = { 0, 8, 22, 97 };
+  TEST_DATA_P uint8_t values[] = { 70, 103, 124, 136 };
+  populate_2dtable_P(&taeTable, values, bins); 
   
   configPage2.taeThresh = 0;
   configPage2.taeMinChange = 0;
@@ -1099,17 +1059,10 @@ static void test_corrections_MAE_setup()
 {
   configPage2.aeMode = AE_MODE_MAP; //Set AE to TPS
 
-  configPage4.maeRates[0] = 70;
-  configPage4.maeRates[1] = 103; 
-  configPage4.maeRates[2] = 124;
-  configPage4.maeRates[3] = 136; 
+  TEST_DATA_P uint8_t bins[] = { 0, 15, 19, 50 };
+  TEST_DATA_P uint8_t values[] = { 70, 103, 124, 136 };
+  populate_2dtable_P(&maeTable, values, bins); 
 
-  //Note: These values are divided by 10
-  configPage4.maeBins[0] = 0;
-  configPage4.maeBins[1] = 15; 
-  configPage4.maeBins[2] = 19;
-  configPage4.maeBins[3] = 50; 
-  
   configPage2.maeThresh = 0;
   configPage2.maeMinChange = 0;
 

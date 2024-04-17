@@ -4,7 +4,9 @@
 #include <stdint.h>
 #include <unity.h>
 #include <Arduino.h>
+#include <unity.h>
 #include "table2d.h"
+#include "table3d.h"
 
 // Unity macro to reduce memory usage (RAM, .bss)
 //
@@ -45,7 +47,6 @@ for ( UNITY_FILENAME_RESTORE, _ufname_done = ufname_set(__FILE__);              
     _ufname_done; _ufname_done = 0 )
 
 // ============================ end SET_UNITY_FILENAME ============================ 
-
 
 // Store test data in flash, if feasible.
 #if defined(PROGMEM)
@@ -108,10 +109,32 @@ static inline void populate_table_P(table3d_t &table,
   }
 }
 
+
+// Populate a 2d table with constant values
 static inline void populate_2dtable(table2D *pTable, uint8_t value, uint8_t bin) {
   for (uint8_t index=0; index<pTable->xSize; ++index) {
     ((uint8_t*)pTable->values)[index] = value;
     ((uint8_t*)pTable->axisX)[index] = bin;
   }
   pTable->cacheTime = UINT8_MAX;
+}
+
+template <typename TValue, typename TBin>
+static inline void populate_2dtable(table2D *pTable, const TValue values[], const TBin bins[]) {
+  memcpy(pTable->axisX, bins, pTable->xSize * sizeof(TBin));
+  memcpy(pTable->values, values, pTable->xSize * sizeof(TValue));
+  pTable->cacheTime = UINT8_MAX;
+}
+
+// Populate a 2d table (from PROGMEM if available)
+// You would typically declare the 2 source arrays using TEST_DATA_P
+template <typename TValue, typename TBin>
+static inline void populate_2dtable_P(table2D *pTable, const TValue values[], const TBin bins[]) {
+#if defined(PROGMEM)
+  memcpy_P(pTable->axisX, bins, pTable->xSize * sizeof(TBin));
+  memcpy_P(pTable->values, values, pTable->xSize * sizeof(TValue));
+  pTable->cacheTime = UINT8_MAX;
+#else
+  populate_2dtable(pTable, values, bins)
+#endif
 }
