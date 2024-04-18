@@ -70,8 +70,9 @@ static void test_correctionCrankingFixedTiming_crank_coolant(void) {
     BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
     configPage2.crkngAddCLTAdv = 1;
     configPage4.CrankAng = 8;
+    currentStatus.coolant = 105 - CALIBRATION_TEMPERATURE_OFFSET;
 
-    TEST_ASSERT_EQUAL(14, correctionCrankingFixedTiming(8));
+    TEST_ASSERT_EQUAL(1, correctionCrankingFixedTiming(8));
 }
 
 static void test_correctionCrankingFixedTiming(void) {

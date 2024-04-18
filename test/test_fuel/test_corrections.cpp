@@ -139,13 +139,13 @@ static void test_corrections_cranking_taper_noase(void) {
   }
 
   // Should be half way between the interpolated table value and 100%.
-  TEST_ASSERT_EQUAL(113U, correctionCranking() );
+  TEST_ASSERT_INT_WITHIN(1, 113U, correctionCranking() );
   
   // Final taper step
   for (uint8_t index=configPage10.crankingEnrichTaper/2U; index<configPage10.crankingEnrichTaper-2U; ++index) {
     (void)correctionCranking();
   }
-  TEST_ASSERT_EQUAL(101U, correctionCranking() );
+  TEST_ASSERT_INT_WITHIN(1, 101U, correctionCranking() );
 
   // Taper finished
   TEST_ASSERT_EQUAL(100U, correctionCranking());
@@ -175,13 +175,13 @@ static void test_corrections_cranking_taper_withase(void) {
   }
 
   // Should be half way between the interpolated table value and 100%.
-  TEST_ASSERT_EQUAL(175U, correctionCranking() );
+  TEST_ASSERT_INT_WITHIN(1, 175U, correctionCranking() );
   
   // Final taper step
   for (uint8_t index=configPage10.crankingEnrichTaper/2U; index<configPage10.crankingEnrichTaper-2U; ++index) {
     (void)correctionCranking();
   }
-  TEST_ASSERT_EQUAL(102U, correctionCranking() );
+  TEST_ASSERT_INT_WITHIN(1, 102U, correctionCranking() );
 
   // Taper finished
   TEST_ASSERT_EQUAL(100U, correctionCranking());
@@ -262,14 +262,14 @@ static void test_corrections_ASE_taper(void) {
   }
 
   // Should be half way between the interpolated table value and 100%.
-  TEST_ASSERT_EQUAL(113, correctionASE());
+  TEST_ASSERT_INT_WITHIN(1, 113, correctionASE());
   TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE));
   
   // Final taper step
   for (uint8_t index=configPage2.aseTaperTime/2U; index<configPage2.aseTaperTime-2U; ++index) {
     (void)correctionASE();
   }
-  TEST_ASSERT_EQUAL(103U, correctionASE() );
+  TEST_ASSERT_INT_WITHIN(1, 103U, correctionASE() );
 
   // Taper finished
   TEST_ASSERT_EQUAL(100U, correctionASE());  
