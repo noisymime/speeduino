@@ -872,6 +872,13 @@ struct config2 {
   } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 #endif
 
+#define IDLEADVANCE_MODE_OFF      0U
+#define IDLEADVANCE_MODE_ADDED    1U
+#define IDLEADVANCE_MODE_SWITCHED 2U
+
+#define IDLEADVANCE_ALGO_TPS      0U
+#define IDLEADVANCE_ALGO_CTPS     1U
+
 /** Page 4 of the config - variables required for ignition and rpm/crank phase /cam phase decoding.
 * See the ini file for further reference.
 */
