@@ -2,7 +2,7 @@
 #include <speeduino.h>
 #include <unity.h>
 #include "test_PW.h"
-#include "init.h"
+// #include "init.h"
 #include "../test_utils.h"
 
 #define PW_ALLOWED_ERROR  30
@@ -30,7 +30,7 @@ int injOpen;
 
 void test_PW_setCommon()
 {
-  initialiseAll();
+  // initialiseAll();
   REQ_FUEL = 1060;
   VE = 130;
   MAP = 94;

@@ -1,10 +1,12 @@
 #include <unity.h>
 #include "globals.h"
 #include "corrections.h"
-#include "init.h"
+// #include "init.h"
 #include "idle.h"
 #include "../test_utils.h"
 #include "sensors.h"
+
+extern void construct2dTables(void);
 
 extern int8_t correctionFixedTiming(int8_t advance);
 
@@ -30,7 +32,8 @@ static void test_correctionFixedTiming(void) {
 extern int8_t correctionCLTadvance(int8_t advance);
 
 static void setup_clt_advance_table(void) {
-  initialiseAll();
+  construct2dTables();
+  initialiseCorrections();
   TEST_DATA_P uint8_t bins[] = { 60, 70, 80, 90, 100, 110 };
   TEST_DATA_P uint8_t values[] = { 30, 25, 20, 15, 10, 5 };
   populate_2dtable_P(&CLTAdvanceTable, values, bins);
@@ -84,7 +87,8 @@ static void test_correctionCrankingFixedTiming(void) {
 extern int8_t correctionFlexTiming(int8_t advance);
 
 static void setup_flexAdv(void) {
-  initialiseAll();
+  construct2dTables();
+  initialiseCorrections();
   TEST_DATA_P uint8_t bins[] = { 30, 40, 50, 60, 70, 80 };
   TEST_DATA_P uint8_t values[] = { 30, 25, 20, 15, 10, 5 };
   populate_2dtable_P(&flexAdvTable, values, bins);
@@ -115,7 +119,8 @@ static void test_correctionFlexTiming(void) {
 extern int8_t correctionWMITiming(int8_t advance);
 
 static void setup_WMIAdv(void) {
-    initialiseAll();
+    construct2dTables();
+    initialiseCorrections();
 
     configPage10.wmiEnabled= 1;
     configPage10.wmiAdvEnabled = 1;
@@ -205,7 +210,8 @@ static void test_correctionWMITiming(void) {
 extern int8_t correctionIATretard(int8_t advance);
 
 static void setup_IATRetard(void) {
-  initialiseAll();
+  construct2dTables();
+  initialiseCorrections();
 
   TEST_DATA_P uint8_t bins[] = { 30, 40, 50, 60, 70, 80 };
   TEST_DATA_P uint8_t values[] = { 30, 25, 20, 15, 10, 5 };
@@ -238,7 +244,8 @@ static void setup_idleadv_ctps(void) {
 }
 
 static void setup_correctionIdleAdvance(void) {
-    initialiseAll();
+    construct2dTables();
+    initialiseCorrections();
 
     TEST_DATA_P uint8_t bins[] = { 30, 40, 50, 60, 70, 80 };
     TEST_DATA_P uint8_t values[] = { 30, 25, 20, 15, 10, 5 };
@@ -363,8 +370,9 @@ static void test_correctionIdleAdvance(void) {
 extern int8_t correctionSoftRevLimit(int8_t advance);
 
 static void setup_correctionSoftRevLimit(void) {
-    initialiseAll();
-  
+    construct2dTables();
+    initialiseCorrections();
+
     configPage6.engineProtectType = PROTECT_CUT_IGN;
     configPage4.SoftRevLim = 50;
     configPage4.SoftLimMax = 1;
@@ -675,7 +683,9 @@ static void test_correctionKnock(void) {
 }
 
 static void setup_correctionsDwell(void) {
-    initialiseAll();
+    construct2dTables();
+    initialiseCorrections();
+    
     configPage4.sparkDur = 10;
     configPage2.perToothIgn = false;
     configPage4.dwellErrCorrect = 0;
