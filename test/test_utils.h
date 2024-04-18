@@ -8,6 +8,16 @@
 #include "table2d.h"
 #include "table3d.h"
 
+template<size_t MAX_LEN, size_t N>
+constexpr void STR_LEN_CHECK(char const (&)[N]) 
+{
+    static_assert(N < MAX_LEN, "String overflow!");
+}
+
+#if !defined(_countof)
+#define _countof(x) (sizeof(x) / sizeof (x[0]))
+#endif
+
 // Unity macro to reduce memory usage (RAM, .bss)
 //
 // Unity supplied RUN_TEST captures the function name
@@ -20,6 +30,8 @@
 #define RUN_TEST_P(func) \
   { \
     char funcName[128]; \
+    constexpr size_t bufferLen = _countof(funcName); \
+    STR_LEN_CHECK<bufferLen>(#func); \
     strcpy_P(funcName, PSTR(#func)); \
     UnityDefaultTestRun(func, funcName, __LINE__); \
   }
