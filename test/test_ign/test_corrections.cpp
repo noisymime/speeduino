@@ -763,12 +763,25 @@ static void test_correctionsDwell_sets_dwellCorrection(void) {
     TEST_ASSERT_EQUAL(115, currentStatus.dwellCorrection);
 }
 
+static void test_correctionsDwell_uses_batvcorrection(void) {
+    setup_correctionsDwell();
+    configPage2.nCylinders = 8;
+    configPage4.sparkMode = IGN_MODE_WASTED;
+
+    currentStatus.battery10 = 105;
+    TEST_ASSERT_EQUAL(296, correctionsDwell(800));
+
+    currentStatus.battery10 = 65;
+    TEST_ASSERT_EQUAL(337, correctionsDwell(800));
+}
+
 static void test_correctionsDwell(void) {
     RUN_TEST_P(test_correctionsDwell_nopertooth);
     RUN_TEST_P(test_correctionsDwell_pertooth);
     RUN_TEST_P(test_correctionsDwell_wasted_nopertooth_largerevolutiontime);
     RUN_TEST_P(test_correctionsDwell_initialises_current_actualDwell);
     RUN_TEST_P(test_correctionsDwell_sets_dwellCorrection);
+    RUN_TEST_P(test_correctionsDwell_uses_batvcorrection);
 }
 
 void testIgnCorrections(void) {
