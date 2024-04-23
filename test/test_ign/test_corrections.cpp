@@ -15,6 +15,7 @@ static void test_correctionFixedTiming_inactive(void) {
     configPage4.FixAng = 13;
 
     TEST_ASSERT_EQUAL(8, correctionFixedTiming(8));
+    TEST_ASSERT_EQUAL(-3, correctionFixedTiming(-3));
 }
 
 static void test_correctionFixedTiming_active(void) {
@@ -22,6 +23,7 @@ static void test_correctionFixedTiming_active(void) {
     configPage4.FixAng = 13;
 
     TEST_ASSERT_EQUAL(configPage4.FixAng, correctionFixedTiming(8));
+    TEST_ASSERT_EQUAL(configPage4.FixAng, correctionFixedTiming(-3));
 }
 
 static void test_correctionFixedTiming(void) {
@@ -43,7 +45,13 @@ static void test_correctionCLTadvance_lookup(void) {
     setup_clt_advance_table();
 
     currentStatus.coolant = 105 - CALIBRATION_TEMPERATURE_OFFSET;
-    TEST_ASSERT_EQUAL(1, correctionCLTadvance(8));
+    TEST_ASSERT_EQUAL(8 + 8 - 15, correctionCLTadvance(8));
+
+    currentStatus.coolant = 65 - CALIBRATION_TEMPERATURE_OFFSET;
+    TEST_ASSERT_EQUAL(1 + 28 - 15, correctionCLTadvance(1));
+
+    currentStatus.coolant = 105 - CALIBRATION_TEMPERATURE_OFFSET;
+    TEST_ASSERT_EQUAL(-3 + 8 - 15, correctionCLTadvance(-3));
 }
 
 static void test_correctionCLTadvance(void) {
@@ -63,8 +71,11 @@ static void test_correctionCrankingFixedTiming_crank_fixed(void) {
     setup_clt_advance_table();
     BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
     configPage2.crkngAddCLTAdv = 0;
-    configPage4.CrankAng = 8;
 
+    configPage4.CrankAng = 8;
+    TEST_ASSERT_EQUAL(configPage4.CrankAng, correctionCrankingFixedTiming(-7));
+
+    configPage4.CrankAng = -8;
     TEST_ASSERT_EQUAL(configPage4.CrankAng, correctionCrankingFixedTiming(-7));
 }
 
@@ -72,10 +83,11 @@ static void test_correctionCrankingFixedTiming_crank_coolant(void) {
     setup_clt_advance_table();
     BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
     configPage2.crkngAddCLTAdv = 1;
+    
     configPage4.CrankAng = 8;
-    currentStatus.coolant = 105 - CALIBRATION_TEMPERATURE_OFFSET;
 
-    TEST_ASSERT_EQUAL(1, correctionCrankingFixedTiming(8));
+    currentStatus.coolant = 65 - CALIBRATION_TEMPERATURE_OFFSET;
+    TEST_ASSERT_EQUAL(1 + 28 - 15, correctionCLTadvance(1));
 }
 
 static void test_correctionCrankingFixedTiming(void) {
@@ -102,13 +114,18 @@ static void test_correctionFlexTiming_inactive(void) {
     configPage2.flexEnabled = 0;
 
     TEST_ASSERT_EQUAL(-7, correctionFlexTiming(-7));
+    TEST_ASSERT_EQUAL(3, correctionFlexTiming(3));
 }
 
 static void test_correctionFlexTiming_table_lookup(void) {
     setup_flexAdv();
 
-    TEST_ASSERT_EQUAL(-14, correctionFlexTiming(8));
-    TEST_ASSERT_EQUAL(18-OFFSET_IGNITION, currentStatus.flexIgnCorrection);    
+    TEST_ASSERT_EQUAL(8 + 18 - OFFSET_IGNITION, correctionFlexTiming(8));
+    TEST_ASSERT_EQUAL(18 - OFFSET_IGNITION, currentStatus.flexIgnCorrection);    
+
+    currentStatus.ethanolPct = 35;
+    TEST_ASSERT_EQUAL(-4 + 28 - OFFSET_IGNITION, correctionFlexTiming(-4));
+    TEST_ASSERT_EQUAL(28 - OFFSET_IGNITION, currentStatus.flexIgnCorrection);    
 }
 
 static void test_correctionFlexTiming(void) {
@@ -129,7 +146,7 @@ static void setup_WMIAdv(void) {
     currentStatus.TPS = configPage10.wmiTPS + 1;
     configPage10.wmiRPM = 30;
     currentStatus.RPM = configPage10.wmiRPM + 1U;
-    configPage10.wmiMAP = 75;
+    configPage10.wmiMAP = 35;
     currentStatus.MAP = (configPage10.wmiMAP*2L)+1L;
     configPage10.wmiIAT = 155;
     currentStatus.IAT = configPage10.wmiIAT - CALIBRATION_TEMPERATURE_OFFSET + 1;
@@ -142,7 +159,11 @@ static void setup_WMIAdv(void) {
 static void test_correctionWMITiming_table_lookup(void) {
     setup_WMIAdv();
 
-    TEST_ASSERT_EQUAL(-24, correctionWMITiming(8));
+    currentStatus.MAP = (55*2U)+1U;
+    TEST_ASSERT_EQUAL(8 + 18 - OFFSET_IGNITION, correctionWMITiming(8));
+
+    currentStatus.MAP = (35*2U)+1U;
+    TEST_ASSERT_EQUAL(-4 + 28 - OFFSET_IGNITION, correctionWMITiming(-4));
 }
 
 static void test_correctionWMITiming_wmidisabled_inactive(void) {
@@ -150,6 +171,7 @@ static void test_correctionWMITiming_wmidisabled_inactive(void) {
     configPage10.wmiEnabled= 0;
 
     TEST_ASSERT_EQUAL(8, correctionWMITiming(8));
+    TEST_ASSERT_EQUAL(-3, correctionWMITiming(-3));
 }
 
 
@@ -158,6 +180,7 @@ static void test_correctionWMITiming_wmiadvdisabled_inactive(void) {
     configPage10.wmiAdvEnabled = 0;
 
     TEST_ASSERT_EQUAL(8, correctionWMITiming(8));
+    TEST_ASSERT_EQUAL(-3, correctionWMITiming(-3));
 }
 
 static void test_correctionWMITiming_empty_inactive(void) {
@@ -165,6 +188,7 @@ static void test_correctionWMITiming_empty_inactive(void) {
     BIT_SET(currentStatus.status4, BIT_STATUS4_WMI_EMPTY);
 
     TEST_ASSERT_EQUAL(8, correctionWMITiming(8));
+    TEST_ASSERT_EQUAL(-3, correctionWMITiming(-3));
 }
 
 static void test_correctionWMITiming_tpslow_inactive(void) {
@@ -172,6 +196,7 @@ static void test_correctionWMITiming_tpslow_inactive(void) {
     currentStatus.TPS = configPage10.wmiTPS - 1;
 
     TEST_ASSERT_EQUAL(8, correctionWMITiming(8));
+    TEST_ASSERT_EQUAL(-3, correctionWMITiming(-3));
 }
 
 static void test_correctionWMITiming_rpmlow_inactive(void) {
@@ -179,6 +204,7 @@ static void test_correctionWMITiming_rpmlow_inactive(void) {
     currentStatus.RPM = configPage10.wmiRPM - 1U;
 
     TEST_ASSERT_EQUAL(8, correctionWMITiming(8));
+    TEST_ASSERT_EQUAL(-3, correctionWMITiming(-3));
 }
    
 static void test_correctionWMITiming_maplow_inactive(void) {
@@ -186,6 +212,7 @@ static void test_correctionWMITiming_maplow_inactive(void) {
     currentStatus.MAP = (configPage10.wmiMAP*2)-1;
 
     TEST_ASSERT_EQUAL(8, correctionWMITiming(8));
+    TEST_ASSERT_EQUAL(-3, correctionWMITiming(-3));
 }
     
 static void test_correctionWMITiming_iatlow_inactive(void) {
@@ -193,6 +220,7 @@ static void test_correctionWMITiming_iatlow_inactive(void) {
     currentStatus.IAT = configPage10.wmiIAT - CALIBRATION_TEMPERATURE_OFFSET - 1;
 
     TEST_ASSERT_EQUAL(8, correctionWMITiming(8));
+    TEST_ASSERT_EQUAL(-3, correctionWMITiming(-3));
 }   
 
 static void test_correctionWMITiming(void) {
@@ -223,7 +251,10 @@ static void setup_IATRetard(void) {
 static void test_correctionIATretard_table_lookup(void) {
     setup_IATRetard();
 
-    TEST_ASSERT_EQUAL(-19, correctionIATretard(-11));
+    TEST_ASSERT_EQUAL(-11-8, correctionIATretard(-11));
+
+    currentStatus.IAT = 35;
+    TEST_ASSERT_EQUAL(11-28, correctionIATretard(11));
 }
 
 static void test_correctionIATretard(void) {
@@ -260,34 +291,45 @@ static void setup_correctionIdleAdvance(void) {
 
     runSecsX10 = configPage2.idleAdvDelay * 5;
     BIT_SET(currentStatus.engine, BIT_ENGINE_RUN);
+    // int idleRPMdelta = (currentStatus.CLIdleTarget - (currentStatus.RPM / 10) ) + 50;
+    currentStatus.CLIdleTarget = 100;
     currentStatus.RPM = (configPage2.idleAdvRPM * 100) - 1U;
-    currentStatus.CLIdleTarget = (currentStatus.RPM-100)/100;
     
     setup_idleadv_tps();
     // Run once to initialise internal state
     correctionIdleAdvance(8);
 }
 
+static void assert_correctionIdleAdvance(int8_t advance, uint8_t expectedLookupValue) {
+    configPage2.idleAdvEnabled = IDLEADVANCE_MODE_ADDED;
+    TEST_ASSERT_EQUAL(advance + expectedLookupValue - 15, correctionIdleAdvance(advance));
+
+    configPage2.idleAdvEnabled = IDLEADVANCE_MODE_SWITCHED;
+    TEST_ASSERT_EQUAL(expectedLookupValue - 15, correctionIdleAdvance(advance));
+}
+
 static void test_correctionIdleAdvance_tps_lookup_nodelay(void) {
     setup_correctionIdleAdvance();
 
     setup_idleadv_tps();
-    configPage2.idleAdvEnabled = IDLEADVANCE_MODE_ADDED;
-    TEST_ASSERT_EQUAL(23, correctionIdleAdvance(8));
 
-    configPage2.idleAdvEnabled = IDLEADVANCE_MODE_SWITCHED;
-    TEST_ASSERT_EQUAL(15, correctionIdleAdvance(8));
+    currentStatus.RPM = (currentStatus.CLIdleTarget * 10) + 100;
+    assert_correctionIdleAdvance(8, 25);
+
+    currentStatus.RPM = (currentStatus.CLIdleTarget * 10) - 100;
+    assert_correctionIdleAdvance(-3, 15);
 }
 
 static void test_correctionIdleAdvance_ctps_lookup_nodelay(void) {
     setup_correctionIdleAdvance();
 
     setup_idleadv_ctps();
-    configPage2.idleAdvEnabled = IDLEADVANCE_MODE_ADDED;
-    TEST_ASSERT_EQUAL(23, correctionIdleAdvance(8));
 
-    configPage2.idleAdvEnabled = IDLEADVANCE_MODE_SWITCHED;
-    TEST_ASSERT_EQUAL(15, correctionIdleAdvance(8));
+    currentStatus.RPM = (currentStatus.CLIdleTarget * 10) + 100;
+    assert_correctionIdleAdvance(8, 25);
+
+    currentStatus.RPM = (currentStatus.CLIdleTarget * 10) - 100;
+    assert_correctionIdleAdvance(-3, 15);
 }
 
 static void test_correctionIdleAdvance_inactive_notrunning(void) {
@@ -376,7 +418,7 @@ static void setup_correctionSoftRevLimit(void) {
     configPage6.engineProtectType = PROTECT_CUT_IGN;
     configPage4.SoftRevLim = 50;
     configPage4.SoftLimMax = 1;
-    configPage4.SoftLimRetard = -5;
+    configPage4.SoftLimRetard = 5;
     configPage2.SoftLimitMode = SOFT_LIMIT_FIXED;
 
     currentStatus.RPMdiv100 = configPage4.SoftRevLim + 1;
@@ -385,48 +427,60 @@ static void setup_correctionSoftRevLimit(void) {
     BIT_CLEAR(LOOP_TIMER, BIT_TIMER_10HZ);
 }
 
+static void assert_correctionSoftRevLimit(int8_t advance) {
+    configPage2.SoftLimitMode = SOFT_LIMIT_FIXED;
+    TEST_ASSERT_EQUAL(configPage4.SoftLimRetard, correctionSoftRevLimit(advance));
+    TEST_ASSERT_BIT_HIGH(BIT_SPARK_SFTLIM , currentStatus.spark);
+
+    BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
+    configPage2.SoftLimitMode = SOFT_LIMIT_RELATIVE;
+    TEST_ASSERT_EQUAL(advance-configPage4.SoftLimRetard, correctionSoftRevLimit(advance));
+    TEST_ASSERT_BIT_HIGH(BIT_SPARK_SFTLIM , currentStatus.spark);
+}
+
 static void test_correctionSoftRevLimit_modes(void) {
     setup_correctionSoftRevLimit();
-    configPage4.SoftLimRetard = -5;
 
-    configPage2.SoftLimitMode = SOFT_LIMIT_FIXED;
-    TEST_ASSERT_EQUAL(-5, correctionSoftRevLimit(8));
-    TEST_ASSERT_BIT_HIGH(BIT_SPARK_SFTLIM , currentStatus.spark);
-
-    configPage2.SoftLimitMode = SOFT_LIMIT_RELATIVE;
-    TEST_ASSERT_EQUAL(13, correctionSoftRevLimit(8));
-    TEST_ASSERT_BIT_HIGH(BIT_SPARK_SFTLIM , currentStatus.spark);
+    assert_correctionSoftRevLimit(8);
+    assert_correctionSoftRevLimit(-3);
 }
 
 static void test_correctionSoftRevLimit_inactive_protecttype(void) {
     setup_correctionSoftRevLimit();
 
     configPage6.engineProtectType = PROTECT_CUT_OFF;
+    BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM);
     TEST_ASSERT_EQUAL(8, correctionSoftRevLimit(8));
     TEST_ASSERT_BIT_LOW(BIT_SPARK_SFTLIM , currentStatus.spark);
 
     configPage6.engineProtectType = PROTECT_CUT_FUEL;
+    BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM);
     TEST_ASSERT_EQUAL(8, correctionSoftRevLimit(8));
     TEST_ASSERT_BIT_LOW(BIT_SPARK_SFTLIM , currentStatus.spark);
 }
 
 static void test_correctionSoftRevLimit_inactive_rpmtoohigh(void) {
     setup_correctionSoftRevLimit();
-    TEST_ASSERT_EQUAL(-5, correctionSoftRevLimit(8));
+    assert_correctionSoftRevLimit(8);
 
     currentStatus.RPMdiv100 = configPage4.SoftRevLim-1;
+    BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM);
     TEST_ASSERT_EQUAL(8, correctionSoftRevLimit(8));
     TEST_ASSERT_BIT_LOW(BIT_SPARK_SFTLIM , currentStatus.spark);
 }
 
 static void test_correctionSoftRevLimit_timeout(void) {
     setup_correctionSoftRevLimit();
+
     configPage4.SoftLimMax = 3;
+    configPage2.SoftLimitMode = SOFT_LIMIT_RELATIVE;
     BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
-    TEST_ASSERT_EQUAL(-5, correctionSoftRevLimit(8));
-    TEST_ASSERT_EQUAL(-5, correctionSoftRevLimit(8));
-    TEST_ASSERT_EQUAL(-5, correctionSoftRevLimit(8));
+    TEST_ASSERT_EQUAL(8-configPage4.SoftLimRetard, correctionSoftRevLimit(8));
+    TEST_ASSERT_EQUAL(-5-configPage4.SoftLimRetard, correctionSoftRevLimit(-5));
+    TEST_ASSERT_EQUAL(23-configPage4.SoftLimRetard, correctionSoftRevLimit(23));
+    TEST_ASSERT_EQUAL(-21, correctionSoftRevLimit(-21));
     TEST_ASSERT_EQUAL(8, correctionSoftRevLimit(8));
+    TEST_ASSERT_EQUAL(0, correctionSoftRevLimit(0));
 }
 
 static void test_correctionSoftRevLimit(void) {
@@ -505,9 +559,16 @@ static void setup_correctionSoftLaunch(void) {
 
 static void test_correctionSoftLaunch_on(void) {
     setup_correctionSoftLaunch();
-    configPage6.lnchRetard = -3;
 
+    configPage6.lnchRetard = -3;
     TEST_ASSERT_EQUAL(configPage6.lnchRetard, correctionSoftLaunch(-8));
+    TEST_ASSERT_TRUE(currentStatus.launchingSoft);
+    TEST_ASSERT_BIT_HIGH(BIT_SPARK_SLAUNCH, currentStatus.spark);
+
+    configPage6.lnchRetard = 3;
+    currentStatus.launchingSoft = false;
+    BIT_CLEAR(currentStatus.spark, BIT_SPARK_SLAUNCH);
+    TEST_ASSERT_EQUAL(configPage6.lnchRetard, correctionSoftLaunch(8));
     TEST_ASSERT_TRUE(currentStatus.launchingSoft);
     TEST_ASSERT_BIT_HIGH(BIT_SPARK_SLAUNCH, currentStatus.spark);
 }
@@ -581,6 +642,8 @@ static void setup_correctionSoftFlatShift(void) {
     currentStatus.clutchTrigger = 1;
     currentStatus.clutchEngagedRPM = ((configPage6.flatSArm) * 100) + 500;
     currentStatus.RPM = currentStatus.clutchEngagedRPM + 600;
+
+    BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_FLATSS);
 }
 
 static void test_correctionSoftFlatShift_on(void) {
@@ -589,6 +652,10 @@ static void test_correctionSoftFlatShift_on(void) {
 
     TEST_ASSERT_EQUAL(configPage6.flatSRetard, correctionSoftFlatShift(-8));
     TEST_ASSERT_BIT_HIGH(BIT_SPARK2_FLATSS, currentStatus.spark2);
+
+    BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_FLATSS);
+    TEST_ASSERT_EQUAL(configPage6.flatSRetard, correctionSoftFlatShift(3));
+    TEST_ASSERT_BIT_HIGH(BIT_SPARK2_FLATSS, currentStatus.spark2);
 }
 
 static void test_correctionSoftFlatShift_off_disabled(void) {
@@ -596,6 +663,7 @@ static void test_correctionSoftFlatShift_off_disabled(void) {
     configPage6.flatSRetard = -3;
     configPage6.flatSEnable = 0;
 
+    BIT_SET(currentStatus.spark2, BIT_SPARK2_FLATSS);
     TEST_ASSERT_EQUAL(-8, correctionSoftFlatShift(-8));
     TEST_ASSERT_BIT_LOW(BIT_SPARK2_FLATSS, currentStatus.spark2);
 }
@@ -605,6 +673,7 @@ static void test_correctionSoftFlatShift_off_noclutchtrigger(void) {
     configPage6.flatSRetard = -3;
     currentStatus.clutchTrigger = 0;
 
+    BIT_SET(currentStatus.spark2, BIT_SPARK2_FLATSS);
     TEST_ASSERT_EQUAL(-8, correctionSoftFlatShift(-8));
     TEST_ASSERT_BIT_LOW(BIT_SPARK2_FLATSS, currentStatus.spark2);
 }
@@ -614,6 +683,7 @@ static void test_correctionSoftFlatShift_off_clutchrpmtoolow(void) {
     configPage6.flatSRetard = -3;
     currentStatus.clutchEngagedRPM = ((configPage6.flatSArm) * 100) - 500;
 
+    BIT_SET(currentStatus.spark2, BIT_SPARK2_FLATSS);
     TEST_ASSERT_EQUAL(-8, correctionSoftFlatShift(-8));
     TEST_ASSERT_BIT_LOW(BIT_SPARK2_FLATSS, currentStatus.spark2);
 }
@@ -623,6 +693,7 @@ static void test_correctionSoftFlatShift_off_rpmnotinwindow(void) {
     configPage6.flatSRetard = -3;
     currentStatus.RPM = (currentStatus.clutchEngagedRPM - (configPage6.flatSSoftWin * 100) ) - 100;
 
+    BIT_SET(currentStatus.spark2, BIT_SPARK2_FLATSS);
     TEST_ASSERT_EQUAL(-8, correctionSoftFlatShift(-8));
     TEST_ASSERT_BIT_LOW(BIT_SPARK2_FLATSS, currentStatus.spark2);
 }
