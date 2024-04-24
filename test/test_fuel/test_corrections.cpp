@@ -975,14 +975,17 @@ static void test_corrections_TAE_setup()
 
 extern uint16_t correctionAccel(void);
 
-static void test_corrections_TAE_no_rpm_taper()
-{
-  test_corrections_TAE_setup();
-
+static void disable_AE_taper(void) {
   //Disable the taper
   currentStatus.RPM = 2000;
   configPage2.aeTaperMin = 50; //5000
   configPage2.aeTaperMax = 60; //6000
+}
+
+static void test_corrections_TAE_no_rpm_taper()
+{
+  test_corrections_TAE_setup();
+  disable_AE_taper();
 
   currentStatus.TPSlast = 0;
   currentStatus.TPS = 50; //25% actual value
@@ -993,18 +996,44 @@ static void test_corrections_TAE_no_rpm_taper()
   TEST_ASSERT_EQUAL((100+132), accelValue);
 	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
 	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+
+  // No change
+  reset_AE();
+  currentStatus.TPSlast = 50;
+  currentStatus.TPS = 50;
+  accelValue = correctionAccel(); //Run the AE calcs
+  TEST_ASSERT_EQUAL(0, currentStatus.tpsDOT);
+  TEST_ASSERT_EQUAL(100, accelValue);
+	TEST_ASSERT_BIT_LOW(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged off
+	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+
+  // Small change   
+  reset_AE();
+  currentStatus.TPSlast = 50;
+  currentStatus.TPS = 51;
+  accelValue = correctionAccel(); //Run the AE calcs
+  TEST_ASSERT_EQUAL(15, currentStatus.tpsDOT);
+  TEST_ASSERT_EQUAL(100+74, accelValue);
+	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+
+  // Large change
+  reset_AE();
+  currentStatus.TPSlast = 0;
+  currentStatus.TPS = 200;
+  accelValue = correctionAccel(); //Run the AE calcs
+  TEST_ASSERT_EQUAL(3000, currentStatus.tpsDOT);
+  TEST_ASSERT_EQUAL(100+136, accelValue);
+	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
 }
 
 static void test_corrections_TAE_negative_tpsdot()
 {
   test_corrections_TAE_setup();
+  disable_AE_taper();
 
-  //Disable the taper
-  currentStatus.RPM = 2000;
-  configPage2.aeTaperMin = 50; //5000
-  configPage2.aeTaperMax = 60; //6000
   configPage2.decelAmount = 50;
-
   currentStatus.TPSlast = 50;
   currentStatus.TPS = 0;
 
@@ -1080,11 +1109,7 @@ static void test_corrections_TAE_under_threshold()
 static void test_corrections_TAE_50pc_warmup_taper()
 {
   test_corrections_TAE_setup();
-
-  //Disable the RPM taper
-  currentStatus.RPM = 2000;
-  configPage2.aeTaperMin = 50; //5000
-  configPage2.aeTaperMax = 60; //6000
+  disable_AE_taper();
 
   currentStatus.TPSlast = 0;
   currentStatus.TPS = 50; //25% actual value
@@ -1137,20 +1162,15 @@ static void test_corrections_MAE_setup()
 	configPage2.aeColdTaperMin = 0;
 	currentStatus.coolant = (int)(configPage2.aeColdTaperMax - CALIBRATION_TEMPERATURE_OFFSET) + 1;
 
-  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); //Make sure AE is turned off
-  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_DCC); //Make sure AE is turned off
+  reset_AE();
 }
 
-static void test_corrections_MAE_negative_tpsdot()
+static void test_corrections_MAE_negative_mapdot()
 {
   test_corrections_MAE_setup();
+  disable_AE_taper();
 
-  //Disable the taper
-  currentStatus.RPM = 2000;
-  configPage2.aeTaperMin = 50; //5000
-  configPage2.aeTaperMax = 60; //6000
   configPage2.decelAmount = 50;
-
   MAPlast_time = UINT16_MAX*2UL;
   MAP_time = MAPlast_time + 25000UL; 
   MAPlast = 50;
@@ -1167,10 +1187,7 @@ static void test_corrections_MAE_negative_tpsdot()
 static void test_corrections_MAE_no_rpm_taper()
 {
   test_corrections_MAE_setup();
-
-  //Disable the taper
-  configPage2.aeTaperMin = 50; //5000
-  configPage2.aeTaperMax = 60; //6000
+  disable_AE_taper();
 
   MAPlast_time = UINT16_MAX*2UL;
   MAP_time = MAPlast_time + 25000UL; 
@@ -1178,10 +1195,65 @@ static void test_corrections_MAE_no_rpm_taper()
   currentStatus.MAP = 50;
 
   uint16_t accelValue = correctionAccel(); //Run the AE calcs
-
   TEST_ASSERT_EQUAL(400, currentStatus.mapDOT);
   TEST_ASSERT_EQUAL((100+132), accelValue);
 	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+
+  // No change
+  reset_AE();
+  MAP_time = MAPlast_time + 1000UL; 
+  MAPlast = 40;
+  currentStatus.MAP = 40;
+  accelValue = correctionAccel(); //Run the AE calcs
+  TEST_ASSERT_EQUAL(0, currentStatus.mapDOT);
+  TEST_ASSERT_EQUAL(100, accelValue);
+	TEST_ASSERT_BIT_LOW(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged off
+	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+
+  // Small change over small time period  
+  reset_AE();
+  MAP_time = MAPlast_time + 1000UL; 
+  MAPlast = 40;
+  currentStatus.MAP = 41;
+  accelValue = correctionAccel(); //Run the AE calcs
+  TEST_ASSERT_EQUAL(1000, currentStatus.mapDOT);
+  TEST_ASSERT_EQUAL((100+136), accelValue);
+	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+
+  // Small change over long (>UINT16_MAX) time period  
+  reset_AE();
+  MAP_time = MAPlast_time + UINT16_MAX*2; 
+  MAPlast = 40;
+  currentStatus.MAP = 41;
+  accelValue = correctionAccel(); //Run the AE calcs
+  TEST_ASSERT_EQUAL(15, currentStatus.mapDOT);
+  TEST_ASSERT_EQUAL(100+72, accelValue);
+	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+
+  // Large change over small time period  
+  reset_AE();
+  MAP_time = MAPlast_time + 1000UL; 
+  MAPlast = 10;
+  currentStatus.MAP = 1000;
+  accelValue = correctionAccel(); //Run the AE calcs
+  TEST_ASSERT_EQUAL(6960, currentStatus.mapDOT);
+  TEST_ASSERT_EQUAL((100+136), accelValue);
+	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+
+  // Large change over long (>UINT16_MAX) time period  
+  reset_AE();
+  MAP_time = MAPlast_time + UINT16_MAX*2; 
+  MAPlast = 10;
+  currentStatus.MAP = 1000;
+  accelValue = correctionAccel(); //Run the AE calcs
+  TEST_ASSERT_EQUAL(14850, currentStatus.mapDOT);
+  TEST_ASSERT_EQUAL(100+136, accelValue);
+	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged pn  
+	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
 }
 
 static void test_corrections_MAE_50pc_rpm_taper()
@@ -1251,10 +1323,7 @@ static void test_corrections_MAE_under_threshold()
 static void test_corrections_MAE_50pc_warmup_taper()
 {
   test_corrections_MAE_setup();
-
-  //Disable the RPM taper
-  configPage2.aeTaperMin = 50; //5000
-  configPage2.aeTaperMax = 60; //6000
+  disable_AE_taper();
 
   MAPlast_time = UINT16_MAX*2UL;
   MAP_time = MAPlast_time + 25000UL; 
@@ -1277,7 +1346,7 @@ static void test_corrections_MAE_50pc_warmup_taper()
 
 static void test_corrections_MAE()
 {
-  RUN_TEST_P(test_corrections_MAE_negative_tpsdot);
+  RUN_TEST_P(test_corrections_MAE_negative_mapdot);
   RUN_TEST_P(test_corrections_MAE_no_rpm_taper);
   RUN_TEST_P(test_corrections_MAE_50pc_rpm_taper);
   RUN_TEST_P(test_corrections_MAE_110pc_rpm_taper);
