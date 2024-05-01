@@ -856,6 +856,8 @@ static void test_correctionsDwell(void) {
 }
 
 void testIgnCorrections(void) {
+    Unity.TestFile = __FILE__;
+
     test_correctionFixedTiming();
     test_correctionCLTadvance();
     test_correctionCrankingFixedTiming();
