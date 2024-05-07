@@ -1,6 +1,8 @@
 #ifndef COMMS_SECONDARY_H
 #define COMMS_SECONDARY_H
 
+#include <Arduino.h>
+
 #define NEW_CAN_PACKET_SIZE   123
 #define CAN_PACKET_SIZE   75
 

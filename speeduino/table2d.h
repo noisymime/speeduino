@@ -4,7 +4,7 @@ This file is used for everything related to maps/tables including their definiti
 #ifndef TABLE_H
 #define TABLE_H
 
-#include "globals.h"
+#include <stdint.h>
 
 #define SIZE_SIGNED_BYTE    4
 #define SIZE_BYTE           8
@@ -16,9 +16,9 @@ The valueSize variable should be set to either 8 or 16 to indicate this BEFORE t
 */
 struct table2D {
   //Used 5414 RAM with original version
-  byte valueSize;
-  byte axisSize;
-  byte xSize;
+  uint8_t valueSize;
+  uint8_t axisSize;
+  uint8_t xSize;
 
   void *values;
   void *axisX;
@@ -33,7 +33,7 @@ struct table2D {
   //Store the last input and output for caching
   int16_t lastInput;
   int16_t lastOutput;
-  byte cacheTime; //Tracks when the last cache value was set so it can expire after x seconds. A timeout is required to pickup when a tuning value is changed, otherwise the old cached value will continue to be returned as the X value isn't changing. 
+  uint8_t cacheTime; //Tracks when the last cache value was set so it can expire after x seconds. A timeout is required to pickup when a tuning value is changed, otherwise the old cached value will continue to be returned as the X value isn't changing. 
 };
 
 void construct2dTable(table2D &table, uint8_t length, uint8_t *values, uint8_t *bins);
@@ -43,8 +43,8 @@ void construct2dTable(table2D &table, uint8_t length, uint8_t *values, uint16_t 
 void construct2dTable(table2D &table, uint8_t length, uint16_t *values, uint8_t *bins);
 void construct2dTable(table2D &table, uint8_t length, int16_t *values, uint8_t *bins);
 
-int16_t table2D_getAxisValue(struct table2D *fromTable, byte X_in);
-int16_t table2D_getRawValue(struct table2D *fromTable, byte X_index);
+int16_t table2D_getAxisValue(struct table2D *fromTable, uint8_t X_in);
+int16_t table2D_getRawValue(struct table2D *fromTable, uint8_t X_index);
 
 int table2D_getValue(struct table2D *fromTable, int X_in);
 

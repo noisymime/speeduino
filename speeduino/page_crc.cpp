@@ -1,4 +1,4 @@
-#include "globals.h"
+#include "src/FastCRC/FastCRC.h"
 #include "page_crc.h"
 #include "pages.h"
 #include "table3d_axis_io.h"

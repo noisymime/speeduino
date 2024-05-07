@@ -1,4 +1,5 @@
 
+#include <Arduino.h>
 #include "globals.h"
 #include "engineProtection.h"
 #include "maths.h"

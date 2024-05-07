@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <unity.h>
 #include "crankMaths.h"
 #include "decoders.h"

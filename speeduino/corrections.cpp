@@ -23,6 +23,7 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 */
 //************************************************************************************************************
 
+#include <Arduino.h>
 #include "globals.h"
 #include "corrections.h"
 #include "speeduino.h"
@@ -135,7 +136,7 @@ uint16_t correctionsFuel(void)
   currentStatus.launchCorrection = correctionLaunch();
   if (currentStatus.launchCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.launchCorrection); }
 
-  bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
+  BIT_WRITE(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
   byte dfcoTaperCorrection = correctionDFCOfuel();
   if (dfcoTaperCorrection == 0) { sumCorrections = 0; }
   else if (dfcoTaperCorrection != 100) { sumCorrections = div100(sumCorrections * dfcoTaperCorrection); }

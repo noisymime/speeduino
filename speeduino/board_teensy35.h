@@ -2,6 +2,8 @@
 #define TEENSY35_H
 #if defined(CORE_TEENSY) && defined(CORE_TEENSY35)
 
+#include <Arduino.h>
+
 /*
 ***********************************************************************************************************
 * General
