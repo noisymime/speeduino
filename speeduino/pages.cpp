@@ -413,8 +413,69 @@ page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
   }
 }
 
+// ========================= Set tune to empty support  ===================
+
+static void setTableRowToEmpty(table_row_iterator row)
+{
+  memset(&*row, 0, row.size());
+}
+
+static void setTableValuesToEmpty(table_value_iterator it)
+{
+  while (!it.at_end())
+  {
+    setTableRowToEmpty(*it);
+    ++it;
+  }
+}
+
+static void setTableAxisToEmpty(table_axis_iterator it)
+{
+  while (!it.at_end())
+  {
+    *it = 0;
+    ++it;
+  }
+}
+
+static void setTableToEmpty(const page_iterator_t &entity)
+{
+  setTableAxisToEmpty(y_begin(entity));
+  setTableAxisToEmpty(x_begin(entity));
+  setTableValuesToEmpty(rows_begin(entity));
+}
+
+
+static void setPageToEmpty(page_iterator_t entity) {
+  switch (entity.type)
+    {
+    case Raw:
+        memset(entity.pData, 0, entity.size);
+        break;
+
+    case Table:
+        return setTableToEmpty(entity);
+        break;
+
+    case NoEntity:
+    default:
+        // Do nothing
+        break;
+    }
+}
+
 
 // ====================================== External functions  ====================================
+
+void setTuneToEmpty(void) {
+  for (uint8_t page=1; page<getPageCount(); ++page) {
+    page_iterator_t entity = page_begin(page);
+    while (entity.type!=End) {
+      setPageToEmpty(entity);
+      entity = advance(entity);
+    }
+  }
+}
 
 uint8_t getPageCount(void)
 {

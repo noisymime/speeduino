@@ -20,6 +20,7 @@
 #include "idle.h"
 #include "table2d.h"
 #include "acc_mc33810.h"
+#include "pages.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 #if defined(EEPROM_RESET_PIN)
   #include EEPROM_LIB_H
@@ -168,7 +169,7 @@ void initialiseAll(void)
     if((configPage2.pinMapping == 255) || (configPage2.pinMapping == 0)) //255 = EEPROM value in a blank AVR; 0 = EEPROM value in new FRAM
     {
       //First time running on this board
-      resetConfigPages();
+      setTuneToEmpty();
       setPinMapping(3); //Force board to v0.4
     }
     else { setPinMapping(configPage2.pinMapping); }
