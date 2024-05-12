@@ -3526,7 +3526,7 @@ void initialiseTriggers(void)
       //36-2-1
       triggerSetup_ThirtySixMinus21();
       triggerHandler = triggerPri_ThirtySixMinus21;
-      triggerSecondaryHandler = triggerSec_missingTooth;
+      triggerSecondaryHandler = triggerSec_ThirtySixMinus21;
       getRPM = getRPM_ThirtySixMinus21;
       getCrankAngle = getCrankAngle_missingTooth; //This uses the same function as the missing tooth decoder, so no need to duplicate code
       triggerSetEndTeeth = triggerSetEndTeeth_ThirtySixMinus21;
