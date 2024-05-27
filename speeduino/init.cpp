@@ -20,7 +20,7 @@
 #include "idle.h"
 #include "table2d.h"
 #include "acc_mc33810.h"
-#include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
+#include "board_definition.h"
 #if defined(EEPROM_RESET_PIN)
   #include EEPROM_LIB_H
 #endif

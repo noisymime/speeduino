@@ -2,6 +2,7 @@
 #include "page_crc.h"
 #include "pages.h"
 #include "table3d_axis_io.h"
+#include "src/FastCRC/FastCRC.h"
 
 using pCrcCalc = uint32_t (FastCRC32::*)(const uint8_t *, const uint16_t, bool);
 

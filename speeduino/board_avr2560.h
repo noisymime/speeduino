@@ -1,9 +1,7 @@
 #ifndef AVR2560_H
 #define AVR2560_H
 
-#include "globals.h"
 #if defined(CORE_AVR)
-
 #include <avr/interrupt.h>
 #include <avr/io.h>
 
@@ -11,6 +9,20 @@
 ***********************************************************************************************************
 * General
 */
+  #define BOARD_MAX_DIGITAL_PINS 54 //digital pins +1
+  #define BOARD_MAX_IO_PINS 70 //digital pins + analog channels + 1
+  #define BOARD_MAX_ADC_PINS  15 //Number of analog pins
+  #ifndef LED_BUILTIN
+    #define LED_BUILTIN 13
+  #endif
+  
+  #ifndef INJ_CHANNELS
+    #define INJ_CHANNELS 4
+  #endif
+  #ifndef IGN_CHANNELS
+    #define IGN_CHANNELS 5
+  #endif
+
   #define PORT_TYPE uint8_t //Size of the port variables (Eg inj1_pin_port).
   #define PINMASK_TYPE uint8_t
   #define COMPARE_TYPE uint16_t

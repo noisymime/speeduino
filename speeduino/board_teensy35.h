@@ -36,6 +36,9 @@
   #define PWM_FAN_AVAILABLE
   #define pinIsReserved(pin)  ( ((pin) == 0) || ((pin) == 1) || ((pin) == 3) || ((pin) == 4) ) //Forbidden pins like USB
 
+  #define INJ_CHANNELS 8
+  #define IGN_CHANNELS 8
+
 /*
 ***********************************************************************************************************
 * Schedules

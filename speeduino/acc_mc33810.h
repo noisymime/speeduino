@@ -3,7 +3,7 @@
 
 #include <SPI.h>
 #include "globals.h"
-#include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
+#include "board_definition.h"
 
 extern volatile PORT_TYPE *mc33810_1_pin_port;
 extern volatile PINMASK_TYPE mc33810_1_pin_mask;

@@ -1,6 +1,6 @@
-#include "globals.h"
+#include "board_definition.h"
+
 #if defined(CORE_TEENSY) && defined(__IMXRT1062__)
-#include "board_teensy41.h"
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"

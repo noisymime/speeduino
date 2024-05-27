@@ -1,7 +1,6 @@
-#include "globals.h"
+#include "board_definition.h"
 
 #if defined(CORE_TEENSY) && defined(CORE_TEENSY35)
-#include "board_teensy35.h"
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"

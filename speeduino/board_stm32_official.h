@@ -135,6 +135,7 @@ void jumpToBootloader();
 #endif
 
 #define PWM_FAN_AVAILABLE
+#define BOARD_MAX_ADC_PINS  NUM_ANALOG_INPUTS-1 //Number of analog pins from core.
 
 #ifndef LED_BUILTIN
   #define LED_BUILTIN PA7
@@ -204,6 +205,13 @@ void jumpToBootloader();
 #define MAX_TIMER_PERIOD 65535*4 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
 #define uS_TO_TIMER_COMPARE(uS) ((COMPARE_TYPE)(uS>>2)) //Converts a given number of uS into the required number of timer ticks until that time has passed.
 
+#if defined(STM32F407xx) //F407 can do 8x8 STM32F401/STM32F411 don't
+  #define INJ_CHANNELS 8
+  #define IGN_CHANNELS 8
+#else
+  #define INJ_CHANNELS 4
+  #define IGN_CHANNELS 5
+#endif
 #define FUEL1_COUNTER (TIM3)->CNT
 #define FUEL2_COUNTER (TIM3)->CNT
 #define FUEL3_COUNTER (TIM3)->CNT

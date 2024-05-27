@@ -69,6 +69,9 @@
 ***********************************************************************************************************
 * Schedules
 */
+  #define INJ_CHANNELS 8
+  #define IGN_CHANNELS 8
+  
   //See : https://electronics.stackexchange.com/questions/325159/the-value-of-the-tcc-counter-on-an-atsam-controller-always-reads-as-zero
   // SAME512 Timer channel list: https://user-images.githubusercontent.com/11770912/62131781-2e150b80-b31f-11e9-9970-9a6c2356a17c.png
   #define FUEL1_COUNTER TCC0->COUNT.reg

@@ -1,5 +1,4 @@
-#include "board_stm32_official.h"
-#include "globals.h"
+#include "board_definition.h"
 
 #if defined(STM32_CORE_VERSION_MAJOR)
 #include "auxiliaries.h"
