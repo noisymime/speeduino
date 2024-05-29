@@ -36,8 +36,6 @@ void initMC33810(void)
     //Set the output states of both ICs to be off to fuel and ignition
     mc33810_1_requestedState = 0;
     mc33810_2_requestedState = 0;
-    mc33810_1_returnState = 0;
-    mc33810_2_returnState = 0;
 
     pinMode(pinMC33810_1_CS, OUTPUT);
     pinMode(pinMC33810_2_CS, OUTPUT);

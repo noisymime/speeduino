@@ -381,12 +381,12 @@ FUEL_INTERRUPT(8, TIMER5_COMPB_vect)
 ///@cond
 // Dwell smoothing macros. They are split up like this for MISRA compliance.
 #define DWELL_AVERAGE_ALPHA 30
-#define DWELL_ONE_AVERAGE_ALPHA ((int32_t)256 - DWELL_AVERAGE_ALPHA)
-#define DWELL_ACTUAL_DWELL_ALPHA (currentStatus.actualDwell * (int32_t)DWELL_AVERAGE_ALPHA)
-#define DWELL_AVERAGE(input) (int16_t)( \
-  ( (input) * \
+#define DWELL_ONE_AVERAGE_ALPHA ((uint32_t)256 - (uint32_t)DWELL_AVERAGE_ALPHA)
+#define DWELL_ACTUAL_DWELL_ALPHA (currentStatus.actualDwell * (uint32_t)DWELL_AVERAGE_ALPHA)
+#define DWELL_AVERAGE(input) (uint16_t)( \
+  ( (uint32_t)(input) * \
     DWELL_ONE_AVERAGE_ALPHA + \
-    DWELL_ACTUAL_DWELL_ALPHA) >> INT32_C(8) \
+    DWELL_ACTUAL_DWELL_ALPHA) >> UINT32_C(8) \
   )
 //#define DWELL_AVERAGE(input) (currentStatus.dwell) //Can be use to disable the above for testing
 ///@endcond
@@ -400,7 +400,7 @@ static inline void onEndIgnitionEvent(IgnitionSchedule *pSchedule) {
   pSchedule->endScheduleSetByDecoder = false;
   ignitionCount = ignitionCount + 1U; //Increment the ignition counter
   int32_t elapsed = (int32_t)(micros() - pSchedule->startTime);
-  currentStatus.actualDwell = DWELL_AVERAGE( elapsed );
+  currentStatus.actualDwell = (uint16_t)DWELL_AVERAGE( elapsed );
 }
 
 /** @brief Called when the supplied schedule transitions from a PENDING state to RUNNING */

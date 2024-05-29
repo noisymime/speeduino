@@ -32,8 +32,8 @@
 #define BIT_SET(a,b) ((a) |= (1U<<(b)))
 #define BIT_CLEAR(a,b) ((a) &= ~(1U<<(b)))
 #define BIT_CHECK(var,pos) !!((var) & (1U<<(pos)))
-#define BIT_TOGGLE(var,pos) ((var)^= 1UL << (pos))
-#define BIT_WRITE(var, pos, bitvalue) ((bitvalue) ? BIT_SET((var), (pos)) : bitClear((var), (pos)))
+#define BIT_TOGGLE(var,pos) ((var) ^= (1U << (pos)))
+#define BIT_WRITE(var, pos, bitvalue) ((bitvalue) ? BIT_SET((var), (pos)) : BIT_CLEAR((var), (pos)))
 
 #define CRANK_ANGLE_MAX (max(CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ))
 
@@ -161,8 +161,8 @@
 #define INJ_PAIR_13_24      0
 #define INJ_PAIR_14_23      1
 
-#define OUTPUT_CONTROL_DIRECT   0
-#define OUTPUT_CONTROL_MC33810  10
+#define OUTPUT_CONTROL_DIRECT   0U
+#define OUTPUT_CONTROL_MC33810  10U
 
 #define IGN_MODE_WASTED     0U
 #define IGN_MODE_SINGLE     1U
@@ -270,8 +270,8 @@
 #define FOUR_STROKE         0U
 #define TWO_STROKE          1U
 
-#define GOING_LOW         0
-#define GOING_HIGH        1
+#define GOING_LOW         0U
+#define GOING_HIGH        1U
 
 #define BATTV_COR_MODE_WHOLE 0
 #define BATTV_COR_MODE_OPENTIME 1
