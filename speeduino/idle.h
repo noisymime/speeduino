@@ -5,14 +5,14 @@
 #include "table2d.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
-#define IAC_ALGORITHM_NONE    0
-#define IAC_ALGORITHM_ONOFF   1
-#define IAC_ALGORITHM_PWM_OL  2
-#define IAC_ALGORITHM_PWM_CL  3
-#define IAC_ALGORITHM_STEP_OL 4
-#define IAC_ALGORITHM_STEP_CL 5
-#define IAC_ALGORITHM_PWM_OLCL  6 //Openloop plus closedloop IAC control
-#define IAC_ALGORITHM_STEP_OLCL  7 //Openloop plus closedloop IAC control
+#define IAC_ALGORITHM_NONE    0U
+#define IAC_ALGORITHM_ONOFF   1U
+#define IAC_ALGORITHM_PWM_OL  2U
+#define IAC_ALGORITHM_PWM_CL  3U
+#define IAC_ALGORITHM_STEP_OL 4U
+#define IAC_ALGORITHM_STEP_CL 5U
+#define IAC_ALGORITHM_PWM_OLCL  6U //Openloop plus closedloop IAC control
+#define IAC_ALGORITHM_STEP_OLCL  7U //Openloop plus closedloop IAC control
 
 #define IDLE_PIN_LOW()  *idle_pin_port &= ~(idle_pin_mask)
 #define IDLE_PIN_HIGH() *idle_pin_port |= (idle_pin_mask)
