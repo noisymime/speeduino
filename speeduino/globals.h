@@ -1329,7 +1329,9 @@ struct config10 {
 
   byte oilPressureProtTime;
 
-  byte unused11_191_191;
+  int8_t PollLevelTeeth;
+
+  //byte unused11_191_191;
 
 #if defined(CORE_AVR)
   };
