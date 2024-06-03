@@ -1,0 +1,37 @@
+name: Run codespell
+
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  codespell:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    # codespell is not installed in the runner by default
+    - name: install codespell
+      run:   |
+          sudo apt update
+          sudo apt install codespell
+
+    - name: identify codespell
+      run: codespell --version
+
+    # use latest available dictionaries
+    - name: update dictionary
+      run:    |
+          curl --output-dir /tmp --remote-name https://raw.githubusercontent.com/codespell-project/codespell/master/codespell_lib/data/dictionary.txt
+          curl --output-dir /tmp --remote-name https://raw.githubusercontent.com/codespell-project/codespell/master/codespell_lib/data/dictionary_rare.txt
+
+    # If count >0 will trigger a workflow failure, else success
+    - name: run codespell
+      run: codespell --dictionary=/tmp/dictionary.txt --dictionary=/tmp/dictionary_rare.txt --ignore-words=./.github/workflows/codespell-ignored-words.txt --count ./speeduino/
