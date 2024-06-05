@@ -86,14 +86,22 @@ using byte = uint8_t;
 * unit based values in similar variable(s) without ADC part in name (see sensors.ino for reading of sensors).
 */
 struct statuses {
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   volatile bool hasSync : 1; /**< Flag for crank/cam position being known by decoders (See decoders.ino).
   This is used for sanity checking e.g. before logging tooth history or reading some sensors and computing readings. */
+  // cppcheck-suppress misra-c2012-6.1
   bool initialisationComplete : 1; //Tracks whether the setup() function has run completely
+  // cppcheck-suppress misra-c2012-6.1
   bool clutchTrigger : 1;
+  // cppcheck-suppress misra-c2012-6.1
   bool previousClutchTrigger : 1;
+  // cppcheck-suppress misra-c2012-6.1
   volatile bool fpPrimed : 1; //Tracks whether or not the fuel pump priming has been completed yet
+  // cppcheck-suppress misra-c2012-6.1
   volatile bool injPrimed : 1; //Tracks whether or not the injector priming has been completed yet
+  // cppcheck-suppress misra-c2012-6.1
   volatile bool tachoSweepEnabled : 1;
+  // cppcheck-suppress misra-c2012-6.1
   volatile bool tachoAlt : 1;
     
   uint16_t RPM;   ///< RPM - Current Revs per minute

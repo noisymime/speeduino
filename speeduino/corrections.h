@@ -45,6 +45,5 @@ uint16_t correctionsDwell(uint16_t dwell);
 bool isFixedTimingOn(void);
 
 extern uint16_t AFRnextCycle;
-extern uint8_t aseTaper;
 
 #endif // CORRECTIONS_H

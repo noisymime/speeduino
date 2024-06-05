@@ -514,6 +514,7 @@ struct config2 {
   byte crkngAddCLTAdv : 1;
   byte includeAFR : 1; //< Enable AFR compensation ? (See also @ref config2.incorporateAFR)
   byte hardCutType : 1;
+  // cppcheck-suppress misra-c2012-6.1
   LoadSource ignAlgorithm : 3;
   byte indInjAng : 1;
   byte injOpen;     ///< Injector opening time (ms * 10)
@@ -526,6 +527,7 @@ struct config2 {
   byte nCylinders : 4; ///< Number of cylinders
 
   //config2 in ini
+  // cppcheck-suppress misra-c2012-6.1
   LoadSource fuelAlgorithm : 3;///< Fuel algorithm - 0=Manifold pressure/MAP (LOAD_SOURCE_MAP, default, proven), 1=Throttle/TPS (LOAD_SOURCE_TPS), 2=IMAP/EMAP (LOAD_SOURCE_IMAPEMAP)
   byte fixAngEnable : 1; ///< Whether fixed/locked timing is enabled (0=disable, 1=enable, See @ref configPage4.FixAng)
   byte nInjectors : 4;   ///< Number of injectors
@@ -1023,6 +1025,7 @@ struct config10 {
   byte knock_recoveryStep; //Byte 121
 
   //Byte 122
+  // cppcheck-suppress misra-c2012-6.1
   LoadSource fuel2Algorithm : 3;
   byte fuel2Mode : 3;
   byte fuel2SwitchVariable : 2;
@@ -1096,6 +1099,7 @@ struct config10 {
   byte fuelTempValues[6]; //180
 
   //Byte 186
+  // cppcheck-suppress misra-c2012-6.1
   LoadSource spark2Algorithm : 3;
   byte spark2Mode : 3;
   byte spark2SwitchVariable : 2;
