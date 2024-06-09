@@ -161,7 +161,12 @@ try {
         $cppcheckBin = Join-Path $CppcheckPath "cppcheck"
         Write-Debug "$($MyInvocation.MyCommand.Name): executing $cppcheckBin $cppCheckParameters"
         
-        & $cppcheckBin $cppCheckParameters
+        # & $cppcheckBin $cppCheckParameters
+
+        # Merge the streams first, so that stderr too goes to the success stream, 
+        # then decide based on the type whether to pass the line through (stdout)
+        # or to collect them in list $stderr.
+        (& $cppcheckBin $cppCheckParameters) | ForEach-Object { if (-not $Quiet) { Write-Host $_ } }        
 
         $scanResults = Get-Content -Path $OutputFile
 
@@ -169,7 +174,7 @@ try {
         $errorLines = $scanResults | Where-Object { $_ -match "Mandatory - |Required - " }
 
         if (-not $Quiet) {
-            $scanResults
+            $scanResults | ForEach-Object { Write-Host $_ }
         }
 
         $errorLines.count
