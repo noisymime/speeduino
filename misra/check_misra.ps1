@@ -1,14 +1,65 @@
+<#
+    .SYNOPSIS
+    Runs CppCheck against the Speeduino source code
+
+    .DESCRIPTION
+    Ideally we'd just run cppcheck on the entire source tree, with the MISRA add on.
+    E.g.
+        cppcheck --addon=misra.py <path to speeduino source>
+    
+    However, at a minimum we need to customize the arguments to the MISRA add on and,
+    in order to get relevant results, set a number of command line flags. Hence this script.
+
+    .INPUTS
+    None. 
+
+    .OUTPUTS
+    The count of mandatory or required MISRA rule violations.
+
+    In addition to writing the results to file, the script writes the results to the Powershell Information 
+    stream, with the tag "CPPCHECK-RESULT". The script also supports the Debug & Progress streams. Use the 
+    standard PS stream configuration options.
+
+    .EXAMPLE
+    PS> .\check_misra.ps1 -c 'C:\Program Files\Cppcheck\'
+    2000
+    PS>
+
+    Minimal parameters: scans the deafult location, displays progress and outputs a text file (results.txt) to the default location
+
+    .EXAMPLE
+    PS> .\check_misra.ps1 -c 'C:\Program Files\Cppcheck\' -x -InformationAction Continue
+    # A whole ton of XML output.....
+    2000
+    PS>
+
+    XML output and echoes the XML to the terminal.
+    
+    .LINK
+    about_Output_Streams
+#> 
+
 param (
-    [Alias("s")]
-    [string]$SourceFolder = "$PSScriptRoot/../speeduino",
-    [Alias("o")]
-    [string]$OutFolder = "$PSScriptRoot/.results",
+    # Path the folder where cppcheck is installed
+    # We expect a 'cppcheck' executable in this folder
     [Alias("c")]
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory=$true, Position = 0)]
     [string]$CppcheckPath,
-    [Alias("q")]
-    [switch]$Quiet=$false,
+    # Path to the Speeduino source folder
+    [Alias("s")]
+    [PSDefaultValue(Help="<script path>/../speeduino")] 
+    [Parameter()]
+    [string]$SourceFolder = (Join-Path $PSScriptRoot ".." "speeduino"),
+    # Path to a folder where the results will be written.
+    # The folder will be created if necessary
+    [Alias("o")]
+    [PSDefaultValue(Help="<script path>/.results")] 
+    [Parameter()]
+    [string]$OutFolder = (Join-Path $PSScriptRoot ".results"),
+    # When set, output the results in XML format
+    # Useful for subsequent analysis that benfit from a structured format. E.g. PowerBi, Grafana
     [Alias("x")]
+    [Parameter()]
     [switch]$OutputXml=$false
 )
 
@@ -161,21 +212,17 @@ try {
         $cppcheckBin = Join-Path $CppcheckPath "cppcheck"
         Write-Debug "$($MyInvocation.MyCommand.Name): executing $cppcheckBin $cppCheckParameters"
         
-        # & $cppcheckBin $cppCheckParameters
-
-        # Merge the streams first, so that stderr too goes to the success stream, 
-        # then decide based on the type whether to pass the line through (stdout)
-        # or to collect them in list $stderr.
-        (& $cppcheckBin $cppCheckParameters) | ForEach-Object { if (-not $Quiet) { Write-Host $_ } }        
+        # Normally cppcheck would ouput any findings to stderr. However, we have told it to write the results to a file.
+        # The rest of the output *should* be progress messages, so send those to Write-Progress
+        & $cppcheckBin $cppCheckParameters | ForEach-Object { Write-Progress -Activity $_ }
 
         $scanResults = Get-Content -Path $OutputFile
 
+        # Send the CppCheck results to the information stream
+        $scanResults | ForEach-Object { Write-Information -Tags "CPPCHECK-RESULT" $_ }
+
         # Count lines for Mandatory or Required rules
         $errorLines = $scanResults | Where-Object { $_ -match "Mandatory - |Required - " }
-
-        if (-not $Quiet) {
-            $scanResults | ForEach-Object { Write-Host $_ }
-        }
 
         $errorLines.count
     }
