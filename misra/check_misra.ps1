@@ -79,6 +79,8 @@ function New-MisraAddOnFile {
     $jsonContents | ConvertTo-Json -Depth 99 | Out-File -FilePath $jsonFile
     
     Write-Debug("$($MyInvocation.MyCommand.Name) : $jsonFile")
+    Get-Content -Path $jsonFile | ForEach-Object { Write-Debug("$($MyInvocation.MyCommand.Name) : $_") }
+    
     $jsonFile
 }
 
@@ -175,7 +177,7 @@ function Get-CppCheckParameters {
     if ($OutputXml) {
         $cppcheckParameters += @("--xml")
     }
-    Write-Debug("$($MyInvocation.MyCommand.Name) : $cppcheckParameters")
+    $cppcheckParameters | ForEach-Object { Write-Debug("$($MyInvocation.MyCommand.Name) : $_") }
     
     $cppcheckParameters
 }
@@ -187,7 +189,7 @@ $SourceFolder = Resolve-Path $SourceFolder
 New-Item -ItemType Directory -Force -Path $OutFolder | Out-Null
 
 # Temporary JSON file to invoke the MISRA add-on
-$jsonFile = New-MisraAddOnFile "$PSScriptRoot/misra_2012_text.txt"
+$jsonFile = New-MisraAddOnFile (Join-Path $PSScriptRoot "misra_2012_text.txt")
 try {   
     # There is no way to tell the misra add on to skip certain headers
     # libdivide adds 10+ minutes to each file so rename the folder 
@@ -214,7 +216,7 @@ try {
         
         # Normally cppcheck would ouput any findings to stderr. However, we have told it to write the results to a file.
         # The rest of the output *should* be progress messages, so send those to Write-Progress
-        & $cppcheckBin $cppCheckParameters | ForEach-Object { Write-Progress -Activity $_ }
+        & $cppcheckBin $cppCheckParameters 2>&1 | ForEach-Object { Write-Progress -Activity $_ }
 
         $scanResults = Get-Content -Path $OutputFile
 
