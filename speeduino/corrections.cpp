@@ -57,7 +57,16 @@ uint8_t dfcoTaper;
  */
 void initialiseCorrections(void)
 {
-  egoPID.SetMode(AUTOMATIC); //Turn O2 PID on
+  PID_output = 0L;
+  PID_O2 = 0L;
+  PID_AFRTarget = 0L;
+  // Toggling between modes resets the PID internal state
+  // This is required by the unit tests
+  // TODO: modify PID code to provide a method to reset it. 
+  egoPID.SetMode(AUTOMATIC);
+  egoPID.SetMode(MANUAL);
+  egoPID.SetMode(AUTOMATIC);
+
   currentStatus.flexIgnCorrection = 0;
   currentStatus.egoCorrection = 100; //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
   AFRnextCycle = 0;
@@ -580,6 +589,26 @@ byte correctionFuelTemp(void)
   return fuelTempValue;
 }
 
+
+// ============================= Air Fuel Ratio (AFR) correction =============================
+
+uint8_t calculateAfrTarget(table3d16RpmLoad &afrLookUpTable, const statuses &current, const config2 &page2, const config6 &page6) {
+  //afrTarget value lookup must be done if O2 sensor is enabled, and always if incorporateAFR is enabled
+  if (page2.incorporateAFR == true) {
+    return get3DTableValue(&afrLookUpTable, current.fuelLoad, current.RPM);
+  }
+  if (page6.egoType!=EGO_TYPE_OFF) 
+  {
+    //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
+    //Note that this should only run after the sensor warmup delay when using Include AFR option,
+    if( current.runSecs > page6.ego_sdelay) { 
+      return get3DTableValue(&afrLookUpTable, current.fuelLoad, current.RPM); 
+    }
+    return current.O2; //Catch all
+  }
+  return current.afrTarget;
+}
+
 /** Lookup the AFR target table and perform either a simple or PID adjustment based on this.
 
 Simple (Best suited to narrowband sensors):
@@ -595,17 +624,8 @@ PID (Best suited to wideband sensors):
 */
 byte correctionAFRClosedLoop(void)
 {
-  byte AFRValue = 100;
-  
-  if( (configPage6.egoType > 0) || (configPage2.incorporateAFR == true) ) //afrTarget value lookup must be done if O2 sensor is enabled, and always if incorporateAFR is enabled
-  {
-    currentStatus.afrTarget = currentStatus.O2; //Catch all in case the below doesn't run. This prevents the Include AFR option from doing crazy things if the AFR target conditions aren't met. This value is changed again below if all conditions are met.
+  byte AFRValue = 100U;
 
-    //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
-    //Note that this should only run after the sensor warmup delay when using Include AFR option, but on Incorporate AFR option it needs to be done at all times
-    if( (currentStatus.runSecs > configPage6.ego_sdelay) || (configPage2.incorporateAFR == true) ) { currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.fuelLoad, currentStatus.RPM); } //Perform the target lookup
-  }
-  
   if((configPage6.egoType > 0) && (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) != 1  ) ) //egoType of 0 means no O2 sensor. If DFCO is active do not run the ego controllers to prevent iterator wind-up.
   {
     AFRValue = currentStatus.egoCorrection; //Need to record this here, just to make sure the correction stays 'on' even if the nextCycle count isn't ready

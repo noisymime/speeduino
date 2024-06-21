@@ -36,6 +36,13 @@ struct table2D {
   byte cacheTime; //Tracks when the last cache value was set so it can expire after x seconds. A timeout is required to pickup when a tuning value is changed, otherwise the old cached value will continue to be returned as the X value isn't changing. 
 };
 
+void construct2dTable(table2D &table, uint8_t length, uint8_t *values, uint8_t *bins);
+void construct2dTable(table2D &table, uint8_t length, uint8_t *values, int8_t *bins);
+void construct2dTable(table2D &table, uint8_t length, uint16_t *values, uint16_t *bins);
+void construct2dTable(table2D &table, uint8_t length, uint8_t *values, uint16_t *bins);
+void construct2dTable(table2D &table, uint8_t length, uint16_t *values, uint8_t *bins);
+void construct2dTable(table2D &table, uint8_t length, int16_t *values, uint8_t *bins);
+
 int16_t table2D_getAxisValue(struct table2D *fromTable, byte X_in);
 int16_t table2D_getRawValue(struct table2D *fromTable, byte X_index);
 

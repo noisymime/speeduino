@@ -3,22 +3,24 @@
 #include <unity.h>
 #include "test_staging.h"
 #include "../test_utils.h"
+// #include "init.h"
 
 void testStaging(void)
 {
   SET_UNITY_FILENAME() {
-
-  RUN_TEST(test_Staging_Off);
-  RUN_TEST(test_Staging_4cyl_Auto_Inactive);
-  RUN_TEST(test_Staging_4cyl_Table_Inactive);
-  RUN_TEST(test_Staging_4cyl_Auto_50pct);
-  RUN_TEST(test_Staging_4cyl_Auto_33pct);
-  RUN_TEST(test_Staging_4cyl_Table_50pct);
+    RUN_TEST(test_Staging_Off);
+    RUN_TEST(test_Staging_4cyl_Auto_Inactive);
+    RUN_TEST(test_Staging_4cyl_Table_Inactive);
+    RUN_TEST(test_Staging_4cyl_Auto_50pct);
+    RUN_TEST(test_Staging_4cyl_Auto_33pct);
+    RUN_TEST(test_Staging_4cyl_Table_50pct);
   }
 }
 
 void test_Staging_setCommon()
 {
+  // initialiseAll();
+  
   configPage2.nCylinders = 4;
   currentStatus.RPM = 3000;
   currentStatus.fuelLoad = 50;
@@ -51,7 +53,7 @@ void test_Staging_Off(void)
 
   uint32_t pwLimit = 9000; //90% duty cycle at 6000rpm
   calculateStaging(pwLimit);
-  TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE));
+  TEST_ASSERT_BIT_LOW(BIT_STATUS4_STAGING_ACTIVE, currentStatus.status4);
 }
 
 void test_Staging_4cyl_Auto_Inactive(void)
@@ -74,7 +76,7 @@ void test_Staging_4cyl_Auto_Inactive(void)
   TEST_ASSERT_EQUAL(7000, currentStatus.PW2);
   TEST_ASSERT_EQUAL(0, currentStatus.PW3);
   TEST_ASSERT_EQUAL(0, currentStatus.PW4);
-  TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE));
+  TEST_ASSERT_BIT_LOW(BIT_STATUS4_STAGING_ACTIVE, currentStatus.status4);
 }
 
 void test_Staging_4cyl_Table_Inactive(void)
@@ -101,7 +103,7 @@ void test_Staging_4cyl_Table_Inactive(void)
   TEST_ASSERT_EQUAL(7000, currentStatus.PW2);
   TEST_ASSERT_EQUAL(0, currentStatus.PW3);
   TEST_ASSERT_EQUAL(0, currentStatus.PW4);
-  TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE));
+  TEST_ASSERT_BIT_LOW(BIT_STATUS4_STAGING_ACTIVE, currentStatus.status4);
 }
 
 void test_Staging_4cyl_Auto_50pct(void)
@@ -123,7 +125,7 @@ void test_Staging_4cyl_Auto_50pct(void)
   TEST_ASSERT_EQUAL(pwLimit, currentStatus.PW2);
   TEST_ASSERT_EQUAL(9000, currentStatus.PW3);
   TEST_ASSERT_EQUAL(9000, currentStatus.PW4);
-  TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE));
+  TEST_ASSERT_BIT_HIGH(BIT_STATUS4_STAGING_ACTIVE, currentStatus.status4);
 }
 
 void test_Staging_4cyl_Auto_33pct(void)
@@ -145,7 +147,7 @@ void test_Staging_4cyl_Auto_33pct(void)
   TEST_ASSERT_EQUAL(pwLimit, currentStatus.PW2);
   TEST_ASSERT_EQUAL(6000, currentStatus.PW3);
   TEST_ASSERT_EQUAL(6000, currentStatus.PW4);
-  TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE));
+  TEST_ASSERT_BIT_HIGH(BIT_STATUS4_STAGING_ACTIVE, currentStatus.status4);
 }
 
 void test_Staging_4cyl_Table_50pct(void)
@@ -175,5 +177,5 @@ void test_Staging_4cyl_Table_50pct(void)
   TEST_ASSERT_EQUAL(4000, currentStatus.PW2);
   TEST_ASSERT_EQUAL(2500, currentStatus.PW3);
   TEST_ASSERT_EQUAL(2500, currentStatus.PW4);
-  TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE));
+  TEST_ASSERT_BIT_HIGH(BIT_STATUS4_STAGING_ACTIVE, currentStatus.status4);
 }

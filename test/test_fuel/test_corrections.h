@@ -1,13 +1,1 @@
 void testCorrections();
-void test_corrections_WUE(void);
-void test_corrections_cranking(void);
-void test_corrections_ASE(void);
-void test_corrections_floodclear(void);
-void test_corrections_closedloop(void);
-void test_corrections_flex(void);
-void test_corrections_bat(void);
-void test_corrections_iatdensity(void);
-void test_corrections_baro(void);
-void test_corrections_launch(void);
-void test_corrections_dfco(void);
-void test_corrections_TAE(void);

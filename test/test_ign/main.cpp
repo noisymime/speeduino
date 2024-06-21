@@ -1,11 +1,7 @@
-#include <globals.h>
-#include <init.h>
 #include <Arduino.h>
 #include <unity.h>
 
-#include "test_corrections.h"
-#include "test_PW.h"
-#include "test_staging.h"
+void testIgnCorrections(void);
 
 #define UNITY_EXCLUDE_DETAILS
 
@@ -19,9 +15,7 @@ void setup()
 
     UNITY_BEGIN();    // IMPORTANT LINE!
 
-    testCorrections();
-    testPW();
-    testStaging();
+    testIgnCorrections();
 
     UNITY_END(); // stop unit testing
 }

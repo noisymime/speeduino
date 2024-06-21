@@ -168,7 +168,6 @@ void test_maths_udiv_32_16_perf(void)
 
     auto nativeTest = [] (uint16_t index, uint32_t &checkSum) { checkSum += (uint32_t)indexToDividend(index) / (uint32_t)index; };
     auto optimizedTest = [] (uint16_t index, uint32_t &checkSum) { checkSum += udiv_32_16(indexToDividend(index), index); };
-    TEST_MESSAGE("udiv_32_16");
     auto comparison = compare_executiontime<uint16_t, uint32_t>(iters, start_index, end_index, step, nativeTest, optimizedTest);
     
     // The checksums will be different due to rounding. This is only
@@ -189,7 +188,6 @@ void test_maths_div100_s16_perf(void)
 
     auto nativeTest = [] (int16_t index, int32_t &checkSum) { checkSum += (int16_t)index / (int16_t)100; };
     auto optimizedTest = [] (int16_t index, int32_t &checkSum) { checkSum += div100(index); };
-    TEST_MESSAGE("div100_s16");
     auto comparison = compare_executiontime<int16_t, int32_t>(iters, start_index, end_index, step, nativeTest, optimizedTest);
     
     // The checksums will be different due to rounding. This is only
@@ -200,6 +198,26 @@ void test_maths_div100_s16_perf(void)
 #endif
 }
 
+void test_maths_div10_s16_perf(void)
+{
+  // Unit test to confirm using div100 to divide by 10 is quicker than straight division by 10.
+#if defined(ARDUINO_ARCH_AVR)
+  constexpr int16_t iters = 1;
+  constexpr int16_t start_index = -3213;
+  constexpr int16_t end_index = 3213;
+  constexpr int16_t step = 17;
+  
+  auto nativeTest = [] (int16_t index, int32_t &checkSum) { checkSum += (int16_t)index / (int16_t)10; };
+  auto optimizedTest = [] (int16_t index, int32_t &checkSum) { checkSum += div100((int16_t)(index * 10)); };
+  auto comparison = compare_executiontime<int16_t, int32_t>(iters, start_index, end_index, step, nativeTest, optimizedTest);
+  
+  // The checksums will be different due to rounding. This is only
+  // here to force the compiler to run the loops above
+  TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison.timeA.result, comparison.timeB.result);
+
+  TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
+#endif
+}
 
 void test_maths_div100_s32_perf(void)
 {
@@ -211,7 +229,6 @@ void test_maths_div100_s32_perf(void)
 
     auto nativeTest = [] (int32_t index, int32_t &checkSum) { checkSum += (int32_t)index / (int32_t)100; };
     auto optimizedTest = [] (int32_t index, int32_t &checkSum) { checkSum += div100(index); };
-    TEST_MESSAGE("div100_s32");
     auto comparison = compare_executiontime<int32_t, int32_t>(iters, start_index, end_index, step, nativeTest, optimizedTest);
     
     // The checksums will be different due to rounding. This is only
@@ -234,6 +251,7 @@ void testDivision(void) {
   RUN_TEST(test_maths_udiv_32_16_perf);
   RUN_TEST(test_maths_div360);
   RUN_TEST(test_maths_div100_s16_perf);
+  RUN_TEST(test_maths_div10_s16_perf);
   RUN_TEST(test_maths_div100_s32_perf);
   }
 }

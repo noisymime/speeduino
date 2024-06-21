@@ -2,6 +2,7 @@
 #include <speeduino.h>
 #include <unity.h>
 #include "test_PW.h"
+// #include "init.h"
 #include "../test_utils.h"
 
 #define PW_ALLOWED_ERROR  30
@@ -9,16 +10,15 @@
 void testPW(void)
 {
   SET_UNITY_FILENAME() {
-
-  RUN_TEST(test_PW_No_Multiply);
-  RUN_TEST(test_PW_MAP_Multiply);
-  RUN_TEST(test_PW_MAP_Multiply_Compatibility);
-  RUN_TEST(test_PW_AFR_Multiply);
-  RUN_TEST(test_PW_Large_Correction);
-  RUN_TEST(test_PW_Very_Large_Correction);
-  RUN_TEST(test_PW_4Cyl_PW0);
-  RUN_TEST(test_PW_Limit_Long_Revolution);
-  RUN_TEST(test_PW_Limit_90pct);
+    RUN_TEST_P(test_PW_No_Multiply);
+    RUN_TEST_P(test_PW_MAP_Multiply);
+    RUN_TEST_P(test_PW_MAP_Multiply_Compatibility);
+    RUN_TEST_P(test_PW_AFR_Multiply);
+    RUN_TEST_P(test_PW_Large_Correction);
+    RUN_TEST_P(test_PW_Very_Large_Correction);
+    RUN_TEST_P(test_PW_4Cyl_PW0);
+    RUN_TEST_P(test_PW_Limit_Long_Revolution);
+    RUN_TEST_P(test_PW_Limit_90pct);
   }
 }
 
@@ -30,6 +30,7 @@ int injOpen;
 
 void test_PW_setCommon()
 {
+  // initialiseAll();
   REQ_FUEL = 1060;
   VE = 130;
   MAP = 94;
@@ -152,6 +153,8 @@ void test_PW_4Cyl_PW0(void)
 //Tests the PW Limit calculation for a normal scenario
 void test_PW_Limit_90pct(void)
 {
+  test_PW_setCommon();
+
   revolutionTime = 10000UL; //6000 rpm
   configPage2.dutyLim = 90;
 
@@ -163,6 +166,8 @@ void test_PW_Limit_90pct(void)
 //Occurs at approx. 915rpm
 void test_PW_Limit_Long_Revolution(void)
 {
+  test_PW_setCommon();
+
   revolutionTime = 100000UL; //600 rpm, below 915rpm cutover point
   configPage2.dutyLim = 90;
   configPage2.strokes = TWO_STROKE;
