@@ -173,9 +173,9 @@ static inline uint32_t div360(uint32_t n) {
 /**
  * @brief Integer based percentage calculation.
  * 
- * @param percent The percent to calculate ([0, 100])
+ * @param percent The percent to calculate 
  * @param value The value to operate on
- * @return uint32_t 
+ * @return uint16_t 
  */
 static inline uint32_t percentage(uint8_t percent, uint32_t value) 
 {
