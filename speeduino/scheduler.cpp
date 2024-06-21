@@ -307,13 +307,7 @@ extern void beginInjectorPriming(void)
  * @{
  */
 
-/**
- * @brief Shared fuel schedule timer ISR implementation. Should be called by the actual timer ISRs
- * (as timed interrupts) when either the start time or the duration time are reached. See @ref schedule-state-machine
- * 
- * @param schedule The fuel schedule to move to the next state
- */
-static inline __attribute__((always_inline)) void onFuelScheduleTimer(FuelSchedule &schedule)
+void moveToNextState(FuelSchedule &schedule)
 {
   movetoNextState(schedule, defaultPendingToRunning, defaultRunningToOff, defaultRunningToPending);
 } 
@@ -322,14 +316,8 @@ static inline __attribute__((always_inline)) void onFuelScheduleTimer(FuelSchedu
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 #define FUEL_INTERRUPT(index, avr_vector) \
   ISR((avr_vector)) { \
-    onFuelScheduleTimer(fuelSchedule ## index); \
+    moveToNextState(fuelSchedule ## index); \
   }
-#else
-#define FUEL_INTERRUPT(index, avr_vector) \
-  void FUEL_INTERRUPT_NAME(index) (void) { \
-    onFuelScheduleTimer(fuelSchedule ## index); \
-  }
-#endif
 
 /** @brief ISR for fuel channel 1 */
 // cppcheck-suppress misra-c2012-8.2
@@ -368,6 +356,7 @@ FUEL_INTERRUPT(7, TIMER5_COMPC_vect)
 /** @brief ISR for fuel channel 8 */
 // cppcheck-suppress misra-c2012-8.2
 FUEL_INTERRUPT(8, TIMER5_COMPB_vect)
+#endif
 #endif
 
 ///@}
@@ -426,13 +415,7 @@ static inline void ignitionRunningToPending(Schedule *pSchedule) {
   onEndIgnitionEvent((IgnitionSchedule *)pSchedule);
 }
 
-/**
- * @brief Shared ignition schedule timer ISR *implementation*. Should be called by the actual ignition timer ISRs
- * (as timed interrupts) when either the start time or the duration time are reached. See @ref schedule-state-machine
- * 
- * @param schedule The ignition schedule to move to the next state
- */
-static inline __attribute__((always_inline)) void onIgnitionScheduleTimer(IgnitionSchedule &schedule)
+void moveToNextState(IgnitionSchedule &schedule)
 {
   movetoNextState(schedule, ignitionPendingToRunning, ignitionRunningToOff, ignitionRunningToPending);
 }
@@ -441,14 +424,8 @@ static inline __attribute__((always_inline)) void onIgnitionScheduleTimer(Igniti
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 #define IGNITION_INTERRUPT(index, avr_vector) \
   ISR((avr_vector)) { \
-    onIgnitionScheduleTimer(ignitionSchedule ## index); \
+    moveToNextState(ignitionSchedule ## index); \
   }
-#else
-#define IGNITION_INTERRUPT(index, avr_vector) \
-  void IGNITION_INTERRUPT_NAME(index) (void) { \
-    onIgnitionScheduleTimer(ignitionSchedule ## index); \
-  }
-#endif
 
 /** @brief ISR for ignition channel 1 */
 // cppcheck-suppress misra-c2012-8.2
@@ -486,6 +463,8 @@ IGNITION_INTERRUPT(7, TIMER3_COMPC_vect)
 /** @brief ISR for ignition channel 8 */
 // cppcheck-suppress misra-c2012-8.2
 IGNITION_INTERRUPT(8, TIMER3_COMPB_vect)
+#endif
+
 #endif
 
 ///@}
