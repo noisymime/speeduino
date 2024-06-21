@@ -21,23 +21,21 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Install cppcheck, dos2unix
+      shell: bash
       run: |
-        sudo apt-get install cppcheck
-        sudo apt-get install dos2unix
-
+        sudo apt update
+        sudo apt-get -yqq install cppcheck --no-install-recommends
+      #sudo apt-get install dos2unix
+    
     - name: Run MISRA scan
       continue-on-error: true
+      shell: pwsh
       run: |
-        cd $GITHUB_WORKSPACE/misra/
-        mkdir .results
-        chmod +x check_misra.sh
-        dos2unix check_misra.sh
-        ./check_misra.sh -c /usr/bin -o ./.results -q
-        echo "Scan complete"
-        NumViolations=`cat .results/error_count.txt`
-        echo $NumViolations
-        echo "VIOLATIONS=$NumViolations" >> $GITHUB_ENV
-        ls $GITHUB_WORKSPACE/misra/.results/
+        cd $env:GITHUB_WORKSPACE/misra/
+        $NumViolations = ./check_misra.ps1 -c /usr/bin -o ./.results -q -x
+        Write-Host "Scan complete"
+        Write-Host "$NumViolations"
+        "VIOLATIONS=$NumViolations" >> $env:GITHUB_ENV
         
     - name: Save output to Gist
       if: github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
@@ -58,5 +56,4 @@ jobs:
       with:
         name: MISRA results
         path: |
-          misra/.results/results.txt
-          misra/.results/error_count.txt
+          misra/.results/results.xml
