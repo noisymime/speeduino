@@ -1,5 +1,5 @@
 #include "globals.h"
-#include BOARD_H
+#include "board_definition.h"
 
 #ifdef SD_LOGGING
 #include <SPI.h>

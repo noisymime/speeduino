@@ -1,4 +1,5 @@
-#include "globals.h"
+#include "board_definition.h"
+
 #if defined(CORE_TEMPLATE)
 
 

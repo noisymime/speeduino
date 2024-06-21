@@ -36,25 +36,25 @@ static void __attribute__((noinline)) assert_fuel_schedules(uint16_t crankAngle,
   strcpy_P(msg, PSTR("req_fuel_uS"));
   TEST_ASSERT_EQUAL_UINT16_MESSAGE(reqFuel, req_fuel_uS, msg);
 
-  assert_fuel_channel(enabled[0], angle[0], INJ1_CMD_BIT, channel1InjDegrees, fuelSchedule1.pStartFunction, fuelSchedule1.pEndFunction);
-  assert_fuel_channel(enabled[1], angle[1], INJ2_CMD_BIT, channel2InjDegrees, fuelSchedule2.pStartFunction, fuelSchedule2.pEndFunction);
-  assert_fuel_channel(enabled[2], angle[2], INJ3_CMD_BIT, channel3InjDegrees, fuelSchedule3.pStartFunction, fuelSchedule3.pEndFunction);
-  assert_fuel_channel(enabled[3], angle[3], INJ4_CMD_BIT, channel4InjDegrees, fuelSchedule4.pStartFunction, fuelSchedule4.pEndFunction);
+  assert_fuel_channel(enabled[0], angle[0], INJ1_CMD_BIT, channel1InjDegrees, fuelSchedule1.pStartCallback, fuelSchedule1.pEndCallback);
+  assert_fuel_channel(enabled[1], angle[1], INJ2_CMD_BIT, channel2InjDegrees, fuelSchedule2.pStartCallback, fuelSchedule2.pEndCallback);
+  assert_fuel_channel(enabled[2], angle[2], INJ3_CMD_BIT, channel3InjDegrees, fuelSchedule3.pStartCallback, fuelSchedule3.pEndCallback);
+  assert_fuel_channel(enabled[3], angle[3], INJ4_CMD_BIT, channel4InjDegrees, fuelSchedule4.pStartCallback, fuelSchedule4.pEndCallback);
 
 #if INJ_CHANNELS>=5
-  assert_fuel_channel(enabled[4], angle[4], INJ5_CMD_BIT, channel5InjDegrees, fuelSchedule5.pStartFunction, fuelSchedule5.pEndFunction);
+  assert_fuel_channel(enabled[4], angle[4], INJ5_CMD_BIT, channel5InjDegrees, fuelSchedule5.pStartCallback, fuelSchedule5.pEndCallback);
 #endif
 
 #if INJ_CHANNELS>=6
-  assert_fuel_channel(enabled[5], angle[5], INJ6_CMD_BIT, channel6InjDegrees, fuelSchedule6.pStartFunction, fuelSchedule6.pEndFunction);
+  assert_fuel_channel(enabled[5], angle[5], INJ6_CMD_BIT, channel6InjDegrees, fuelSchedule6.pStartCallback, fuelSchedule6.pEndCallback);
 #endif
 
 #if INJ_CHANNELS>=7
-  assert_fuel_channel(enabled[6], angle[6], INJ7_CMD_BIT, channel7InjDegrees, fuelSchedule7.pStartFunction, fuelSchedule7.pEndFunction);
+  assert_fuel_channel(enabled[6], angle[6], INJ7_CMD_BIT, channel7InjDegrees, fuelSchedule7.pStartCallback, fuelSchedule7.pEndCallback);
 #endif
 
 #if INJ_CHANNELS>=8
-  assert_fuel_channel(enabled[7], angle[7], INJ8_CMD_BIT, channel8InjDegrees, fuelSchedule8.pStartFunction, fuelSchedule8.pEndFunction);
+  assert_fuel_channel(enabled[7], angle[7], INJ8_CMD_BIT, channel8InjDegrees, fuelSchedule8.pStartCallback, fuelSchedule8.pEndCallback);
 #endif 
 }
 

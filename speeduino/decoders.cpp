@@ -438,42 +438,42 @@ static inline void checkPerToothTiming(int16_t crankAngle, uint16_t currentTooth
   {
     if ( (currentTooth == ignition1EndTooth) )
     {
-      adjustCrankAngle(ignitionSchedule1, ignition1EndAngle, crankAngle);
+      adjustCrankAngle(ignitionSchedule1, ignition1StartAngle, ignition1EndAngle, crankAngle);
     }
     else if ( (currentTooth == ignition2EndTooth) )
     {
-      adjustCrankAngle(ignitionSchedule2, ignition2EndAngle, crankAngle);
+      adjustCrankAngle(ignitionSchedule2, ignition2StartAngle, ignition2EndAngle, crankAngle);
     }
     else if ( (currentTooth == ignition3EndTooth) )
     {
-      adjustCrankAngle(ignitionSchedule3, ignition3EndAngle, crankAngle);
+      adjustCrankAngle(ignitionSchedule3, ignition3StartAngle, ignition3EndAngle, crankAngle);
     }
     else if ( (currentTooth == ignition4EndTooth) )
     {
-      adjustCrankAngle(ignitionSchedule4, ignition4EndAngle, crankAngle);
+      adjustCrankAngle(ignitionSchedule4, ignition4StartAngle, ignition4EndAngle, crankAngle);
     }
 #if IGN_CHANNELS >= 5
     else if ( (currentTooth == ignition5EndTooth) )
     {
-      adjustCrankAngle(ignitionSchedule5, ignition5EndAngle, crankAngle);
+      adjustCrankAngle(ignitionSchedule5, ignition5StartAngle, ignition5EndAngle, crankAngle);
     }
 #endif
 #if IGN_CHANNELS >= 6
     else if ( (currentTooth == ignition6EndTooth) )
     {
-      adjustCrankAngle(ignitionSchedule6, ignition6EndAngle, crankAngle);
+      adjustCrankAngle(ignitionSchedule6, ignition6StartAngle, ignition6EndAngle, crankAngle);
     }
 #endif
 #if IGN_CHANNELS >= 7
     else if ( (currentTooth == ignition7EndTooth) )
     {
-      adjustCrankAngle(ignitionSchedule7, ignition7EndAngle, crankAngle);
+      adjustCrankAngle(ignitionSchedule7, ignition7StartAngle, ignition7EndAngle, crankAngle);
     }
 #endif
 #if IGN_CHANNELS >= 8
     else if ( (currentTooth == ignition8EndTooth) )
     {
-      adjustCrankAngle(ignitionSchedule8, ignition8EndAngle, crankAngle);
+      adjustCrankAngle(ignitionSchedule8, ignition8StartAngle, ignition8EndAngle, crankAngle);
     }
 #endif
   }
