@@ -4,6 +4,7 @@
 #include "globals.h"
 #include "auxiliaries.h"
 #include "comms_secondary.h"
+#include "scheduler.h"
 
 // Prescaler values for timers 1-3-4-5. Refer to www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
 #define TIMER_PRESCALER_OFF  ((0<<CS12)|(0<<CS11)|(0<<CS10))
@@ -17,6 +18,94 @@
 #define TIMER_MODE_PWM       ((0<<WGM01)|(1<<WGM00))
 #define TIMER_MODE_CTC       ((1<<WGM01)|(0<<WGM00))
 #define TIMER_MODE_FASTPWM   ((1<<WGM01)|(1<<WGM00))
+
+#define FUEL_INTERRUPT(index, avr_vector) \
+  ISR((avr_vector)) { \
+    moveToNextState(fuelSchedule ## index); \
+  }
+
+/** @brief ISR for fuel channel 1 */
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(1, TIMER3_COMPA_vect)
+#if INJ_CHANNELS >= 2
+/** @brief ISR for fuel channel 2 */
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(2, TIMER3_COMPB_vect)
+#endif
+#if INJ_CHANNELS >= 3
+/** @brief ISR for fuel channel 3 */
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(3, TIMER3_COMPC_vect)
+#endif
+#if INJ_CHANNELS >= 4
+/** @brief ISR for fuel channel 4 */
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(4, TIMER4_COMPB_vect)
+#endif
+#if INJ_CHANNELS >= 5
+/** @brief ISR for fuel channel 5 */
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(5, TIMER4_COMPC_vect)
+#endif
+#if INJ_CHANNELS >= 6
+/** @brief ISR for fuel channel 6 */
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(6, TIMER4_COMPA_vect)
+#endif
+#if INJ_CHANNELS >= 7
+/** @brief ISR for fuel channel 7 */
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(7, TIMER5_COMPC_vect)
+#endif
+#if INJ_CHANNELS >= 8
+/** @brief ISR for fuel channel 8 */
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(8, TIMER5_COMPB_vect)
+#endif
+
+#define IGNITION_INTERRUPT(index, avr_vector) \
+  ISR((avr_vector)) { \
+    moveToNextState(ignitionSchedule ## index); \
+  }
+
+/** @brief ISR for ignition channel 1 */
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(1, TIMER5_COMPA_vect)
+#if IGN_CHANNELS >= 2
+/** @brief ISR for ignition channel 2 */
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(2, TIMER5_COMPB_vect)
+#endif
+#if IGN_CHANNELS >= 3
+/** @brief ISR for ignition channel 3 */
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(3, TIMER5_COMPC_vect)
+#endif
+#if IGN_CHANNELS >= 4
+/** @brief ISR for ignition channel 4 */
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(4, TIMER4_COMPA_vect)
+#endif
+#if IGN_CHANNELS >= 5
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(5, TIMER4_COMPC_vect)
+#endif
+#if IGN_CHANNELS >= 6
+/** @brief ISR for ignition channel 6 */
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(6, TIMER4_COMPB_vect)
+#endif
+#if IGN_CHANNELS >= 7
+/** @brief ISR for ignition channel 7 */
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(7, TIMER3_COMPC_vect)
+#endif
+#if IGN_CHANNELS >= 8
+/** @brief ISR for ignition channel 8 */
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(8, TIMER3_COMPB_vect)
+#endif
+
 
 void initBoard(void)
 {
@@ -91,7 +180,6 @@ void initBoard(void)
     TCCR4A = TIMER_MODE_NORMAL;     //Timer4 Control Reg A: Wave Gen Mode normal
     TCCR4B = TIMER_PRESCALER_64;    //Timer4 Control Reg B: Timer Prescaler set to 64.
     TIFR4 = (1 << OCF4A) | (1<<OCF4B) | (1<<OCF4C) | (1<<TOV4) | (1<<ICF4); //Clear the compare flags, overflow flag and external input flag bits
-
 }
 
 /*

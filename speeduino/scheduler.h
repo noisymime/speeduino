@@ -41,7 +41,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
-#include "globals.h"
+#include "board_definition.h"
 #include "scheduledIO.h"
 
 #define USE_IGN_REFRESH

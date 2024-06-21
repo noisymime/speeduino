@@ -312,53 +312,6 @@ void moveToNextState(FuelSchedule &schedule)
   movetoNextState(schedule, defaultPendingToRunning, defaultRunningToOff, defaultRunningToPending);
 } 
 
-/** @brief Declares and defines a fuel schedule timer interrupt */
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-#define FUEL_INTERRUPT(index, avr_vector) \
-  ISR((avr_vector)) { \
-    moveToNextState(fuelSchedule ## index); \
-  }
-
-/** @brief ISR for fuel channel 1 */
-// cppcheck-suppress misra-c2012-8.2
-FUEL_INTERRUPT(1, TIMER3_COMPA_vect)
-#if INJ_CHANNELS >= 2
-/** @brief ISR for fuel channel 2 */
-// cppcheck-suppress misra-c2012-8.2
-FUEL_INTERRUPT(2, TIMER3_COMPB_vect)
-#endif
-#if INJ_CHANNELS >= 3
-/** @brief ISR for fuel channel 3 */
-// cppcheck-suppress misra-c2012-8.2
-FUEL_INTERRUPT(3, TIMER3_COMPC_vect)
-#endif
-#if INJ_CHANNELS >= 4
-/** @brief ISR for fuel channel 4 */
-// cppcheck-suppress misra-c2012-8.2
-FUEL_INTERRUPT(4, TIMER4_COMPB_vect)
-#endif
-#if INJ_CHANNELS >= 5
-/** @brief ISR for fuel channel 5 */
-// cppcheck-suppress misra-c2012-8.2
-FUEL_INTERRUPT(5, TIMER4_COMPC_vect)
-#endif
-#if INJ_CHANNELS >= 6
-/** @brief ISR for fuel channel 6 */
-// cppcheck-suppress misra-c2012-8.2
-FUEL_INTERRUPT(6, TIMER4_COMPA_vect)
-#endif
-#if INJ_CHANNELS >= 7
-/** @brief ISR for fuel channel 7 */
-// cppcheck-suppress misra-c2012-8.2
-FUEL_INTERRUPT(7, TIMER5_COMPC_vect)
-#endif
-#if INJ_CHANNELS >= 8
-/** @brief ISR for fuel channel 8 */
-// cppcheck-suppress misra-c2012-8.2
-FUEL_INTERRUPT(8, TIMER5_COMPB_vect)
-#endif
-#endif
-
 ///@}
 
 /**
@@ -419,53 +372,6 @@ void moveToNextState(IgnitionSchedule &schedule)
 {
   movetoNextState(schedule, ignitionPendingToRunning, ignitionRunningToOff, ignitionRunningToPending);
 }
-
-/** @brief Declares and defines an ignition schedule timer interrupt */
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-#define IGNITION_INTERRUPT(index, avr_vector) \
-  ISR((avr_vector)) { \
-    moveToNextState(ignitionSchedule ## index); \
-  }
-
-/** @brief ISR for ignition channel 1 */
-// cppcheck-suppress misra-c2012-8.2
-IGNITION_INTERRUPT(1, TIMER5_COMPA_vect)
-#if IGN_CHANNELS >= 2
-/** @brief ISR for ignition channel 2 */
-// cppcheck-suppress misra-c2012-8.2
-IGNITION_INTERRUPT(2, TIMER5_COMPB_vect)
-#endif
-#if IGN_CHANNELS >= 3
-/** @brief ISR for ignition channel 3 */
-// cppcheck-suppress misra-c2012-8.2
-IGNITION_INTERRUPT(3, TIMER5_COMPC_vect)
-#endif
-#if IGN_CHANNELS >= 4
-/** @brief ISR for ignition channel 4 */
-// cppcheck-suppress misra-c2012-8.2
-IGNITION_INTERRUPT(4, TIMER4_COMPA_vect)
-#endif
-#if IGN_CHANNELS >= 5
-// cppcheck-suppress misra-c2012-8.2
-IGNITION_INTERRUPT(5, TIMER4_COMPC_vect)
-#endif
-#if IGN_CHANNELS >= 6
-/** @brief ISR for ignition channel 6 */
-// cppcheck-suppress misra-c2012-8.2
-IGNITION_INTERRUPT(6, TIMER4_COMPB_vect)
-#endif
-#if IGN_CHANNELS >= 7
-/** @brief ISR for ignition channel 7 */
-// cppcheck-suppress misra-c2012-8.2
-IGNITION_INTERRUPT(7, TIMER3_COMPC_vect)
-#endif
-#if IGN_CHANNELS >= 8
-/** @brief ISR for ignition channel 8 */
-// cppcheck-suppress misra-c2012-8.2
-IGNITION_INTERRUPT(8, TIMER3_COMPB_vect)
-#endif
-
-#endif
 
 ///@}
 
