@@ -123,7 +123,7 @@
   //#define TMR_PRESCALE  128
   //#define MAX_TIMER_PERIOD ((65535 * 1000000ULL) / (F_BUS_ACTUAL / TMR_PRESCALE)) //55923 @ 600Mhz. 
   #define MAX_TIMER_PERIOD 55923UL
-  #define uS_TO_TIMER_COMPARE(uS) ((uS * 75UL) >> 6) //Converts a given number of uS into the required number of timer ticks until that time has passed. 
+  #define uS_TO_TIMER_COMPARE(uS) ((COMPARE_TYPE)((uS * 75UL) >> 6)) //Converts a given number of uS into the required number of timer ticks until that time has passed. 
   /*
   To calculate the above uS_TO_TIMER_COMPARE
   Choose number of bit of precision. Eg: 6

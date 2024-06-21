@@ -164,7 +164,7 @@ struct Schedule {
   voidVoidCallback pStartCallback;  ///< Start Callback function for schedule
   voidVoidCallback pEndCallback;    ///< End Callback function for schedule
 
-  volatile COMPARE_TYPE nextStartCompare;    ///< Planned start of next schedule (when current schedule is RUNNING_WITHNEXT)
+  volatile COUNTER_TYPE nextStartCompare;    ///< Planned start of next schedule (when current schedule is RUNNING_WITHNEXT)
   
   counter_t &_counter;       ///< **Reference** to the counter register. E.g. TCNT3
   compare_t &_compare;       ///< **Reference**to the compare register. E.g. OCR3A

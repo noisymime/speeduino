@@ -114,7 +114,7 @@
     static inline void IGN8_TIMER_DISABLE(void)  {FTM3_C7SC &= ~FTM_CSC_CHIE;}
 
   #define MAX_TIMER_PERIOD 139808UL // 2.13333333uS * 65535
-  #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
+  #define uS_TO_TIMER_COMPARE(uS) ((COMPARE_TYPE)((uS * 15) >> 5)) //Converts a given number of uS into the required number of timer ticks until that time has passed.
 
 /*
 ***********************************************************************************************************

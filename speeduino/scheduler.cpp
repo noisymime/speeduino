@@ -231,7 +231,7 @@ void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsi
   //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
   noInterrupts();
   schedule.Duration = uS_TO_TIMER_COMPARE(duration);
-  SET_COMPARE(schedule._compare, schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeout));
+  schedule._compare = schedule._counter + uS_TO_TIMER_COMPARE(timeout);
   schedule.Status = PENDING; //Turn this schedule on
   interrupts();
 }
@@ -254,7 +254,7 @@ void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeo
   // by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
   if(schedule.Status==OFF || schedule.endScheduleSetByDecoder == false) { 
     //Need to check that the timeout doesn't exceed the overflow
-    SET_COMPARE(schedule._compare, schedule._counter + uS_TO_TIMER_COMPARE(min(timeout, MAX_TIMER_PERIOD - 1UL)));
+    schedule._compare = schedule._counter + uS_TO_TIMER_COMPARE(min(timeout, MAX_TIMER_PERIOD - 1UL));
   }
   schedule.Status = PENDING; //Turn this schedule on
   interrupts();
@@ -268,7 +268,7 @@ void refreshIgnitionSchedule1(unsigned long timeToEnd)
   {
     noInterrupts();
     ignitionSchedule1.Duration = uS_TO_TIMER_COMPARE(timeToEnd);
-    SET_COMPARE(ignitionSchedule1._compare, ignitionSchedule1._counter + ignitionSchedule1.Duration);
+    ignitionSchedule1._compare = ignitionSchedule1._counter + ignitionSchedule1.Duration;
     interrupts();
   }
 }
@@ -317,7 +317,7 @@ static inline __attribute__((always_inline)) void fuelScheduleISR(FuelSchedule &
   {
     schedule.pStartCallback();
     schedule.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-    SET_COMPARE(schedule._compare, schedule._counter + schedule.Duration); //Doing this here prevents a potential overflow on restarts
+    schedule._compare = schedule._counter + schedule.Duration; //Doing this here prevents a potential overflow on restarts
   }
   else if (isRunning(schedule))
   {
@@ -325,7 +325,7 @@ static inline __attribute__((always_inline)) void fuelScheduleISR(FuelSchedule &
       //If there is a next schedule queued up, activate it
       if(hasNextSchedule(schedule))
       {
-        SET_COMPARE(schedule._compare, schedule.nextStartCompare);
+        schedule._compare = schedule.nextStartCompare;
         schedule.Status = PENDING;
       } else {
         schedule.Status = OFF; //Turn off the schedule
@@ -447,7 +447,7 @@ static inline __attribute__((always_inline)) void ignitionScheduleISR(IgnitionSc
     schedule.pStartCallback();
     schedule.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
     schedule.startTime = micros();
-    SET_COMPARE(schedule._compare, schedule._counter + schedule.Duration);
+    schedule._compare = schedule._counter + schedule.Duration;
   }
   else if (isRunning(schedule))
   {
@@ -460,7 +460,7 @@ static inline __attribute__((always_inline)) void ignitionScheduleISR(IgnitionSc
     //If there is a next schedule queued up, activate it
     if(hasNextSchedule(schedule))
     {
-        SET_COMPARE(schedule._compare, schedule.nextStartCompare);
+        schedule._compare = schedule.nextStartCompare;
         schedule.Status = PENDING;
     } else {
       schedule.Status = OFF; //Turn off the schedule

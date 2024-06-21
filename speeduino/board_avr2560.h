@@ -128,7 +128,7 @@ static inline void IGN7_TIMER_DISABLE(void) { TIMSK3 &= ~(1 << OCIE3C); } //Repl
 static inline void IGN8_TIMER_DISABLE(void) { TIMSK3 &= ~(1 << OCIE3B); } //Replaces injector 2
 
   #define MAX_TIMER_PERIOD 262140UL //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
-  #define uS_TO_TIMER_COMPARE(uS1) ((uS1) >> 2) //Converts a given number of uS into the required number of timer ticks until that time has passed
+  #define uS_TO_TIMER_COMPARE(uS1) ((COMPARE_TYPE)((uS1) >> 2)) //Converts a given number of uS into the required number of timer ticks until that time has passed
 
 /*
 ***********************************************************************************************************
