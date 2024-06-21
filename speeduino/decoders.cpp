@@ -374,9 +374,10 @@ static inline uint16_t RpmFromRevolutionTimeUs(uint32_t revTime) {
   }
 }
 
-/** Compute RPM.
+/** @brief Compute RPM.
+ * 
 * As nearly all the decoders use a common method of determining RPM (The time the last full revolution took) A common function is simpler.
-* @param degreesOver - the number of crank degrees between tooth #1s. Some patterns have a tooth #1 every crank rev, others are every cam rev.
+* @param isCamTeeth - are we basing the calculation on crank (1x) or cam (2x)
 * @return RPM
 */
 static __attribute__((noinline)) uint16_t stdGetRPM(bool isCamTeeth)
