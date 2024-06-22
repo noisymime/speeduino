@@ -321,7 +321,7 @@ uint16_t correctionAccel(void)
           activateMAPDOT = abs(currentStatus.mapDOT);
           currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
           //Check if the MAP rate of change is negative or positive. Negative means decelarion.
-          if (currentStatus.mapDOT < 0)
+          if ( (currentStatus.mapDOT) < 0 && (currentStatus.MAP < configPage15.decelMaxMAP) )
           {
             BIT_SET(currentStatus.engine, BIT_ENGINE_DCC); //Mark deceleration enleanment as active.
             accelValue = configPage2.decelAmount; //In decel, use the decel fuel amount as accelValue
@@ -387,7 +387,7 @@ uint16_t correctionAccel(void)
           activateTPSDOT = abs(currentStatus.tpsDOT);
           currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
           //Check if the TPS rate of change is negative or positive. Negative means decelarion.
-          if (currentStatus.tpsDOT < 0)
+          if ( (currentStatus.tpsDOT < 0) && (currentStatus.MAP < configPage15.decelMaxMAP) )
           {
             BIT_SET(currentStatus.engine, BIT_ENGINE_DCC); //Mark deceleration enleanment as active.
             accelValue = configPage2.decelAmount; //In decel, use the decel fuel amount as accelValue
