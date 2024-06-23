@@ -59,6 +59,7 @@ void CAN_write()
 
 void sendBMWCluster()
 {
+  outMsg.flags.extended = 0; //Make sure to set this to standard
   DashMessage(CAN_BMW_DME1);
   Can0.write(outMsg);
   DashMessage(CAN_BMW_DME2);
@@ -69,6 +70,7 @@ void sendBMWCluster()
 
 void sendVAGCluster()
 {
+  outMsg.flags.extended = 0; //Make sure to set this to standard
   DashMessage(CAN_VAG_RPM);
   Can0.write(outMsg);
   DashMessage(CAN_VAG_VSS);
@@ -85,28 +87,24 @@ void receiveCANwbo()
     outMsg.buf[0] = currentStatus.battery10; // We don't do any conversion since factor is 0.1 and speeduino value is x10
     outMsg.buf[1] = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) ? 0x1 : 0x0; // Enable heater once engine is running (ie. above cranking rpm), this condition can be changed to CLT above certain temp and so on.
     Can0.write(outMsg);
+    outMsg.flags.extended = 0; //Make sure to set this back to standard to avoid future problems
     if ((inMsg.id == 0x190 || inMsg.id == 0x192))
     {
       uint32_t inLambda;
       inLambda = (word(inMsg.buf[3], inMsg.buf[2])); // Combining 2 bytes of data into single variable factor is 0.0001 so lambda 1 comes in as 10K
       if(inMsg.buf[1] == 0x1) // Checking if lambda is valid
       {
+        inLambda = (inLambda * configPage2.stoich) / 10000; // Multiplying lambda by stoich ratio to get AFR and dividing it by 10000 to get correct value
         switch(inMsg.id)
         {
           case 0x190:
-          if ((inLambda * configPage2.stoich / 10000) > 250) { //Check if we dont overflow the 8bit O2 variable
-            currentStatus.O2 = 250;
-            break;
-          }
-          currentStatus.O2 = (unsigned int)(inLambda * configPage2.stoich / 10000); // Multiplying lambda by stoich ratio to get AFR and dividing it by 10000 to get correct value
+          if (inLambda > 250) { currentStatus.O2 = 250; } //Check if we don't overflow the 8bit O2 variable
+          else { currentStatus.O2 = inLambda & 0xFF; }
           break;
 
           case 0x192:
-          if ((inLambda * configPage2.stoich / 10000) > 250) { //Check if we dont overflow the 8bit O2 variable
-            currentStatus.O2 = 250;
-            break;
-          }
-          currentStatus.O2_2 = (unsigned int)(inLambda * configPage2.stoich / 10000); // Multiplying lambda by stoich ratio to get AFR and dividing it by 10000 to get correct value
+          if (inLambda > 250) { currentStatus.O2_2 = 250; } //Check if we don't overflow the 8bit O2 variable
+          else { currentStatus.O2_2 = inLambda & 0xFF; }
           break;
 
           default:
@@ -258,6 +256,7 @@ void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPID
   uint16_t obdcalcH16;    //used in calcs  
 
   outMsg.len = 8;
+  outMsg.flags.extended = 0; //Make sure to set this to standard
   
   if (PIDmode == 0x01)
   {
