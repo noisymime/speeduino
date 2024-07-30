@@ -681,6 +681,7 @@ void doUpdates(void)
     configPage2.maeMinChange = 2; //Default is 2% minimum change to match prior behaviour.
 
     configPage2.decelAmount = 100; //Default decel fuel amount is 100%, so no change in fueling in decel as before.
+    configPage15.decelMaxMAP = 100;
     //full status structure has been changed. Update programmable outputs settings to match.
     for (uint8_t y = 0; y < sizeof(configPage13.outputPin); y++)
     {
