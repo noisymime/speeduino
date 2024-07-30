@@ -304,15 +304,40 @@ uint16_t correctionAccel(void)
 
       //Need to check whether the accel amount has increased from when AE was turned on
       //If the accel amount HAS increased, we clear the current enrich phase and a new one will be started below
-      if( (configPage2.aeMode == AE_MODE_MAP) && (abs(currentStatus.mapDOT) > activateMAPDOT) )
+      //Comparing between 0 for faster switching between accel and decel
+      if(configPage2.aeMode == AE_MODE_MAP)
       {
-        BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
-        BIT_CLEAR(currentStatus.engine, BIT_ENGINE_DCC);
+        if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC))
+        {
+          if((abs(currentStatus.mapDOT) > activateMAPDOT) || (abs(currentStatus.mapDOT) > configPage2.maeThresh && currentStatus.mapDOT < 0))
+          {
+            BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
+          }
+        }
+        else if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC))
+        {
+          if((abs(currentStatus.mapDOT) > activateMAPDOT) || (abs(currentStatus.mapDOT) > configPage2.maeThresh && currentStatus.mapDOT > 0))
+          {
+            BIT_CLEAR(currentStatus.engine, BIT_ENGINE_DCC);
+          }
+        }
       }
-      else if( (configPage2.aeMode == AE_MODE_TPS) && (abs(currentStatus.tpsDOT) > activateTPSDOT) )
+      else if(configPage2.aeMode == AE_MODE_TPS)
       {
-        BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
-        BIT_CLEAR(currentStatus.engine, BIT_ENGINE_DCC);
+        if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC))
+        {
+          if((abs(currentStatus.tpsDOT) > activateTPSDOT) || (abs(currentStatus.tpsDOT) > configPage2.taeThresh && currentStatus.tpsDOT < 0))
+          {
+            BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
+          }
+        }
+        else if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC))
+        {
+          if((abs(currentStatus.tpsDOT) > activateTPSDOT) || (abs(currentStatus.tpsDOT) > configPage2.taeThresh && currentStatus.tpsDOT > 0))
+          {
+            BIT_CLEAR(currentStatus.engine, BIT_ENGINE_DCC);
+          }
+        }
       }
     }
   }
