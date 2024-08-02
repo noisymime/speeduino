@@ -68,13 +68,11 @@ HardwareTimer Timer1(TIM1);
 HardwareTimer Timer2(TIM2);
 HardwareTimer Timer3(TIM3);
 HardwareTimer Timer4(TIM4);
-#if !defined(ARDUINO_BLUEPILL_F103C8) && !defined(ARDUINO_BLUEPILL_F103CB) //F103 just have 4 timers
 HardwareTimer Timer5(TIM5);
 #if defined(TIM11)
 HardwareTimer Timer11(TIM11);
 #elif defined(TIM7)
 HardwareTimer Timer11(TIM7);
-#endif
 #endif
 
 #ifdef RTC_ENABLED
@@ -130,25 +128,14 @@ STM32RTC& rtc = STM32RTC::getInstance();
     ***********************************************************************************************************
     * Timers
     */
-    #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB)
-      Timer4.setOverflow(1000, MICROSEC_FORMAT);  // Set up period
-      #if ( STM32_CORE_VERSION_MAJOR < 2 )
-      Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
-      Timer4.attachInterrupt(1, oneMSInterval);
-      #else //2.0 forward
-      Timer4.attachInterrupt(oneMSInterval);
-      #endif
-      Timer4.resume(); //Start Timer
+    Timer11.setOverflow(1000, MICROSEC_FORMAT);  // Set up period
+    #if ( STM32_CORE_VERSION_MAJOR < 2 )
+    Timer11.setMode(1, TIMER_OUTPUT_COMPARE);
+    Timer11.attachInterrupt(1, oneMSInterval);
     #else
-      Timer11.setOverflow(1000, MICROSEC_FORMAT);  // Set up period
-      #if ( STM32_CORE_VERSION_MAJOR < 2 )
-      Timer11.setMode(1, TIMER_OUTPUT_COMPARE);
-      Timer11.attachInterrupt(1, oneMSInterval);
-      #else
-      Timer11.attachInterrupt(oneMSInterval);
-      #endif
-      Timer11.resume(); //Start Timer
+    Timer11.attachInterrupt(oneMSInterval);
     #endif
+    Timer11.resume(); //Start Timer
     pinMode(LED_BUILTIN, OUTPUT); //Visual WDT
 
     /*
