@@ -5630,6 +5630,7 @@ void triggerSetup_SuzukiK6A(void)
 
   // not using toothAngles[0] as i'm hoping it makes logic easier
 
+  toothAngles[0] = -70;                 // Wrap around to 650, 
   toothAngles[1] = 0;                   // 0 TDC cylinder 1, 
   toothAngles[2] = 170;                 // 170 - end of cylinder 1, start of cylinder 3, trigger ignition for cylinder 3 on this tooth
   toothAngles[3] = 240;                 // 70 TDC cylinder 3
@@ -5655,7 +5656,7 @@ void triggerPri_SuzukiK6A(void)
 {
   curTime = micros();  
   curGap = curTime - toothLastToothTime;
-  if ( (curGap >= triggerFilterTime) || (currentStatus.startRevolutions == 0) )
+  if ( (curGap >= triggerFilterTime) || (currentStatus.startRevolutions == 0U) )
   {    
     toothCurrentCount++;
     BIT_SET(decoderState, BIT_DECODER_VALID_TRIGGER); //Flag this pulse as being a valid trigger (ie that it passed filters)
@@ -5680,21 +5681,24 @@ void triggerPri_SuzukiK6A(void)
     curGap2 = curGap;
     
     
-    if( (toothCurrentCount == (triggerActualTeeth + 1)) && currentStatus.hasSync == true  )
+    if( (toothCurrentCount == (triggerActualTeeth + 1U)) && currentStatus.hasSync == true  )
     {
       // seen enough teeth to have a revolution of the crank
       toothCurrentCount = 1; //Reset the counter
       toothOneMinusOneTime = toothOneTime;
       toothOneTime = curTime;
-      currentStatus.startRevolutions = currentStatus.startRevolutions + 2; // increment for 2 revs as we do 720 degrees on the the crank       
+      currentStatus.startRevolutions = currentStatus.startRevolutions + 2U; // increment for 2 revs as we do 720 degrees on the the crank       
     }
-    else if (toothCurrentCount > (triggerActualTeeth + 1))
+    else if (toothCurrentCount > (triggerActualTeeth + 1U))
     {
       // Lost sync
       currentStatus.hasSync = false; 
       currentStatus.syncLossCounter++;
       triggerFilterTime = 0;
       toothCurrentCount=0;
+    } else {
+      // We have sync, but are part way through a revolution
+      // Nothing to do but keep MISRA happy.
     }
 
     // check gaps match with tooth to check we have sync 
@@ -5720,6 +5724,7 @@ void triggerPri_SuzukiK6A(void)
       case 2:
       case 4:
       case 7:
+      default:
         // current tooth gap is smaller than the previous tooth gap = syncloss
         // eg tooth 2 should be bigger than tooth 1, if its not then we've got syncloss
         if (curGap < curGap2)
@@ -5787,10 +5792,10 @@ void triggerPri_SuzukiK6A(void)
               triggerFilterTime = curGap;
               break;
             case 2: // 50 % 67 degrees
-              triggerFilterTime = curGap * 2;
+              triggerFilterTime = curGap * 2U;
               break;
             case 3: // 75 % 100 degrees
-              triggerFilterTime = curGap * 3;
+              triggerFilterTime = curGap * 3U;
               break;
             default:
               triggerFilterTime = 0;
@@ -5837,6 +5842,9 @@ void triggerPri_SuzukiK6A(void)
           }
           break;
 
+        default:
+          triggerFilterTime = 0;
+          break;
       }
       
       //NEW IGNITION MODE
@@ -5862,9 +5870,8 @@ uint16_t getRPM_SuzukiK6A(void)
 {
   //Cranking code needs working out. 
 
-  uint16_t tempRPM;
+  uint16_t tempRPM = stdGetRPM(CAM_SPEED);
 
-  tempRPM = stdGetRPM(720);
   MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
   if(MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
 
@@ -5873,127 +5880,52 @@ uint16_t getRPM_SuzukiK6A(void)
 
 int getCrankAngle_SuzukiK6A(void)
 {
-  int crankAngle = 0;
-
-  //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
-  unsigned long tempToothLastToothTime;
-  int tempToothCurrentCount;
   //Grab some variables that are used in the trigger code and assign them to temp variables.
   noInterrupts();
-  tempToothCurrentCount = toothCurrentCount;
-  tempToothLastToothTime = toothLastToothTime;
+  uint16_t tempToothCurrentCount = toothCurrentCount;
+  unsigned long tempToothLastToothTime = toothLastToothTime;
   lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
   interrupts();
 
-  crankAngle = toothAngles[(tempToothCurrentCount)] + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
+  if (tempToothCurrentCount>0U) {
+    triggerToothAngle = (uint16_t)toothAngles[tempToothCurrentCount] - (uint16_t)toothAngles[tempToothCurrentCount-1U];
+  }
   
   //Estimate the number of degrees travelled since the last tooth}
   elapsedTime = (lastCrankAngleCalc - tempToothLastToothTime);
 
-  switch(toothCurrentCount)
-  {
-    case 2:
-    case 4:
-      // equivalent of tooth 1 except we've not done rotation code yet so its 8
-      // 170 degree tooth, next tooth is 70          
-      triggerToothAngle = 170;
-      break;
-
-    case 5:
-      // 70 degrees, next tooth is 35
-      triggerToothAngle = 70;
-      break;
-
-    case 6:
-      // sync tooth, next tooth is 135
-      triggerToothAngle = 35;
-      break;
-
-    case 7:
-      // 135 degre tooth, next tooth is 70
-      triggerToothAngle = 135;
-      break;
-
-    case 1:
-    case 3:
-      // 70 degree tooth, next tooth is 170
-      triggerToothAngle = 70;
-      break;
-  }
-  crankAngle += timeToAngleDegPerMicroSec(elapsedTime);
+  int crankAngle = toothAngles[tempToothCurrentCount] + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
+  crankAngle += (int)timeToAngleDegPerMicroSec(elapsedTime);
   if (crankAngle >= 720) { crankAngle -= 720; }
-//  if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; } not needed, crank angle max gets max from injection or ignition, we have to be over 720 degrees so can ignore
   if (crankAngle < 0) { crankAngle += 720; }   
 
   return crankAngle;
 }
 
 // Assumes no advance greater than 48 degrees. Triggers on the tooth before the ignition event
+static uint16_t __attribute__((noinline)) calcEndTeeth_SuzukiK6A(int ignitionAngle) {
+  //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
+  const int16_t tempIgnitionEndTooth = ignitionLimits(ignitionAngle - configPage4.triggerAngle);
+
+  uint8_t nCount=1U;
+  while ((nCount<8U) && (tempIgnitionEndTooth > toothAngles[nCount])) {
+    ++nCount;
+  }
+  if(nCount==1U || nCount==8U) {
+    // didn't find a match, use tooth 7 as it must be greater than 7 but less than 1.  
+    return 7U;
+  } 
+
+  // The tooth we want is the tooth prior to this one.     
+  return nCount-1U;
+}
+
 void triggerSetEndTeeth_SuzukiK6A(void)
 {
-  byte nCount, bExit;
-
-  //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
-  int16_t tempIgnitionEndTooth;
-
-  tempIgnitionEndTooth = (ignition1EndAngle - configPage4.triggerAngle);
-
-  tempIgnitionEndTooth = ignitionLimits(tempIgnitionEndTooth);
-
-  for (nCount = 1, bExit = false; nCount < 8 && bExit == false; nCount++)
-  {
-    if(tempIgnitionEndTooth <= toothAngles[nCount])
-    { 
-      // The tooth we want is the tooth prior to this one.     
-      tempIgnitionEndTooth = nCount-1;
-      if (tempIgnitionEndTooth <= 0)
-      { tempIgnitionEndTooth = 7; }    
-      bExit = true;
-    }
-  }
-  if(nCount == 8)
-  { tempIgnitionEndTooth = 7; } // didn't find a match, use tooth 7 as it must be greater than 7 but less than 1.  
-  ignition1EndTooth = tempIgnitionEndTooth;
-
-  //--------------------
-
-  tempIgnitionEndTooth = (ignition2EndAngle - configPage4.triggerAngle);
-  tempIgnitionEndTooth = ignitionLimits(tempIgnitionEndTooth);
-  
-  for (nCount = 1, bExit = false; nCount < 8 && bExit == false; nCount++)
-  {
-    if(tempIgnitionEndTooth <= toothAngles[nCount])
-    { 
-      // The tooth we want is the tooth prior to this one.     
-      tempIgnitionEndTooth = nCount-1;
-      if (tempIgnitionEndTooth <= 0)
-      { tempIgnitionEndTooth = 7; }    
-      bExit = true; // force exit from loop   
-    }
-  }
-  if(nCount == 8)
-  { tempIgnitionEndTooth = 7; } // didn't find a match, use tooth 7 as it must be greater than 7 but less than 1.  
-  ignition2EndTooth = tempIgnitionEndTooth;
-
-  //--------------
-
-  tempIgnitionEndTooth = (ignition3EndAngle - configPage4.triggerAngle);
-  tempIgnitionEndTooth = ignitionLimits(tempIgnitionEndTooth);
-  
-  for (nCount = 1, bExit = false; nCount < 8 && bExit == false; nCount++)
-  {
-    if(tempIgnitionEndTooth <= toothAngles[nCount])
-    { 
-      // The tooth we want is the tooth prior to this one.     
-      tempIgnitionEndTooth = nCount-1;
-      if (tempIgnitionEndTooth <= 0)
-      { tempIgnitionEndTooth = 7; }    
-      bExit = true; // force exit from loop   
-    }
-  }
-  if(nCount == 8)
-  { tempIgnitionEndTooth = 7; } // didn't find a match, use tooth 7 as it must be greater than 7 but less than 1.  
-  ignition3EndTooth = tempIgnitionEndTooth;
+  ignition1EndTooth = calcEndTeeth_SuzukiK6A(ignition1EndAngle);
+  ignition2EndTooth = calcEndTeeth_SuzukiK6A(ignition2EndAngle);
+  ignition3EndTooth = calcEndTeeth_SuzukiK6A(ignition3EndAngle);
 }
+
 /** @} */
 
