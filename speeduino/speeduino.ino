@@ -45,8 +45,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "SD_logger.h"
 #include "schedule_calcs.h"
 #include "auxiliaries.h"
+#include "board_definition.h"
 #include RTC_LIB_H //Defined in each boards .h file
-#include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 
 uint16_t req_fuel_uS = 0; /**< The required fuel variable (As calculated by TunerStudio) in uS */
@@ -88,7 +88,16 @@ inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int
  * - Can be tested for certain frequency interval being expired by (eg) BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)
  * 
  */
-void loop(void)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wattributes"
+// Sometimes loop() is inlined by LTO & sometimes not
+// When not inlined, there is a huge difference in stack usage: 60+ bytes
+// That eats into available RAM.
+// Adding __attribute__((always_inline)) forces the LTO process to inline.
+//
+// Since the function is declared in an Arduino header, we can't change
+// it to inline, so we need to suppress the resulting warning.
+void __attribute__((always_inline)) loop(void)
 {
       mainLoopCount++;
       LOOP_TIMER = TIMER_mask;
@@ -1059,7 +1068,7 @@ void loop(void)
 #endif
 
 #if defined(USE_IGN_REFRESH)
-        if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > crankAngle) && (configPage4.StgCycles == 0) && (configPage2.perToothIgn != true) )
+        if( isRunning(ignitionSchedule1) && (ignition1EndAngle > crankAngle) && (configPage4.StgCycles == 0) && (configPage2.perToothIgn != true) )
         {
           unsigned long uSToEnd = 0;
 
@@ -1183,6 +1192,8 @@ void loop(void)
       BIT_CLEAR(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
     }
 } //loop()
+#pragma GCC diagnostic pop
+
 #endif //Unit test guard
 
 /**

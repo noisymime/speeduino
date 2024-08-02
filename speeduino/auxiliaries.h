@@ -1,7 +1,7 @@
 #ifndef AUX_H
 #define AUX_H
 
-#include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
+#include "board_definition.h"
 
 #if defined(CORE_AVR)
 #include <util/atomic.h>

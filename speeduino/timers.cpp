@@ -60,7 +60,7 @@ void initialiseTimers(void)
 
 static inline void applyOverDwellCheck(IgnitionSchedule &schedule, uint32_t targetOverdwellTime) {
   //Check first whether each spark output is currently on. Only check it's dwell time if it is
-  if ((schedule.Status == RUNNING) && (schedule.startTime < targetOverdwellTime)) { 
+  if (isRunning(schedule) && (schedule.startTime < targetOverdwellTime)) { 
     schedule.pEndCallback(); schedule.Status = OFF; 
   }
 }

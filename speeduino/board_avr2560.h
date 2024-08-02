@@ -1,9 +1,7 @@
 #ifndef AVR2560_H
 #define AVR2560_H
 
-#include "globals.h"
 #if defined(CORE_AVR)
-
 #include <avr/interrupt.h>
 #include <avr/io.h>
 
@@ -11,6 +9,20 @@
 ***********************************************************************************************************
 * General
 */
+  #define BOARD_MAX_DIGITAL_PINS 54 //digital pins +1
+  #define BOARD_MAX_IO_PINS 70 //digital pins + analog channels + 1
+  #define BOARD_MAX_ADC_PINS  15 //Number of analog pins
+  #ifndef LED_BUILTIN
+    #define LED_BUILTIN 13
+  #endif
+  
+  #ifndef INJ_CHANNELS
+    #define INJ_CHANNELS 4
+  #endif
+  #ifndef IGN_CHANNELS
+    #define IGN_CHANNELS 5
+  #endif
+
   #define PORT_TYPE uint8_t //Size of the port variables (Eg inj1_pin_port).
   #define PINMASK_TYPE uint8_t
   #define COMPARE_TYPE uint16_t
@@ -128,7 +140,7 @@ static inline void IGN7_TIMER_DISABLE(void) { TIMSK3 &= ~(1 << OCIE3C); } //Repl
 static inline void IGN8_TIMER_DISABLE(void) { TIMSK3 &= ~(1 << OCIE3B); } //Replaces injector 2
 
   #define MAX_TIMER_PERIOD 262140UL //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
-  #define uS_TO_TIMER_COMPARE(uS1) ((uS1) >> 2) //Converts a given number of uS into the required number of timer ticks until that time has passed
+  #define uS_TO_TIMER_COMPARE(uS1) ((COMPARE_TYPE)((uS1) >> 2)) //Converts a given number of uS into the required number of timer ticks until that time has passed
 
 /*
 ***********************************************************************************************************

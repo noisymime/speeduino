@@ -24,95 +24,16 @@
  */
 #ifndef GLOBALS_H
 #define GLOBALS_H
-#include <Arduino.h>
 #include "table2d.h"
 #include "table3d.h"
-#include <assert.h>
-#include "src/FastCRC/FastCRC.h"
-
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
-  #define BOARD_MAX_DIGITAL_PINS 54 //digital pins +1
-  #define BOARD_MAX_IO_PINS 70 //digital pins + analog channels + 1
-  #define BOARD_MAX_ADC_PINS  15 //Number of analog pins
-  #ifndef LED_BUILTIN
-    #define LED_BUILTIN 13
-  #endif
-  #define CORE_AVR
-  #define BOARD_H "board_avr2560.h"
-  #ifndef INJ_CHANNELS
-    #define INJ_CHANNELS 4
-  #endif
-  #ifndef IGN_CHANNELS
-    #define IGN_CHANNELS 5
-  #endif
-
-  #if defined(__AVR_ATmega2561__)
-    //This is a workaround to avoid having to change all the references to higher ADC channels. We simply define the channels (Which don't exist on the 2561) as being the same as A0-A7
-    //These Analog inputs should never be used on any 2561 board definition (Because they don't exist on the MCU), so it will not cause any issues
-    #define A8  A0
-    #define A9  A1
-    #define A10  A2
-    #define A11  A3
-    #define A12  A4
-    #define A13  A5
-    #define A14  A6
-    #define A15  A7
-  #endif
-
-  //#define TIMER5_MICROS
-
-#elif defined(CORE_TEENSY)
-  #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
-    #define CORE_TEENSY35
-    #define BOARD_H "board_teensy35.h"
-  #elif defined(__IMXRT1062__)
-    #define CORE_TEENSY41
-    #define BOARD_H "board_teensy41.h"
-  #endif
-  #define INJ_CHANNELS 8
-  #define IGN_CHANNELS 8
-
-#elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(STM32)
-  #define BOARD_H "board_stm32_official.h"
-  #define CORE_STM32
-
-  #define BOARD_MAX_ADC_PINS  NUM_ANALOG_INPUTS-1 //Number of analog pins from core.
-  #if defined(STM32F407xx) //F407 can do 8x8 STM32F401/STM32F411 don't
-   #define INJ_CHANNELS 8
-   #define IGN_CHANNELS 8
-  #else
-   #define INJ_CHANNELS 4
-   #define IGN_CHANNELS 5
-  #endif
-#elif defined(__SAMD21G18A__)
-  #define BOARD_H "board_samd21.h"
-  #define CORE_SAMD21
-  #define CORE_SAM
-  #define INJ_CHANNELS 4
-  #define IGN_CHANNELS 4
-#elif defined(__SAMC21J18A__)
-  #define BOARD_H "board_samc21.h"
-  #define CORE_SAMC21
-  #define CORE_SAM
-#elif defined(__SAME51J19A__)
-  #define BOARD_H "board_same51.h"
-  #define CORE_SAME51
-  #define CORE_SAM
-  #define INJ_CHANNELS 8
-  #define IGN_CHANNELS 8
-#else
-  #error Incorrect board selected. Please select the correct board (Usually Mega 2560) and upload again
-#endif
-
-//This can only be included after the above section
-#include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
+#include "board_definition.h"
 
 //Handy bitsetting macros
 #define BIT_SET(a,b) ((a) |= (1U<<(b)))
 #define BIT_CLEAR(a,b) ((a) &= ~(1U<<(b)))
 #define BIT_CHECK(var,pos) !!((var) & (1U<<(pos)))
-#define BIT_TOGGLE(var,pos) ((var)^= 1UL << (pos))
-#define BIT_WRITE(var, pos, bitvalue) ((bitvalue) ? BIT_SET((var), (pos)) : bitClear((var), (pos)))
+#define BIT_TOGGLE(var,pos) ((var) ^= (1U << (pos)))
+#define BIT_WRITE(var, pos, bitvalue) ((bitvalue) ? BIT_SET((var), (pos)) : BIT_CLEAR((var), (pos)))
 
 #define CRANK_ANGLE_MAX (max(CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ))
 
@@ -240,8 +161,8 @@
 #define INJ_PAIR_13_24      0
 #define INJ_PAIR_14_23      1
 
-#define OUTPUT_CONTROL_DIRECT   0
-#define OUTPUT_CONTROL_MC33810  10
+#define OUTPUT_CONTROL_DIRECT   0U
+#define OUTPUT_CONTROL_MC33810  10U
 
 #define IGN_MODE_WASTED     0U
 #define IGN_MODE_SINGLE     1U
@@ -354,8 +275,8 @@
 #define FOUR_STROKE         0U
 #define TWO_STROKE          1U
 
-#define GOING_LOW         0
-#define GOING_HIGH        1
+#define GOING_LOW         0U
+#define GOING_HIGH        1U
 
 #define BATTV_COR_MODE_WHOLE 0
 #define BATTV_COR_MODE_OPENTIME 1

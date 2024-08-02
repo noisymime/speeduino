@@ -1,7 +1,6 @@
-#include "globals.h"
+#include "board_definition.h"
 
 #if defined(CORE_TEENSY) && defined(CORE_TEENSY35)
-#include "board_teensy35.h"
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"
@@ -316,14 +315,14 @@ void ftm0_isr(void)
   bool interrupt7 = (FTM0_C6SC & FTM_CSC_CHF);
   bool interrupt8 = (FTM0_C7SC & FTM_CSC_CHF);
 
-  if(interrupt1) { FTM0_C0SC &= ~FTM_CSC_CHF; fuelSchedule1Interrupt(); }
-  else if(interrupt2) { FTM0_C1SC &= ~FTM_CSC_CHF; fuelSchedule2Interrupt(); }
-  else if(interrupt3) { FTM0_C2SC &= ~FTM_CSC_CHF; fuelSchedule3Interrupt(); }
-  else if(interrupt4) { FTM0_C3SC &= ~FTM_CSC_CHF; fuelSchedule4Interrupt(); }
-  else if(interrupt5) { FTM0_C4SC &= ~FTM_CSC_CHF; ignitionSchedule1Interrupt(); }
-  else if(interrupt6) { FTM0_C5SC &= ~FTM_CSC_CHF; ignitionSchedule2Interrupt(); }
-  else if(interrupt7) { FTM0_C6SC &= ~FTM_CSC_CHF; ignitionSchedule3Interrupt(); }
-  else if(interrupt8) { FTM0_C7SC &= ~FTM_CSC_CHF; ignitionSchedule4Interrupt(); }
+  if(interrupt1) { FTM0_C0SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule1); }
+  else if(interrupt2) { FTM0_C1SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule2); }
+  else if(interrupt3) { FTM0_C2SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule3); }
+  else if(interrupt4) { FTM0_C3SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule4); }
+  else if(interrupt5) { FTM0_C4SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule1); }
+  else if(interrupt6) { FTM0_C5SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule2); }
+  else if(interrupt7) { FTM0_C6SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule3); }
+  else if(interrupt8) { FTM0_C7SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule4); }
 
 }
 void ftm3_isr(void)
@@ -331,35 +330,35 @@ void ftm3_isr(void)
 
 #if (INJ_CHANNELS >= 5)
   bool interrupt1 = (FTM3_C0SC & FTM_CSC_CHF);
-  if(interrupt1) { FTM3_C0SC &= ~FTM_CSC_CHF; fuelSchedule5Interrupt(); }
+  if(interrupt1) { FTM3_C0SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule5); }
 #endif
 #if (INJ_CHANNELS >= 6)
   bool interrupt2 = (FTM3_C1SC & FTM_CSC_CHF);
-  if(interrupt2) { FTM3_C1SC &= ~FTM_CSC_CHF; fuelSchedule6Interrupt(); }
+  if(interrupt2) { FTM3_C1SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule6); }
 #endif
 #if (INJ_CHANNELS >= 7)
   bool interrupt3 = (FTM3_C2SC & FTM_CSC_CHF);
-  if(interrupt3) { FTM3_C2SC &= ~FTM_CSC_CHF; fuelSchedule7Interrupt(); }
+  if(interrupt3) { FTM3_C2SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule7); }
 #endif
 #if (INJ_CHANNELS >= 8)
   bool interrupt4 = (FTM3_C3SC & FTM_CSC_CHF);
-  if(interrupt4) { FTM3_C3SC &= ~FTM_CSC_CHF; fuelSchedule8Interrupt(); }
+  if(interrupt4) { FTM3_C3SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule8); }
 #endif
 #if (IGN_CHANNELS >= 5)
   bool interrupt5 = (FTM3_C4SC & FTM_CSC_CHF);
-  if(interrupt5) { FTM3_C4SC &= ~FTM_CSC_CHF; ignitionSchedule5Interrupt(); }
+  if(interrupt5) { FTM3_C4SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule5); }
 #endif
 #if (IGN_CHANNELS >= 6)
   bool interrupt6 = (FTM3_C5SC & FTM_CSC_CHF);
-  if(interrupt6) { FTM3_C5SC &= ~FTM_CSC_CHF; ignitionSchedule6Interrupt(); }
+  if(interrupt6) { FTM3_C5SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule6); }
 #endif
 #if (IGN_CHANNELS >= 7)
   bool interrupt7 = (FTM3_C6SC & FTM_CSC_CHF);
-  if(interrupt7) { FTM3_C6SC &= ~FTM_CSC_CHF; ignitionSchedule7Interrupt(); }
+  if(interrupt7) { FTM3_C6SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule7); }
 #endif
 #if (IGN_CHANNELS >= 8)
   bool interrupt8 = (FTM3_C7SC & FTM_CSC_CHF);
-  if(interrupt8) { FTM3_C7SC &= ~FTM_CSC_CHF; ignitionSchedule8Interrupt(); }
+  if(interrupt8) { FTM3_C7SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule8); }
 #endif
 
 }
