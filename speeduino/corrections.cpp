@@ -31,27 +31,29 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 #include "sensors.h"
 #include "src/PID_v1/PID_v1.h"
 
-long PID_O2, PID_output, PID_AFRTarget;
+#define IGN_IDLE_THRESHOLD 200 //RPM threshold (below CL idle target) for when ign based idle control will engage
+
+static long PID_O2, PID_output, PID_AFRTarget;
 /** Instance of the PID object in case that algorithm is used (Always instantiated).
 * Needs to be global as it maintains state outside of each function call.
 * Comes from Arduino (?) PID library.
 */
-PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE);
+static PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE);
 
-byte activateMAPDOT; //The mapDOT value seen when the MAE was activated. 
-byte activateTPSDOT; //The tpsDOT value seen when the MAE was activated.
+static byte activateMAPDOT; //The mapDOT value seen when the MAE was activated. 
+static byte activateTPSDOT; //The tpsDOT value seen when the MAE was activated.
 
-bool idleAdvActive = false;
+static bool idleAdvActive = false;
 uint16_t AFRnextCycle;
-unsigned long knockStartTime;
-uint8_t knockLastRecoveryStep;
+static unsigned long knockStartTime;
+static uint8_t knockLastRecoveryStep;
 //int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
 //int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
-uint8_t aseTaper;
-uint8_t dfcoDelay;
-uint8_t idleAdvTaper;
-uint8_t crankingEnrichTaper;
-uint8_t dfcoTaper;
+static uint8_t aseTaper;
+uint8_t dfcoDelay; // Non-static for unit testing
+static uint8_t idleAdvTaper;
+static uint8_t crankingEnrichTaper;
+uint8_t dfcoTaper; // Non-static for unit testing
 
 /** Initialise instances and vars related to corrections (at ECU boot-up).
  */
@@ -366,7 +368,7 @@ uint16_t correctionAccel(void)
               //If CLT is less than taper min temp, apply full modifier on top of accelValue
               if ( currentStatus.coolant <= (int)(configPage2.aeColdTaperMin - CALIBRATION_TEMPERATURE_OFFSET) )
               {
-                uint16_t accelValue_uint = percentage(configPage2.aeColdPct, accelValue);
+                uint16_t accelValue_uint = (uint16_t)percentage(configPage2.aeColdPct, (uint16_t)accelValue);
                 accelValue = (int16_t) accelValue_uint;
               }
               //If CLT is between taper min and max, taper the modifier value and apply it on top of accelValue
@@ -374,7 +376,7 @@ uint16_t correctionAccel(void)
               {
                 int16_t taperRange = (int16_t) configPage2.aeColdTaperMax - configPage2.aeColdTaperMin;
                 int16_t taperPercent = (int)((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - configPage2.aeColdTaperMin) * 100) / taperRange;
-                int16_t coldPct = (int16_t) 100 + percentage( (100-taperPercent), (configPage2.aeColdPct-100) );
+                int16_t coldPct = (int16_t) 100 + (int16_t)percentage((uint8_t) (100U-taperPercent), (configPage2.aeColdPct-100U) );
                 uint16_t accelValue_uint = (uint16_t) accelValue * coldPct / 100; //Potential overflow (if AE is large) without using uint16_t (percentage() may overflow)
                 accelValue = (int16_t) accelValue_uint;
               }
@@ -431,15 +433,15 @@ uint16_t correctionAccel(void)
               //If CLT is less than taper min temp, apply full modifier on top of accelValue
               if ( currentStatus.coolant <= (int)(configPage2.aeColdTaperMin - CALIBRATION_TEMPERATURE_OFFSET) )
               {
-                uint16_t accelValue_uint = percentage(configPage2.aeColdPct, accelValue);
+                uint16_t accelValue_uint = percentage(configPage2.aeColdPct, (uint16_t)accelValue);
                 accelValue = (int16_t) accelValue_uint;
               }
               //If CLT is between taper min and max, taper the modifier value and apply it on top of accelValue
               else
               {
                 int16_t taperRange = (int16_t) configPage2.aeColdTaperMax - configPage2.aeColdTaperMin;
-                int16_t taperPercent = (int)((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - configPage2.aeColdTaperMin) * 100) / taperRange;
-                int16_t coldPct = (int16_t)100 + percentage( (100 - taperPercent), (configPage2.aeColdPct-100) );
+                uint16_t taperPercent = (int)((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - configPage2.aeColdTaperMin) * 100) / taperRange;
+                uint16_t coldPct = 100U + (uint16_t)percentage((uint8_t) (100U - taperPercent), configPage2.aeColdPct-100U);
                 uint16_t accelValue_uint = (uint16_t) accelValue * coldPct / 100; //Potential overflow (if AE is large) without using uint16_t
                 accelValue = (int16_t) accelValue_uint;
               }
@@ -1098,4 +1100,12 @@ uint16_t correctionsDwell(uint16_t dwell)
   }
 
   return tempDwell;
+}
+
+
+bool isFixedTimingOn(void) {
+          // Fixed timing is in effect
+  return  configPage2.fixAngEnable == 1U
+          // Cranking, so the cranking advance angle is in effect
+          || BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK);  
 }

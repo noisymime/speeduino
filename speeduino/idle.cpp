@@ -577,7 +577,7 @@ void idleControl(void)
       else
       {
         //Read the OL table as feedforward term
-        FeedForwardTerm = percentage(table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), idle_pwm_max_count<<2); //All temps are offset by 40 degrees
+        FeedForwardTerm = percentage((uint8_t)table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), idle_pwm_max_count<<2); //All temps are offset by 40 degrees
         
         // Add an offset to the feed forward term. When tuned correctly, the extra load from the air conditioning
         // should exactly cancel this out and the PID loop will be relatively unaffected.

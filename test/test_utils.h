@@ -1,5 +1,6 @@
 
 #pragma once
+#include "table3d.h"
 
 #include <stdint.h>
 #include <unity.h>
@@ -150,3 +151,5 @@ static inline void populate_2dtable_P(table2D *pTable, const TValue values[], co
   populate_2dtable(pTable, values, bins)
 #endif
 }
+
+void populateTable(table3d16RpmLoad &table, const table3d_value_t values[], const table3d_axis_t xAxis[], const table3d_axis_t yAxis[]);
