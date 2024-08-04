@@ -10,6 +10,8 @@
 #ifndef COMMS_H
 #define COMMS_H
 
+#include <Arduino.h>
+
 /** \enum SerialStatus
  * @brief The current state of serial communication
  * */

@@ -47,7 +47,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #define IGNITION_REFRESH_THRESHOLD  30 //Time in uS that the refresh functions will check to ensure there is enough time before changing the end compare
 
 #define DWELL_AVERAGE_ALPHA 30
-#define DWELL_AVERAGE(input) (((long)input * (256 - DWELL_AVERAGE_ALPHA) + ((long)currentStatus.actualDwell * DWELL_AVERAGE_ALPHA))) >> 8
+#define DWELL_AVERAGE(input) LOW_PASS_FILTER((input), DWELL_AVERAGE_ALPHA, currentStatus.actualDwell)
 //#define DWELL_AVERAGE(input) (currentStatus.dwell) //Can be use to disable the above for testing
 
 void initialiseSchedulers(void);

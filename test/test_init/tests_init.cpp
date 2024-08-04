@@ -1,4 +1,5 @@
 #include <unity.h>
+#include <Arduino.h>
 #include "globals.h"
 #include "init.h"
 #include "../test_utils.h"

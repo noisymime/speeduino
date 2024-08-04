@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include "globals.h"
 #include "secondaryTables.h"
 #include "corrections.h"

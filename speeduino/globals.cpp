@@ -3,10 +3,6 @@
  */
 #include "globals.h"
 
-const char TSfirmwareVersion[] PROGMEM = "Speeduino";
-
-const byte data_structure_version = 2; //This identifies the data structure when reading / writing. (outdated ?)
-
 struct table3d16RpmLoad fuelTable; ///< 16x16 fuel map
 struct table3d16RpmLoad fuelTable2; ///< 16x16 fuel map
 struct table3d16RpmLoad ignitionTable; ///< 16x16 ignition map
@@ -107,7 +103,6 @@ volatile PORT_TYPE *triggerThird_pin_port;
 volatile PINMASK_TYPE triggerThird_pin_mask;
 
 //These are variables used across multiple files
-bool initialisationComplete = false; ///< Tracks whether the setup() function has run completely (true = has run)
 byte fpPrimeTime = 0; ///< The time (in seconds, based on @ref statuses.secl) that the fuel pump started priming
 uint8_t softLimitTime = 0; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
 volatile uint16_t mainLoopCount; //Main loop counter (incremented at each main loop rev., used for maintaining currentStatus.loopsPerSecond)
@@ -119,8 +114,6 @@ bool clutchTrigger;
 bool previousClutchTrigger;
 volatile uint32_t toothHistory[TOOTH_LOG_SIZE]; ///< Tooth trigger history - delta time (in uS) from last tooth (Indexed by @ref toothHistoryIndex)
 volatile uint8_t compositeLogHistory[TOOTH_LOG_SIZE]; 
-volatile bool fpPrimed = false; ///< Tracks whether or not the fuel pump priming has been completed yet
-volatile bool injPrimed = false; ///< Tracks whether or not the injectors priming has been completed yet
 volatile unsigned int toothHistoryIndex = 0; ///< Current index to @ref toothHistory array
 unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
 volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */

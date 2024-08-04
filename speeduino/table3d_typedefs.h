@@ -37,7 +37,6 @@ using table3d_axis_t = int16_t;
     GENERATOR(6, Rpm, Load, ##__VA_ARGS__) \
     GENERATOR(4, Rpm, Load, ##__VA_ARGS__) \
     GENERATOR(8, Rpm, Load, ##__VA_ARGS__) \
-    GENERATOR(8, Rpm, Tps, ##__VA_ARGS__) \
     GENERATOR(16, Rpm, Load, ##__VA_ARGS__)
 
 // Each 3d table is given a distinct type based on size & axis domains

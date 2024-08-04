@@ -29,6 +29,9 @@ uint16_t getPageSize(byte pageNum /**< [in] The page number */ );
 #define ignMap2Page   14
 #define boostvvtPage2 15
 
+/** @brief Fill the tune (config pages & tables) with zeroes. */
+void setTuneToEmpty(void);
+
 // ============================== Per-byte page access ==========================
 
 /**

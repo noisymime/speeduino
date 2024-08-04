@@ -159,7 +159,7 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
  * @param X_in 
  * @return int16_t 
  */
-int16_t table2D_getAxisValue(struct table2D *fromTable, byte X_in)
+int16_t table2D_getAxisValue(struct table2D *fromTable, uint8_t X_in)
 {
   int returnValue = 0;
 
@@ -178,7 +178,7 @@ int16_t table2D_getAxisValue(struct table2D *fromTable, byte X_in)
  * @param X_index 
  * @return int16_t 
  */
-int16_t table2D_getRawValue(struct table2D *fromTable, byte X_index)
+int16_t table2D_getRawValue(struct table2D *fromTable, uint8_t X_index)
 {
   int returnValue = 0;
 
