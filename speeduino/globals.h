@@ -100,7 +100,9 @@
   #define CORE_SAM
   #define INJ_CHANNELS 8
   #define IGN_CHANNELS 8
-#else
+#endif
+
+#ifndef BOARD_H
   #error Incorrect board selected. Please select the correct board (Usually Mega 2560) and upload again
 #endif
 
