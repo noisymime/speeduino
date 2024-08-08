@@ -16,9 +16,7 @@
   #endif
 #endif
 
-#if defined(STM32F1)
-  #include "stm32f1xx_ll_tim.h"
-#elif defined(STM32F3)
+#if defined(STM32F3)
   #include "stm32f3xx_ll_tim.h"
 #elif defined(STM32F4)
   #include "stm32f4xx_ll_tim.h"
@@ -50,8 +48,7 @@
   #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
 #endif  
   
-#if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
-  || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
+#if defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
   //STM32 Pill boards
   #ifndef NUM_DIGITAL_PINS
     #define NUM_DIGITAL_PINS 35
@@ -63,11 +60,6 @@
   #ifndef NUM_DIGITAL_PINS
     #define NUM_DIGITAL_PINS 75
   #endif
-#endif
-
-//Specific mode for Bluepill due to its small flash size. This disables a number of strings from being compiled into the flash
-#if defined(MCU_STM32F103C8) || defined(MCU_STM32F103CB)
-  #define SMALL_FLASH_MODE
 #endif
 
 #define BOARD_MAX_DIGITAL_PINS NUM_DIGITAL_PINS
@@ -110,8 +102,7 @@ uint16_t freeRam();
 void doSystemReset();
 void jumpToBootloader();
 
-#if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
- || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
+#if defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
   #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PC14) || ((pin) == PC15) )
 
   #ifndef PB11 //Hack for F4 BlackPills
@@ -187,13 +178,6 @@ void jumpToBootloader();
 /*
 ***********************************************************************************************************
 * Schedules
-* Timers Table for STM32F1
-*   TIMER1    TIMER2    TIMER3    TIMER4
-* 1 - FAN   1 - INJ1  1 - IGN1  1 - oneMSInterval
-* 2 - BOOST 2 - INJ2  2 - IGN2  2 -
-* 3 - VVT   3 - INJ3  3 - IGN3  3 -
-* 4 - IDLE  4 - INJ4  4 - IGN4  4 -
-*
 * Timers Table for STM32F4
 *   TIMER1  |  TIMER2  |  TIMER3  |  TIMER4  |  TIMER5  |  TIMER11
 * 1 - FAN  |1 - INJ1  |1 - IGN1  |1 - IGN5  |1 - INJ5  |1 - oneMSInterval
@@ -328,13 +312,11 @@ extern HardwareTimer Timer1;
 extern HardwareTimer Timer2;
 extern HardwareTimer Timer3;
 extern HardwareTimer Timer4;
-#if !defined(ARDUINO_BLUEPILL_F103C8) && !defined(ARDUINO_BLUEPILL_F103CB) //F103 just have 4 timers
 extern HardwareTimer Timer5;
 #if defined(TIM11)
 extern HardwareTimer Timer11;
 #elif defined(TIM7)
 extern HardwareTimer Timer11;
-#endif
 #endif
 
 #if ((STM32_CORE_VERSION_MINOR<=8) & (STM32_CORE_VERSION_MAJOR==1)) 

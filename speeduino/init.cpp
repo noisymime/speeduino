@@ -2553,45 +2553,6 @@ void setPinMapping(byte boardID)
         pinFlex = PC14; // Flex sensor (Must be external interrupt enabled)
         pinTrigger = PC13; //The CAS pin also led pin so bad idea
         pinTrigger2 = PC15; //The Cam Sensor pin
-
-     #elif defined(CORE_STM32)
-        //blue pill wiki.stm32duino.com/index.php?title=Blue_Pill
-        //Maple mini wiki.stm32duino.com/index.php?title=Maple_Mini
-        //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
-        //PB2 can't be used as input because is BOOT pin
-        pinInjector1 = PB7; //Output pin injector 1 is on
-        pinInjector2 = PB6; //Output pin injector 2 is on
-        pinInjector3 = PB5; //Output pin injector 3 is on
-        pinInjector4 = PB4; //Output pin injector 4 is on
-        pinCoil1 = PB3; //Pin for coil 1
-        pinCoil2 = PA15; //Pin for coil 2
-        pinCoil3 = PA14; //Pin for coil 3
-        pinCoil4 = PA9; //Pin for coil 4
-        pinCoil5 = PA8; //Pin for coil 5
-        pinTPS = A0; //TPS input pin
-        pinMAP = A1; //MAP sensor pin
-        pinIAT = A2; //IAT sensor pin
-        pinCLT = A3; //CLS sensor pin
-        pinO2 = A4; //O2 Sensor pin
-        pinBat = A5; //Battery reference voltage pin
-        pinBaro = pinMAP;
-        pinIdle1 = PB2; //Single wire idle control
-        pinIdle2 = PA2; //2 wire idle control
-        pinBoost = PA1; //Boost control
-        pinVVT_1 = PA0; //Default VVT output
-        pinVVT_2 = PA2; //Default VVT2 output
-        pinStepperDir = PC15; //Direction pin  for DRV8825 driver
-        pinStepperStep = PC14; //Step pin for DRV8825 driver
-        pinStepperEnable = PC13; //Enable pin for DRV8825
-        pinDisplayReset = PB2; // OLED reset pin
-        pinFan = PB1; //Pin for the fan output
-        pinFuelPump = PB11; //Fuel pump output
-        pinTachOut = PB10; //Tacho output pin
-        //external interrupt enabled pins
-        pinFlex = PB8; // Flex sensor (Must be external interrupt enabled)
-        pinTrigger = PA10; //The CAS pin
-        pinTrigger2 = PA13; //The Cam Sensor pin
-      
     #endif
       break;
     default:
