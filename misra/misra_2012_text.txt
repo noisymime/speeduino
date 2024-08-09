@@ -273,6 +273,8 @@ Rule 21.11
 No text specified
 Rule 21.12
 No text specified
+Rule 21.15
+The pointer arguments to the Standard Library functions memcpy, memmove and memcmp shall be pointers to qualified or unqualified versions of compatible types
 Rule 22.1
 No text specified
 Rule 22.2

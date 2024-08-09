@@ -209,10 +209,12 @@
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
 #ifndef UNIT_TEST 
-#define TOOTH_LOG_SIZE      127
+#define TOOTH_LOG_SIZE      127U
 #else
-#define TOOTH_LOG_SIZE      1
+#define TOOTH_LOG_SIZE      1U
 #endif
+// Some code relies on TOOTH_LOG_SIZE being uint8_t.
+static_assert(TOOTH_LOG_SIZE<UINT8_MAX, "Check all uses of TOOTH_LOG_SIZE");
 
 #define O2_CALIBRATION_PAGE   2U
 #define IAT_CALIBRATION_PAGE  1U
@@ -331,10 +333,10 @@
 #define SPARK2_CONDITION_TPS 2
 #define SPARK2_CONDITION_ETH 3
 
-#define RESET_CONTROL_DISABLED             0
-#define RESET_CONTROL_PREVENT_WHEN_RUNNING 1
-#define RESET_CONTROL_PREVENT_ALWAYS       2
-#define RESET_CONTROL_SERIAL_COMMAND       3
+#define RESET_CONTROL_DISABLED             0U
+#define RESET_CONTROL_PREVENT_WHEN_RUNNING 1U
+#define RESET_CONTROL_PREVENT_ALWAYS       2U
+#define RESET_CONTROL_SERIAL_COMMAND       3U
 
 #define OPEN_LOOP_BOOST     0
 #define CLOSED_LOOP_BOOST   1
