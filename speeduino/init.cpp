@@ -3592,6 +3592,19 @@ void initialiseTriggers(void)
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
 
+    case DECODER_XTZ:
+      triggerSetup_XTZ();
+      triggerHandler = triggerPri_XTZ;
+      getRPM = getRPM_XTZ;
+      getCrankAngle = getCrankAngle_XTZ;
+      triggerSetEndTeeth = triggerSetEndTeeth_XTZ;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = true; } // set as boolean so we can directly use it in decoder.
+      else { primaryTriggerEdge = false; }
+      
+      attachInterrupt(triggerInterrupt, triggerHandler, CHANGE); //Hardcoded change, the primaryTriggerEdge will be used in the decoder to select if it`s an inverted or non-inverted signal.
+      break;
+
 
     default:
       triggerHandler = triggerPri_missingTooth;
